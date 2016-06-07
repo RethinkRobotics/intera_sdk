@@ -29,9 +29,9 @@ import errno
 
 import rospy
 
-import baxter_dataflow
+import intera_dataflow
 
-from baxter_core_msgs.msg import (
+from intera_core_msgs.msg import (
     AnalogIOState,
     AnalogOutputCommand,
 )

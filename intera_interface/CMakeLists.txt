@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(baxter_interface)
+project(intera_interface)
 
 find_package(catkin
   REQUIRED
@@ -11,7 +11,7 @@ find_package(catkin
   control_msgs
   trajectory_msgs
   dynamic_reconfigure
-  baxter_core_msgs
+  intera_core_msgs
 )
 
 catkin_python_setup()
@@ -24,7 +24,7 @@ generate_dynamic_reconfigure_options(
   cfg/HeadActionServer.cfg
 )
 
-add_dependencies(${PROJECT_NAME}_gencfg baxter_core_msgs_generate_messages_py)
+add_dependencies(${PROJECT_NAME}_gencfg intera_core_msgs_generate_messages_py)
 
 catkin_package(
   CATKIN_DEPENDS
@@ -35,7 +35,7 @@ catkin_package(
   control_msgs
   trajectory_msgs
   dynamic_reconfigure
-  baxter_core_msgs
+  intera_core_msgs
 )
 
 install(

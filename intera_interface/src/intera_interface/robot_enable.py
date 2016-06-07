@@ -38,12 +38,12 @@ from std_msgs.msg import (
     Empty,
 )
 
-import baxter_dataflow
+import intera_dataflow
 
-from baxter_core_msgs.msg import (
+from intera_core_msgs.msg import (
     AssemblyState,
 )
-from baxter_interface import settings
+from intera_interface import settings
 
 
 class RobotEnable(object):
