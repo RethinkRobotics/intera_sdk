@@ -1,0 +1,20 @@
+<launch>
+
+  <!-- File Path Argument -->
+  <arg name="file_path" />
+
+  <!-- Loops Argument -->
+  <arg name="loops" default="1" />
+
+  <!-- Start the Joint Trajectory Action Server -->
+  <node name="rsdk_velocity_joint_trajectory_action_server"
+  pkg="baxter_interface" type="joint_trajectory_action_server.py"
+  required="true" args="--mode velocity" />
+
+  <!-- Run the Joint Trajectory File Playback Example -->
+  <node name="rsdk_joint_trajectory_file_playback" pkg="baxter_examples"
+  type="joint_trajectory_file_playback.py"
+  args="--file $(arg file_path) --loops $(arg loops)"
+  output="screen" />
+
+</launch>
