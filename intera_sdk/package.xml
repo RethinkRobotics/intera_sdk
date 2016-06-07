@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<package>
+  <name>intera_sdk</name>
+  <version>5.0.0</version>
+  <description>
+    intera_sdk metapackage containing all of the SDK packages
+    for Rethink Robotics' robots.
+  </description>
+
+  <maintainer email="rsdk.support@rethinkrobotics.com">
+    Rethink Robotics Inc.
+  </maintainer>
+  <license>Apache 2.0</license>
+  <url type="website">http://sdk.rethinkrobotics.com/</url>
+  <url type="repository">
+    https://github.com/RethinkRobotics/intera_sdk
+  </url>
+  <url type="bugtracker">
+    https://github.com/RethinkRobotics/intera_sdk/issues
+  </url>
+  <author>Rethink Robotics Inc.</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>intera_interface</run_depend>
+  <run_depend>intera_examples</run_depend>
+  
+  <export>
+    <metapackage/>
+  </export>
+
+</package>
