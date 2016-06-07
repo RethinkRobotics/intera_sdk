@@ -77,10 +77,10 @@ class Navigator(object):
             raise AttributeError("Invalid Navigator name '%s'" % (location,))
         self._id = location
         self._state = None
-        self.button0_changed = baxter_dataflow.Signal()
-        self.button1_changed = baxter_dataflow.Signal()
-        self.button2_changed = baxter_dataflow.Signal()
-        self.wheel_changed = baxter_dataflow.Signal()
+        self.button0_changed = intera_dataflow.Signal()
+        self.button1_changed = intera_dataflow.Signal()
+        self.button2_changed = intera_dataflow.Signal()
+        self.wheel_changed = intera_dataflow.Signal()
 
         nav_state_topic = 'robot/navigators/{0}_navigator/state'.format(self._id)
         self._state_sub = rospy.Subscriber(
@@ -98,7 +98,7 @@ class Navigator(object):
 
         init_err_msg = ("Navigator init failed to get current state from %s" %
                         (nav_state_topic,))
-        baxter_dataflow.wait_for(lambda: self._state != None,
+        intera_dataflow.wait_for(lambda: self._state != None,
                                  timeout_msg=init_err_msg)
 
     @property

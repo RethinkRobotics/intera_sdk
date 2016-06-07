@@ -65,13 +65,13 @@ class Gripper(object):
         on initialization. [False]
 
         The gripper firmware versions are checked against the version
-        compatibility list in L{baxter_interface.VERSIONS_SDK2GRIPPER}.
+        compatibility list in L{intera_interface.VERSIONS_SDK2GRIPPER}.
         The compatibility list is updated in each SDK release.
 
         By default, this interface class will not check versions,
-        but all examples using Grippers in baxter_examples pass a True
+        but all examples using Grippers in intera_examples pass a True
         and will check. This behavior can be overridden by setting
-        L{baxter_interface.CHECK_VERSION} to False.
+        L{intera_interface.CHECK_VERSION} to False.
         """
         self.name = gripper + '_gripper'
         self._cmd_sender = rospy.get_name() + '_%s'
@@ -81,9 +81,9 @@ class Gripper(object):
 
         self._state = None
         self._prop = EndEffectorProperties(id=-1)  # initialize w/unused value
-        self.on_type_changed = baxter_dataflow.Signal()
-        self.on_gripping_changed = baxter_dataflow.Signal()
-        self.on_moving_changed = baxter_dataflow.Signal()
+        self.on_type_changed = intera_dataflow.Signal()
+        self.on_gripping_changed = intera_dataflow.Signal()
+        self.on_moving_changed = intera_dataflow.Signal()
 
         self._parameters = dict()
 
@@ -113,7 +113,7 @@ class Gripper(object):
                                           )
 
         # Wait for the gripper state message to be populated
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
                           lambda: not self._state is None,
                           timeout=5.0,
                           timeout_msg=("Failed to get state from %s" %
@@ -121,7 +121,7 @@ class Gripper(object):
                           )
 
         # Wait for the gripper type to be populated
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
                           lambda: not self.type() is None,
                           timeout=5.0,
                           timeout_msg=("Failed to get properties from %s" %
@@ -211,10 +211,10 @@ class Gripper(object):
                          "current firmware")
         warn_time = self._version_str_to_time(
                          settings.VERSIONS_SDK2GRIPPER[sdk_version]['warn'],
-                         "baxter_interface settings.py firmware 'warn'")
+                         "intera_interface settings.py firmware 'warn'")
         fail_time = self._version_str_to_time(
                          settings.VERSIONS_SDK2GRIPPER[sdk_version]['fail'],
-                         "baxter_interface settings.py firmware 'fail'")
+                         "intera_interface settings.py firmware 'fail'")
         if firmware_time > warn_time:
             return True
         elif firmware_time <= warn_time and firmware_time > fail_time:
@@ -280,7 +280,7 @@ class Gripper(object):
         self._cmd_pub.publish(ee_cmd)
         if block:
             finish_time = rospy.get_time() + timeout
-            cmd_seq = baxter_dataflow.wait_for(
+            cmd_seq = intera_dataflow.wait_for(
                           test=seq_test,
                           timeout=timeout,
                           raise_on_error=False,
@@ -291,7 +291,7 @@ class Gripper(object):
                            " %s:%s") % (self.name, ee_cmd.command))
                 rospy.logdebug(seq_msg)
             time_remain = max(0.5, finish_time - rospy.get_time())
-            return baxter_dataflow.wait_for(
+            return intera_dataflow.wait_for(
                        test=test,
                        timeout=time_remain,
                        raise_on_error=False,
@@ -401,7 +401,7 @@ class Gripper(object):
                         self._prop.manufacturer == default_manufacturer and
                         self._prop.product == default_product
                         )
-        return baxter_dataflow.wait_for(
+        return intera_dataflow.wait_for(
                    test=test,
                    timeout=timeout,
                    raise_on_error=False,
@@ -431,7 +431,7 @@ class Gripper(object):
                         self._state.ready == state_unknown and
                         self._state.position == 0.0
                         )
-        return baxter_dataflow.wait_for(
+        return intera_dataflow.wait_for(
                    test=test,
                    timeout=timeout,
                    raise_on_error=False,

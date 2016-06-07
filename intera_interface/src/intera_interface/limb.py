@@ -117,11 +117,11 @@ class Limb(object):
 
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
-        baxter_dataflow.wait_for(lambda: len(self._joint_angle.keys()) > 0,
+        intera_dataflow.wait_for(lambda: len(self._joint_angle.keys()) > 0,
                                  timeout_msg=err_msg)
         err_msg = ("%s limb init failed to get current endpoint_state "
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
-        baxter_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
+        intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
                                  timeout_msg=err_msg)
 
     def _on_joint_states(self, msg):
@@ -438,7 +438,7 @@ class Limb(object):
                  j in self._joint_angle]
 
         self.set_joint_positions(filtered_cmd())
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             test=lambda: callable(test) and test() == True or \
                          (all(diff() < threshold for diff in diffs)),
             timeout=timeout,

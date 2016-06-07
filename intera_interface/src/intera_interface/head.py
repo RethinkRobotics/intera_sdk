@@ -72,7 +72,7 @@ class Head(object):
             HeadState,
             self._on_head_state)
 
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             lambda: len(self._state) != 0,
             timeout=5.0,
             timeout_msg=("Failed to get current head state from %s" %
@@ -140,7 +140,7 @@ class Head(object):
         self._pub_pan.publish(msg)
 
         if not timeout == 0:
-            baxter_dataflow.wait_for(
+            intera_dataflow.wait_for(
                 lambda: (abs(self.pan() - angle) <=
                          settings.HEAD_PAN_ANGLE_TOLERANCE),
                 timeout=timeout,
@@ -161,7 +161,7 @@ class Head(object):
 
         if not timeout == 0:
             # Wait for nod to initiate
-            baxter_dataflow.wait_for(
+            intera_dataflow.wait_for(
                 test=self.nodding,
                 timeout=timeout,
                 rate=100,
@@ -170,7 +170,7 @@ class Head(object):
             )
 
             # Wait for nod to complete
-            baxter_dataflow.wait_for(
+            intera_dataflow.wait_for(
                 test=lambda: not self.nodding(),
                 timeout=timeout,
                 rate=100,

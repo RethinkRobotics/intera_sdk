@@ -38,7 +38,7 @@ import rospy
 
 from dynamic_reconfigure.server import Server
 
-from baxter_interface.cfg import (
+from intera_interface.cfg import (
     PositionJointTrajectoryActionServerConfig,
     VelocityJointTrajectoryActionServerConfig,
     PositionFFJointTrajectoryActionServerConfig,

@@ -59,7 +59,7 @@ class DigitalIO(object):
         self._is_output = False
         self._state = None
 
-        self.state_changed = baxter_dataflow.Signal()
+        self.state_changed = intera_dataflow.Signal()
 
         type_ns = '/robot/' + self._component_type
         topic_base = type_ns + '/' + self._id
@@ -69,7 +69,7 @@ class DigitalIO(object):
             DigitalIOState,
             self._on_io_state)
 
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             lambda: self._state != None,
             timeout=2.0,
             timeout_msg="Failed to get current digital_io state from %s" \
@@ -142,7 +142,7 @@ class DigitalIO(object):
         self._pub_output.publish(cmd)
 
         if not timeout == 0:
-            baxter_dataflow.wait_for(
+            intera_dataflow.wait_for(
                 test=lambda: self.state == value,
                 timeout=timeout,
                 rate=100,

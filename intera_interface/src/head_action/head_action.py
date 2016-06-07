@@ -40,8 +40,8 @@ from control_msgs.msg import (
     SingleJointPositionResult, 
 )
 
-import baxter_interface
-from baxter_core_msgs.msg import (
+import intera_interface
+from intera_core_msgs.msg import (
    HeadPanCommand,
 )
 
@@ -50,7 +50,7 @@ class HeadActionServer(object):
     def __init__(self, reconfig_server):
         self._dyn = reconfig_server
         self._ns = 'robot/head/head_action'
-        self._head = baxter_interface.Head()
+        self._head = intera_interface.Head()
 
         # Action Server
         self._server = actionlib.SimpleActionServer(
@@ -66,7 +66,7 @@ class HeadActionServer(object):
         self._result = SingleJointPositionResult()
 
         # Initialize Parameters
-        self._prm = {"dead_zone" : baxter_interface.settings.HEAD_PAN_ANGLE_TOLERANCE}
+        self._prm = {"dead_zone" : intera_interface.settings.HEAD_PAN_ANGLE_TOLERANCE}
         self._timeout = 5.0
 
     def _get_head_parameters(self):

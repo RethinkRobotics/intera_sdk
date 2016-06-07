@@ -66,12 +66,12 @@ class RobotEnable(object):
         @param versioned: True to check robot software version
         compatibility on initialization. False (default) to ignore.
 
-        The compatibility of robot versions to SDK (baxter_interface)
-        versions is defined in the L{baxter_interface.VERSIONS_SDK2ROBOT}.
+        The compatibility of robot versions to SDK (intera_interface)
+        versions is defined in the L{intera_interface.VERSIONS_SDK2ROBOT}.
 
         By default, the class does not check, but all examples do. The
         example behavior can be overridden by changing the value of
-        L{baxter_interface.CHECK_VERSION} to False.
+        L{intera_interface.CHECK_VERSION} to False.
         """
         self._state = None
         state_topic = 'robot/state'
@@ -82,7 +82,7 @@ class RobotEnable(object):
         if versioned and not self.version_check():
             sys.exit(1)
 
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             lambda: not self._state is None,
             timeout=2.0,
             timeout_msg=("Failed to get robot state on %s" %
@@ -97,7 +97,7 @@ class RobotEnable(object):
         pub = rospy.Publisher('robot/set_super_enable', Bool, 
                               queue_size=10)
 
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             test=lambda: self._state.enabled == status,
             timeout=2.0 if status else 5.0,
             timeout_msg=("Failed to %sable robot" %
@@ -158,7 +158,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
 
         rospy.loginfo("Resetting robot...")
         try:
-            baxter_dataflow.wait_for(
+            intera_dataflow.wait_for(
                 test=is_reset,
                 timeout=3.0,
                 timeout_msg=error_env,
@@ -177,7 +177,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         the stopped state.
         """
         pub = rospy.Publisher('robot/set_super_stop', Empty, queue_size=10)
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             test=lambda: self._state.stopped == True,
             timeout=3.0,
             timeout_msg="Failed to stop the robot",
@@ -189,7 +189,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         Verifies the version of the software running on the robot is
         compatible with this local version of the Baxter RSDK.
 
-        Currently uses the variables in baxter_interface.settings and
+        Currently uses the variables in intera_interface.settings and
         can be overridden for all default examples by setting CHECK_VERSION
         to False.
         """

@@ -68,7 +68,7 @@ class AnalogIO(object):
             AnalogIOState,
             self._on_io_state)
 
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             lambda: len(self._state.keys()) != 0,
             timeout=2.0,
             timeout_msg="Failed to get current analog_io state from %s" \
@@ -120,7 +120,7 @@ class AnalogIO(object):
         self._pub_output.publish(cmd)
 
         if not timeout == 0:
-            baxter_dataflow.wait_for(
+            intera_dataflow.wait_for(
                 test=lambda: self.state() == value,
                 timeout=timeout,
                 rate=100,

@@ -52,9 +52,9 @@ from trajectory_msgs.msg import (
     JointTrajectoryPoint,
 )
 
-import baxter_control
-import baxter_dataflow
-import baxter_interface
+import intera_control
+import intera_dataflow
+import intera_interface
 
 
 class JointTrajectoryActionServer(object):
@@ -69,10 +69,10 @@ class JointTrajectoryActionServer(object):
             execute_cb=self._on_trajectory_action,
             auto_start=False)
         self._action_name = rospy.get_name()
-        self._limb = baxter_interface.Limb(limb)
-        self._enable = baxter_interface.RobotEnable()
+        self._limb = intera_interface.Limb(limb)
+        self._enable = intera_interface.RobotEnable()
         self._name = limb
-        self._cuff = baxter_interface.DigitalIO('%s_lower_cuff' % (limb,))
+        self._cuff = intera_interface.DigitalIO('%s_lower_cuff' % (limb,))
         self._cuff.state_changed.connect(self._cuff_cb)
         # Verify joint control mode
         self._mode = mode
@@ -103,7 +103,7 @@ class JointTrajectoryActionServer(object):
         # Create our PID controllers
         self._pid = dict()
         for joint in self._limb.joint_names():
-            self._pid[joint] = baxter_control.PID()
+            self._pid[joint] = intera_control.PID()
 
         # Create our spline coefficients
         self._coeff = [None] * len(self._limb.joint_names())
@@ -403,7 +403,7 @@ class JointTrajectoryActionServer(object):
         start_time = goal.trajectory.header.stamp.to_sec()
         if start_time == 0.0:
             start_time = rospy.get_time()
-        baxter_dataflow.wait_for(
+        intera_dataflow.wait_for(
             lambda: rospy.get_time() >= start_time,
             timeout=float('inf')
         )
