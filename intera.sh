@@ -6,7 +6,7 @@
 
 # This is a convenient script which will set up your ROS environment and
 # should be executed with every new instance of a shell in which you plan on
-# working with Baxter.
+# working with Intera.
 
 # Clear any previously set your_ip/your_hostname
 unset your_ip
@@ -18,11 +18,11 @@ unset your_hostname
 # previously set (typically in your .bashrc or .bash_profile), those settings
 # will be overwritten by any variables set here.
 
-# Specify Baxter's hostname
-baxter_hostname="baxter_hostname.local"
+# Specify Robot's hostname
+robot_hostname="robot_hostname.local"
 
 # Set *Either* your computers ip address or hostname. Please note if using
-# your_hostname that this must be resolvable to Baxter.
+# your_hostname that this must be resolvable to the Robot.
 your_ip="192.168.XXX.XXX"
 #your_hostname="my_computer.local"
 
@@ -43,18 +43,18 @@ else
 	your_ip="${ROS_IP}" && your_hostname="${ROS_HOSTNAME}"
 fi
 
-# If argument provided, set baxter_hostname to argument
-# If argument is sim or local, set baxter_hostname to localhost
+# If argument provided, set robot_hostname to argument
+# If argument is sim or local, set robot_hostname to localhost
 if [ -n "${1}" ]; then
 	if [[ "${1}" == "sim" ]] || [[ "${1}" == "local" ]]; then
-		baxter_hostname="localhost"
+		robot_hostname="localhost"
 		if [[ -z ${your_ip} || "${your_ip}" == "192.168.XXX.XXX" ]] && \
 		[[ -z ${your_hostname} || "${your_hostname}" == "my_computer.local" ]]; then
 			your_hostname="localhost"
 			your_ip=""
 		fi
 	else
-		baxter_hostname="${1}"
+		robot_hostname="${1}"
 	fi
 fi
 
@@ -64,9 +64,9 @@ cat <<-EOF > ${tf}
 	[ -s "\${HOME}"/.bashrc ] && source "\${HOME}"/.bashrc
 	[ -s "\${HOME}"/.bash_profile ] && source "\${HOME}"/.bash_profile
 
-	# verify this script is moved out of baxter folder
-	if [[ -e "${topdir}/baxter_sdk/package.xml" ]]; then
-		echo -ne "EXITING - This script must be moved from the baxter folder \
+	# verify this script is moved out of intera_sdk folder
+	if [[ -e "${topdir}/intera_sdk/package.xml" ]]; then
+		echo -ne "EXITING - This script must be moved from the intera_sdk folder \
 to the root of your catkin workspace.\n"
 		exit 1
 	fi
@@ -81,11 +81,11 @@ to the root of your catkin workspace.\n"
 		exit 1
 	fi
 
-	# if set, verify user has modified the baxter_hostname
-	if [ -n ${baxter_hostname} ] && \
-	[[ "${baxter_hostname}" == "baxter_hostname.local" ]]; then
+	# if set, verify user has modified the robot_hostname
+	if [ -n ${robot_hostname} ] && \
+	[[ "${robot_hostname}" == "robot_hostname.local" ]]; then
 		echo -ne "EXITING - Please edit this file, modifying the \
-'baxter_hostname' variable to reflect Baxter's current hostname.\n"
+'robot_hostname' variable to reflect your Robot's current hostname.\n"
 		exit 1
 	fi
 
@@ -145,8 +145,8 @@ has been built (source /opt/ros/\${ros_version}/setup.sh; catkin_make).\n\
 
 	[ -n "${your_ip}" ] && export ROS_IP="${your_ip}"
 	[ -n "${your_hostname}" ] && export ROS_HOSTNAME="${your_hostname}"
-	[ -n "${baxter_hostname}" ] && \
-		export ROS_MASTER_URI="http://${baxter_hostname}:11311"
+	[ -n "${robot_hostname}" ] && \
+		export ROS_MASTER_URI="http://${robot_hostname}:11311"
 
 	# source the catkin setup bash script
 	source devel/setup.bash
@@ -160,8 +160,8 @@ has been built (source /opt/ros/\${ros_version}/setup.sh; catkin_make).\n\
 		if [ -n "\${__ORIG_PROMPT_COMMAND}" ]; then
 			eval \${__ORIG_PROMPT_COMMAND}
 		fi
-		if ! echo \${PS1} | grep '\[baxter' &>/dev/null; then
-			export PS1="\[\033[00;33m\][baxter - \
+		if ! echo \${PS1} | grep '\[intera' &>/dev/null; then
+			export PS1="\[\033[00;33m\][intera - \
 \${ROS_MASTER_URI}]\[\033[00m\] \${PS1}"
 		fi
 	}
@@ -169,8 +169,8 @@ has been built (source /opt/ros/\${ros_version}/setup.sh; catkin_make).\n\
 	if [ "\${TERM}" != "dumb" ]; then
 		export PROMPT_COMMAND=__ros_prompt
 		__ROS_PROMPT=1
-	elif ! echo \${PS1} | grep '\[baxter' &>/dev/null; then
-		export PS1="[baxter - \${ROS_MASTER_URI}] \${PS1}"
+	elif ! echo \${PS1} | grep '\[intera' &>/dev/null; then
+		export PS1="[intera - \${ROS_MASTER_URI}] \${PS1}"
 	fi
 
 EOF
