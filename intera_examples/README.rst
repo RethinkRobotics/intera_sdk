@@ -1,7 +1,7 @@
-baxter_examples
+intera_examples
 ===============
 
-Example SDK usage for the Baxter Research Robot from Rethink Robotics
+Examples for utilizing the Intera SDK Interface to communicate with robots from Rethink Robotics
 
 Code & Tickets
 --------------
@@ -9,12 +9,12 @@ Code & Tickets
 +-----------------+----------------------------------------------------------------+
 | Documentation   | http://sdk.rethinkrobotics.com/wiki                            |
 +-----------------+----------------------------------------------------------------+
-| Issues          | https://github.com/RethinkRobotics/baxter_examples/issues      |
+| Issues          | https://github.com/RethinkRobotics/intera_sdk/issues           |
 +-----------------+----------------------------------------------------------------+
 | Contributions   | http://sdk.rethinkrobotics.com/wiki/Contributions              |
 +-----------------+----------------------------------------------------------------+
 
-baxter_examples Repository Overview
+intera_examples Repository Overview
 -----------------------------------
 
 ::
@@ -52,9 +52,9 @@ baxter_examples Repository Overview
      |   +-- joint_trajectory_client.launch
      |   +-- joint_trajectory_file_playback.launch
      |
-     +-- src/                                      baxter_examples api
-     |   +-- baxter_examples/                      example classes
-     |   +-- baxter_external_devices/              external device classes
+     +-- src/                                      intera_examples api
+     |   +-- intera_examples/                      example classes
+     |   +-- intera_external_devices/              external device classes
      |
      +-- share/                                    shared example program resources
      |
@@ -65,13 +65,7 @@ Other Baxter Repositories
 -------------------------
 
 +------------------+-----------------------------------------------------+
-| baxter           | https://github.com/RethinkRobotics/baxter           |
-+------------------+-----------------------------------------------------+
-| baxter_interface | https://github.com/RethinkRobotics/baxter_interface |
-+------------------+-----------------------------------------------------+
-| baxter_tools     | https://github.com/RethinkRobotics/baxter_tools     |
-+------------------+-----------------------------------------------------+
-| baxter_common    | https://github.com/RethinkRobotics/baxter_common    |
+| intera_common    | https://github.com/RethinkRobotics/intera_common    |
 +------------------+-----------------------------------------------------+
 
 Latest Release Information

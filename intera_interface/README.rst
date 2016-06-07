@@ -1,4 +1,4 @@
-baxter_interface
+intera_interface
 ================
 
 Python interface classes and action servers for control of
@@ -10,20 +10,20 @@ Code & Tickets
 +-----------------+----------------------------------------------------------------+
 | Documentation   | http://sdk.rethinkrobotics.com/wiki                            |
 +-----------------+----------------------------------------------------------------+
-| Issues          | https://github.com/RethinkRobotics/baxter_interface/issues     |
+| Issues          | https://github.com/RethinkRobotics/intera_interface/issues     |
 +-----------------+----------------------------------------------------------------+
 | Contributions   | http://sdk.rethinkrobotics.com/wiki/Contributions              |
 +-----------------+----------------------------------------------------------------+
 
-baxter_interface Repository Overview
+intera_interface Repository Overview
 ------------------------------------
 
 ::
 
      .
      |
-     +-- src/                                  baxter_interface api
-     |   +-- baxter_interface/                 baxter component classes
+     +-- src/                                  intera_interface api
+     |   +-- intera_interface/                 intera component classes
      |       +-- analog_io.py
      |       +-- camera.py
      |       +-- digital_io.py
@@ -34,8 +34,8 @@ baxter_interface Repository Overview
      |       +-- robot_enable.py
      |       +-- robust_controller.py
      |       +-- settings.py
-     |   +-- baxter_control/                   generic control utilities
-     |   +-- baxter_dataflow/                  timing/program flow utilities
+     |   +-- intera_control/                   generic control utilities
+     |   +-- intera_dataflow/                  timing/program flow utilities
      |   +-- joint_trajectory_action/          joint trajectory action implementation
      |   +-- gripper_action/                   gripper action implementation
      |   +-- head_action/                      head action implementation
@@ -48,17 +48,11 @@ baxter_interface Repository Overview
      +-- cfg/                                  dynamic reconfigure action configs
 
 
-Other Baxter Repositories
+Other Intera Repositories
 -------------------------
 
 +------------------+-----------------------------------------------------+
-| baxter           | https://github.com/RethinkRobotics/baxter           |
-+------------------+-----------------------------------------------------+
-| baxter_tools     | https://github.com/RethinkRobotics/baxter_tools     |
-+------------------+-----------------------------------------------------+
-| baxter_examples  | https://github.com/RethinkRobotics/baxter_examples  |
-+------------------+-----------------------------------------------------+
-| baxter_common    | https://github.com/RethinkRobotics/baxter_common    |
+| intera_common    | https://github.com/RethinkRobotics/intera_common    |
 +------------------+-----------------------------------------------------+
 
 Latest Release Information

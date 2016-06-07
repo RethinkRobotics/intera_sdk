@@ -37,8 +37,10 @@ Intera Repository Overview
      |   +-- scripts/ 
      |   +-- src/
      |
-     +-- intera_example       examples using the Python API for Intera-enable robots
+     +-- intera_examples       examples using the Python API for Intera-enable robots
      |   +-- cfg/
+     |   +-- launch/
+     |   +-- share/images
      |   +-- scripts/ 
      |   +-- src/
      |
