@@ -1,7 +1,7 @@
 #! /usr/bin/python
 # Software License Agreement (BSD License)
 #
-# Copyright (c) 2013-2015, Rethink Robotics
+# Copyright (c) 2013-2016, Rethink Robotics
 # All rights reserved.
 #
 # Copyright (c) 2011, Ian McMahon
