@@ -47,9 +47,9 @@ from trajectory_msgs.msg import (
     JointTrajectoryPoint,
 )
 
-import baxter_interface
+import intera_interface
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 class Trajectory(object):
@@ -123,7 +123,7 @@ def main():
     print("Initializing node... ")
     rospy.init_node("rsdk_joint_trajectory_client_%s" % (limb,))
     print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
+    rs = intera_interface.RobotEnable(CHECK_VERSION)
     print("Enabling robot... ")
     rs.enable()
     print("Running. Ctrl-c to quit")
@@ -135,7 +135,7 @@ def main():
     traj = Trajectory(limb)
     rospy.on_shutdown(traj.stop)
     # Command Current Joint Positions first
-    limb_interface = baxter_interface.limb.Limb(limb)
+    limb_interface = intera_interface.limb.Limb(limb)
     current_angles = [limb_interface.joint_angle(joint) for joint in limb_interface.joint_names()]
     traj.add_point(current_angles, 0.0)
 

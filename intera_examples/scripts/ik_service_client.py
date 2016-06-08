@@ -44,7 +44,7 @@ from geometry_msgs.msg import (
 )
 from std_msgs.msg import Header
 
-from baxter_core_msgs.srv import (
+from intera_core_msgs.srv import (
     SolvePositionIK,
     SolvePositionIKRequest,
 )

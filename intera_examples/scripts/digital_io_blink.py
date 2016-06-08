@@ -31,7 +31,7 @@ import argparse
 
 import rospy
 
-import baxter_interface.digital_io as DIO
+import intera_interface.digital_io as DIO
 
 
 def test_interface(io_component='left_outer_light'):
@@ -57,7 +57,7 @@ def main():
 
     Turns the output of a DigitalIO component on then off again
     while printing the state at each step. Simple demonstration
-    of using the baxter_interface.DigitalIO class.
+    of using the intera_interface.DigitalIO class.
 
     Run this example with default arguments and watch the light
     on the left arm Navigator blink on and off while the console
@@ -70,8 +70,8 @@ ROS Parameters:
 
 Baxter DigitalIO
     Note that 'DigitalIO' components are only those that use
-    the custom ROS Messages baxter_core_msgs/DigitalIOState
-    and baxter_core_msgs/DigitalOutputCommand.
+    the custom ROS Messages intera_core_msgs/DigitalIOState
+    and intera_core_msgs/DigitalOutputCommand.
 
     Component names can be found on the Wiki, or by echoing
     the names field of the digital_io_states topic:

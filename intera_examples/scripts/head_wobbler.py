@@ -32,9 +32,9 @@ import random
 
 import rospy
 
-import baxter_interface
+import intera_interface
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 class Wobbler(object):
@@ -44,11 +44,11 @@ class Wobbler(object):
         'Wobbles' the head
         """
         self._done = False
-        self._head = baxter_interface.Head()
+        self._head = intera_interface.Head()
 
         # verify robot is enabled
         print("Getting robot state... ")
-        self._rs = baxter_interface.RobotEnable(CHECK_VERSION)
+        self._rs = intera_interface.RobotEnable(CHECK_VERSION)
         self._init_state = self._rs.state().enabled
         print("Enabling robot... ")
         self._rs.enable()
@@ -85,7 +85,7 @@ class Wobbler(object):
             angle = random.uniform(-1.5, 1.5)
             while (not rospy.is_shutdown() and
                    not (abs(self._head.pan() - angle) <=
-                       baxter_interface.HEAD_PAN_ANGLE_TOLERANCE)):
+                       intera_interface.HEAD_PAN_ANGLE_TOLERANCE)):
                 self._head.set_pan(angle, speed=0.3, timeout=0)
                 control_rate.sleep()
             command_rate.sleep()
@@ -98,7 +98,7 @@ def main():
     """RSDK Head Example: Wobbler
 
     Nods the head and pans side-to-side towards random angles.
-    Demonstrates the use of the baxter_interface.Head class.
+    Demonstrates the use of the intera_interface.Head class.
     """
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,

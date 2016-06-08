@@ -35,9 +35,9 @@ import sys
 
 import rospy
 
-import baxter_interface
+import intera_interface
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 def try_float(x):
@@ -83,10 +83,10 @@ def map_file(filename, loops=1):
     name/value pairs. Names come from the column headers
     first column is the time stamp
     """
-    left = baxter_interface.Limb('left')
-    right = baxter_interface.Limb('right')
-    grip_left = baxter_interface.Gripper('left', CHECK_VERSION)
-    grip_right = baxter_interface.Gripper('right', CHECK_VERSION)
+    left = intera_interface.Limb('left')
+    right = intera_interface.Limb('right')
+    grip_left = intera_interface.Gripper('left', CHECK_VERSION)
+    grip_right = intera_interface.Gripper('right', CHECK_VERSION)
     rate = rospy.Rate(1000)
 
     if grip_left.error():
@@ -180,7 +180,7 @@ Related examples:
     print("Initializing node... ")
     rospy.init_node("rsdk_joint_position_file_playback")
     print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
+    rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
 
     def clean_shutdown():

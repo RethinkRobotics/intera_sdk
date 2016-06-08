@@ -4,12 +4,12 @@
   <arg name="limb" default="right" />
 
   <!-- Start the Joint Trajectory Action Server -->
-  <node name="rsdk_joint_trajectory_action_server" pkg="baxter_interface"
+  <node name="rsdk_joint_trajectory_action_server" pkg="intera_interface"
   type="joint_trajectory_action_server.py" args="--limb $(arg limb) --mode position"
   required="true" />
 
   <!-- Run the Joint Trajectory Action Test Example -->
-  <node name="rsdk_joint_trajectory_test" pkg="baxter_examples"
+  <node name="rsdk_joint_trajectory_test" pkg="intera_examples"
   type="joint_trajectory_client.py" args="--limb $(arg limb)"
   output="screen" />
 

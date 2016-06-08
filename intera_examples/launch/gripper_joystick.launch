@@ -13,7 +13,7 @@
   </node>
 
   <!-- Run the Gripper Joystick Example -->
-  <node name="rsdk_gripper_control_joystick" pkg="baxter_examples"
+  <node name="rsdk_gripper_control_joystick" pkg="intera_examples"
   type="gripper_joystick.py" args="--joystick $(arg joystick)"
   required="true" output="screen" />
 

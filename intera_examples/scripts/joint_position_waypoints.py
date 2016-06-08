@@ -35,14 +35,14 @@ import sys
 
 import rospy
 
-import baxter_interface
+import intera_interface
 
 
 class Waypoints(object):
     def __init__(self, limb, speed, accuracy):
-        # Create baxter_interface limb instance
+        # Create intera_interface limb instance
         self._arm = limb
-        self._limb = baxter_interface.Limb(self._arm)
+        self._limb = intera_interface.Limb(self._arm)
 
         # Parameters which will describe joint position moves
         self._speed = speed
@@ -56,13 +56,13 @@ class Waypoints(object):
 
         # Verify robot is enabled
         print("Getting robot state... ")
-        self._rs = baxter_interface.RobotEnable()
+        self._rs = intera_interface.RobotEnable()
         self._init_state = self._rs.state().enabled
         print("Enabling robot... ")
         self._rs.enable()
 
         # Create Navigator I/O
-        self._navigator_io = baxter_interface.Navigator(self._arm)
+        self._navigator_io = intera_interface.Navigator(self._arm)
 
     def _record_waypoint(self, value):
         """
@@ -170,7 +170,7 @@ def main():
     )
     parser.add_argument(
         '-a', '--accuracy',
-        default=baxter_interface.settings.JOINT_ANGLE_TOLERANCE, type=float,
+        default=intera_interface.settings.JOINT_ANGLE_TOLERANCE, type=float,
         help='joint position accuracy (rad) at which waypoints must achieve'
     )
     args = parser.parse_args(rospy.myargv()[1:])

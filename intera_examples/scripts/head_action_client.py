@@ -42,9 +42,9 @@ from control_msgs.msg import (
     SingleJointPositionGoal,
 )
 
-import baxter_interface
+import intera_interface
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 class HeadClient(object):
     def __init__(self):
@@ -95,7 +95,7 @@ def main():
     print("Initializing node... ")
     rospy.init_node("rsdk_head_action_client")
     print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
+    rs = intera_interface.RobotEnable(CHECK_VERSION)
     print("Enabling robot... ")
     rs.enable()
     print("Running. Ctrl-c to quit")

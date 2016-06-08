@@ -34,10 +34,10 @@ import argparse
 
 import rospy
 
-import baxter_interface
-import baxter_external_devices
+import intera_interface
+import intera_external_devices
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 def map_joystick(joystick):
@@ -48,10 +48,10 @@ def map_joystick(joystick):
     """
     # initialize interfaces
     print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
+    rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
-    left = baxter_interface.Gripper('left', CHECK_VERSION)
-    right = baxter_interface.Gripper('right', CHECK_VERSION)
+    left = intera_interface.Gripper('left', CHECK_VERSION)
+    right = intera_interface.Gripper('right', CHECK_VERSION)
 
     def clean_shutdown():
         print("\nExiting example...")
@@ -172,8 +172,8 @@ def main():
     the *joystick* type you are using as an argument to setup
     appropriate key mappings.
 
-    Uses the baxter_interface.Gripper class and the helper classes
-    in baxter_external_devices.Joystick.
+    Uses the intera_interface.Gripper class and the helper classes
+    in intera_external_devices.Joystick.
     """
     epilog = """
 See help inside the example with the "Start" button for controller
@@ -192,11 +192,11 @@ key bindings.
 
     joystick = None
     if args.joystick == 'xbox':
-        joystick = baxter_external_devices.joystick.XboxController()
+        joystick = intera_external_devices.joystick.XboxController()
     elif args.joystick == 'logitech':
-        joystick = baxter_external_devices.joystick.LogitechController()
+        joystick = intera_external_devices.joystick.LogitechController()
     elif args.joystick == 'ps3':
-        joystick = baxter_external_devices.joystick.PS3Controller()
+        joystick = intera_external_devices.joystick.PS3Controller()
     else:
         # Should never reach this case with proper argparse usage
         parser.error("Unsupported joystick type '%s'" % (args.joystick))

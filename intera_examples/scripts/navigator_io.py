@@ -32,15 +32,15 @@ import sys
 
 import rospy
 
-import baxter_interface
+import intera_interface
 
 
 def blink():
     navs = (
-        baxter_interface.Navigator('left'),
-        baxter_interface.Navigator('right'),
-        baxter_interface.Navigator('torso_left'),
-        baxter_interface.Navigator('torso_right'),)
+        intera_interface.Navigator('left'),
+        intera_interface.Navigator('right'),
+        intera_interface.Navigator('torso_left'),
+        intera_interface.Navigator('torso_right'),)
 
     print ("Blinking LED's for 10 seconds")
     rate = rospy.Rate(10)
@@ -66,7 +66,7 @@ def echo_input():
     def wheel_moved(v):
         print ("Wheel Increment: %d, New Value: %s" % (v, nav.wheel))
 
-    nav = baxter_interface.Navigator('left')
+    nav = intera_interface.Navigator('left')
     nav.button0_changed.connect(b0_pressed)
     nav.button1_changed.connect(b1_pressed)
     nav.button2_changed.connect(b2_pressed)
@@ -93,7 +93,7 @@ def main():
     with the corresponding arguments, then follow the instructions
     on screen.
 
-    Uses the baxter_interface.Navigator class to interface with the
+    Uses the intera_interface.Navigator class to interface with the
     four Navigator button/LED controls. Also shows a nice example of
     using the button_changed Signal feature.
     """

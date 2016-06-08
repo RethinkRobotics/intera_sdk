@@ -27,9 +27,9 @@
 
 import rospy
 
-import baxter_interface
+import intera_interface
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 class JointRecorder(object):
@@ -43,14 +43,14 @@ class JointRecorder(object):
         self._start_time = rospy.get_time()
         self._done = False
 
-        self._limb_left = baxter_interface.Limb("left")
-        self._limb_right = baxter_interface.Limb("right")
-        self._gripper_left = baxter_interface.Gripper("left", CHECK_VERSION)
-        self._gripper_right = baxter_interface.Gripper("right", CHECK_VERSION)
-        self._io_left_lower = baxter_interface.DigitalIO('left_lower_button')
-        self._io_left_upper = baxter_interface.DigitalIO('left_upper_button')
-        self._io_right_lower = baxter_interface.DigitalIO('right_lower_button')
-        self._io_right_upper = baxter_interface.DigitalIO('right_upper_button')
+        self._limb_left = intera_interface.Limb("left")
+        self._limb_right = intera_interface.Limb("right")
+        self._gripper_left = intera_interface.Gripper("left", CHECK_VERSION)
+        self._gripper_right = intera_interface.Gripper("right", CHECK_VERSION)
+        self._io_left_lower = intera_interface.DigitalIO('left_lower_button')
+        self._io_left_upper = intera_interface.DigitalIO('left_upper_button')
+        self._io_right_lower = intera_interface.DigitalIO('right_lower_button')
+        self._io_right_upper = intera_interface.DigitalIO('right_upper_button')
 
         # Verify Grippers Have No Errors and are Calibrated
         if self._gripper_left.error():

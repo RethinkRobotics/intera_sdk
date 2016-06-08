@@ -34,17 +34,17 @@ import argparse
 
 import rospy
 
-import baxter_interface
-import baxter_external_devices
+import intera_interface
+import intera_external_devices
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 def map_keyboard():
-    left = baxter_interface.Limb('left')
-    right = baxter_interface.Limb('right')
-    grip_left = baxter_interface.Gripper('left', CHECK_VERSION)
-    grip_right = baxter_interface.Gripper('right', CHECK_VERSION)
+    left = intera_interface.Limb('left')
+    right = intera_interface.Limb('right')
+    grip_left = intera_interface.Gripper('left', CHECK_VERSION)
+    grip_right = intera_interface.Gripper('right', CHECK_VERSION)
     lj = left.joint_names()
     rj = right.joint_names()
 
@@ -94,7 +94,7 @@ def map_keyboard():
     done = False
     print("Controlling joints. Press ? for help, Esc to quit.")
     while not done and not rospy.is_shutdown():
-        c = baxter_external_devices.getch()
+        c = intera_external_devices.getch()
         if c:
             #catch Esc or ctrl-c
             if c in ['\x1b', '\x03']:
@@ -136,7 +136,7 @@ See help inside the example with the '?' key for key bindings.
     print("Initializing node... ")
     rospy.init_node("rsdk_joint_position_keyboard")
     print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
+    rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
 
     def clean_shutdown():

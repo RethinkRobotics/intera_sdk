@@ -31,7 +31,7 @@ import argparse
 
 import rospy
 
-import baxter_interface.analog_io as AIO
+import intera_interface.analog_io as AIO
 
 
 def test_interface(io_component='torso_fan'):
@@ -66,7 +66,7 @@ def main():
 
     Ramps the output of an AnalogIO component from 0 to 100,
     and then back down again. Demonstrates the use of the
-    baxter_interface.AnalogIO class.
+    intera_interface.AnalogIO class.
 
     Run this example and listen to the fan as output changes.
     """
@@ -76,8 +76,8 @@ ROS Parameters:
 
 Baxter AnalogIO
     Note that 'AnalogIO' components are only those that use
-    the custom ROS Messages baxter_core_msgs/AnalogIOState
-    and baxter_core_msgs/AnalogOutputCommand.
+    the custom ROS Messages intera_core_msgs/AnalogIOState
+    and intera_core_msgs/AnalogOutputCommand.
 
     AnalogIO component names can be found on the Wiki or by
     echoing the names field of the analog_io_states topic:

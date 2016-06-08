@@ -37,9 +37,9 @@ from std_msgs.msg import (
     UInt16,
 )
 
-import baxter_interface
+import intera_interface
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 class Wobbler(object):
@@ -50,8 +50,8 @@ class Wobbler(object):
         """
         self._pub_rate = rospy.Publisher('robot/joint_state_publish_rate',
                                          UInt16, queue_size=10)
-        self._left_arm = baxter_interface.limb.Limb("left")
-        self._right_arm = baxter_interface.limb.Limb("right")
+        self._left_arm = intera_interface.limb.Limb("left")
+        self._right_arm = intera_interface.limb.Limb("right")
         self._left_joint_names = self._left_arm.joint_names()
         self._right_joint_names = self._right_arm.joint_names()
 
@@ -59,7 +59,7 @@ class Wobbler(object):
         self._rate = 500.0  # Hz
 
         print("Getting robot state... ")
-        self._rs = baxter_interface.RobotEnable(CHECK_VERSION)
+        self._rs = intera_interface.RobotEnable(CHECK_VERSION)
         self._init_state = self._rs.state().enabled
         print("Enabling robot... ")
         self._rs.enable()

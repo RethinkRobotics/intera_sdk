@@ -32,7 +32,7 @@ import sys
 
 import rospy
 
-from baxter_interface import (
+from intera_interface import (
     DigitalIO,
     Gripper,
     Navigator,

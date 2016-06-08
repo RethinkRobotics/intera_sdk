@@ -41,12 +41,12 @@ from std_msgs.msg import (
     Empty,
 )
 
-import baxter_interface
+import intera_interface
 
-from baxter_examples.cfg import (
+from intera_examples.cfg import (
     JointSpringsExampleConfig,
 )
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 class JointSprings(object):
@@ -68,7 +68,7 @@ class JointSprings(object):
         self._missed_cmds = 20.0  # Missed cycles before triggering timeout
 
         # create our limb instance
-        self._limb = baxter_interface.Limb(limb)
+        self._limb = intera_interface.Limb(limb)
 
         # initialize parameters
         self._springs = dict()
@@ -81,7 +81,7 @@ class JointSprings(object):
 
         # verify robot is enabled
         print("Getting robot state... ")
-        self._rs = baxter_interface.RobotEnable(CHECK_VERSION)
+        self._rs = intera_interface.RobotEnable(CHECK_VERSION)
         self._init_state = self._rs.state().enabled
         print("Enabling robot... ")
         self._rs.enable()

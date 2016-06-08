@@ -36,9 +36,9 @@ from std_msgs.msg import (
     UInt16,
 )
 
-import baxter_interface
+import intera_interface
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 class Puppeteer(object):
@@ -53,12 +53,12 @@ class Puppeteer(object):
         puppet_arm = {"left": "right", "right": "left"}
         self._control_limb = limb
         self._puppet_limb = puppet_arm[limb]
-        self._control_arm = baxter_interface.limb.Limb(self._control_limb)
-        self._puppet_arm = baxter_interface.limb.Limb(self._puppet_limb)
+        self._control_arm = intera_interface.limb.Limb(self._control_limb)
+        self._puppet_arm = intera_interface.limb.Limb(self._puppet_limb)
         self._amp = amplification
 
         print("Getting robot state... ")
-        self._rs = baxter_interface.RobotEnable(CHECK_VERSION)
+        self._rs = intera_interface.RobotEnable(CHECK_VERSION)
         self._init_state = self._rs.state().enabled
         print("Enabling robot... ")
         self._rs.enable()

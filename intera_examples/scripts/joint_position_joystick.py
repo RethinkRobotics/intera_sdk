@@ -34,10 +34,10 @@ import argparse
 
 import rospy
 
-import baxter_interface
-import baxter_external_devices
+import intera_interface
+import intera_external_devices
 
-from baxter_interface import CHECK_VERSION
+from intera_interface import CHECK_VERSION
 
 
 def rotate(l):
@@ -74,10 +74,10 @@ def map_joystick(joystick):
 
     @param joystick: an instance of a Joystick
     """
-    left = baxter_interface.Limb('left')
-    right = baxter_interface.Limb('right')
-    grip_left = baxter_interface.Gripper('left', CHECK_VERSION)
-    grip_right = baxter_interface.Gripper('right', CHECK_VERSION)
+    left = intera_interface.Limb('left')
+    right = intera_interface.Limb('right')
+    grip_left = intera_interface.Gripper('left', CHECK_VERSION)
+    grip_right = intera_interface.Gripper('right', CHECK_VERSION)
     lcmd = {}
     rcmd = {}
 
@@ -195,18 +195,18 @@ key bindings.
 
     joystick = None
     if args.joystick == 'xbox':
-        joystick = baxter_external_devices.joystick.XboxController()
+        joystick = intera_external_devices.joystick.XboxController()
     elif args.joystick == 'logitech':
-        joystick = baxter_external_devices.joystick.LogitechController()
+        joystick = intera_external_devices.joystick.LogitechController()
     elif args.joystick == 'ps3':
-        joystick = baxter_external_devices.joystick.PS3Controller()
+        joystick = intera_external_devices.joystick.PS3Controller()
     else:
         parser.error("Unsupported joystick type '%s'" % (args.joystick))
 
     print("Initializing node... ")
     rospy.init_node("rsdk_joint_position_joystick")
     print("Getting robot state... ")
-    rs = baxter_interface.RobotEnable(CHECK_VERSION)
+    rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
 
     def clean_shutdown():
