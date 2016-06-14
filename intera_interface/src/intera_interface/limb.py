@@ -390,17 +390,18 @@ class Limb(object):
 
     def move_to_neutral(self, timeout=15.0):
         """
-        Command the joints to the center of their joint ranges
-
-        Neutral is defined as::
-          ['*_s0', '*_s1', '*_e0', '*_e1', '*_w0', '*_w1', '*_w2']
-          [0.0, -0.55, 0.0, 0.75, 0.0, 1.26, 0.0]
+        Command the Limb joints to a predefined set of "neutral" joint angles.
+        From rosparam named_poses/<limb>/poses/neutral.
 
         @type timeout: float
         @param timeout: seconds to wait for move to finish [15]
         """
-        angles = dict(zip(self.joint_names(),
-                          [0.0, -0.55, 0.0, 0.75, 0.0, 1.26, 0.0]))
+        try:
+            neutral_pose = rospy.get_param("named_poses/{0}/poses/neutral".format(self.name))
+        except KeyError:
+            rospy.logerr(("Get neutral pose failed, arm: \"{0}\".").format(self.name))
+            return
+        angles = dict(zip(self.joint_names(), neutral_pose))
         return self.move_to_joint_positions(angles, timeout)
 
     def move_to_joint_positions(self, positions, timeout=15.0,
