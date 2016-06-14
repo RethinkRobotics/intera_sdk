@@ -61,11 +61,6 @@ class Head(object):
             HeadPanCommand,
             queue_size=10)
 
-        self._pub_nod = rospy.Publisher(
-            '/robot/head/command_head_nod',
-            Bool,
-            queue_size=10)
-
         state_topic = '/robot/head/head_state'
         self._sub_state = rospy.Subscriber(
             state_topic,
@@ -82,7 +77,36 @@ class Head(object):
     def _on_head_state(self, msg):
         self._state['pan'] = msg.pan
         self._state['panning'] = msg.isTurning
-        self._state['nodding'] = msg.isNodding
+        self._state['blocked'] = msg.isBlocked
+        self._state['pan_mode'] = msg.panMode
+
+    def blocked(self):
+        """
+        Check if the head is currently blocked from movement.
+        Get the current pan angle of the head. This can only
+        be true if 'pan_mode' is ACTIVE_CANCELLATION_MODE.
+
+        @rtype: bool
+        @return: True if the head is currently blocked, False otherwise.
+        """
+        return self._state['blocked']
+
+    def pan_mode(self):
+        """
+        Get the mode the head is currently acting in.
+
+        @rtype: uint8
+        @return: current mode -
+                 PASSIVE_MODE (0) : Compliant to user-induced external movement
+                 ACTIVE_MODE  (1) : Actively responds to absolute commanded
+                                    position
+                                    Command limits are actual joint limits.
+                 ACTIVE_CANCELLATION_MODE (2) : Actively responds to commanded
+                                           head position relative to the
+                                           current position of j0 joint
+                                           Command limits are [-pi, pi] rads.
+        """
+        return self._state['pan_mode']
 
     def pan(self):
         """
@@ -92,15 +116,6 @@ class Head(object):
         @return: current angle in radians
         """
         return self._state['pan']
-
-    def nodding(self):
-        """
-        Check if the head is currently nodding.
-
-        @rtype: bool
-        @return: True if the head is currently nodding, False otherwise.
-        """
-        return self._state['nodding']
 
     def panning(self):
         """
@@ -149,31 +164,3 @@ class Head(object):
                 body=lambda: self._pub_pan.publish(msg)
                 )
 
-    def command_nod(self, timeout=5.0):
-        """
-        Command the head to nod once.
-
-        @type timeout: float
-        @param timeout: Seconds to wait for the head to nod.
-                        If 0, just command once and return. [0]
-        """
-        self._pub_nod.publish(True)
-
-        if not timeout == 0:
-            # Wait for nod to initiate
-            intera_dataflow.wait_for(
-                test=self.nodding,
-                timeout=timeout,
-                rate=100,
-                timeout_msg="Failed to initiate head nod command",
-                body=lambda: self._pub_nod.publish(True)
-            )
-
-            # Wait for nod to complete
-            intera_dataflow.wait_for(
-                test=lambda: not self.nodding(),
-                timeout=timeout,
-                rate=100,
-                timeout_msg="Failed to complete head nod command",
-                body=lambda: self._pub_nod.publish(False)
-            )
