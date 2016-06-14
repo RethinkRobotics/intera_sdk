@@ -26,9 +26,10 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from copy import deepcopy
-from math import fabs
+from math import fabs, pi
 
 import rospy
+import tf
 
 from std_msgs.msg import (
     Bool
@@ -61,16 +62,13 @@ class Head(object):
             HeadPanCommand,
             queue_size=10)
 
-        self._pub_nod = rospy.Publisher(
-            '/robot/head/command_head_nod',
-            Bool,
-            queue_size=10)
-
         state_topic = '/robot/head/head_state'
         self._sub_state = rospy.Subscriber(
             state_topic,
             HeadState,
             self._on_head_state)
+
+        self._tf_listener = tf.TransformListener()
 
         intera_dataflow.wait_for(
             lambda: len(self._state) != 0,
@@ -82,7 +80,37 @@ class Head(object):
     def _on_head_state(self, msg):
         self._state['pan'] = msg.pan
         self._state['panning'] = msg.isTurning
-        self._state['nodding'] = msg.isNodding
+        self._state['blocked'] = msg.isBlocked
+        self._state['pan_mode'] = msg.panMode
+
+    def blocked(self):
+        """
+        Check if the head is currently blocked from movement.
+        Get the current pan angle of the head. This can only
+        be true if 'pan_mode' is ACTIVE_CANCELLATION_MODE.
+
+        @rtype: bool
+        @return: True if the head is currently blocked, False otherwise.
+        """
+        return self._state['blocked']
+
+    def pan_mode(self):
+        """
+        Get the mode the head is currently acting in.
+
+        @rtype: string
+        @return: current mode -
+                 'PASSIVE_MODE'(0) : Compliant to user-induced external movement
+                 'ACTIVE_MODE' (1)  : Actively responds to absolute commanded
+                                    position
+                                    Command limits are actual joint limits.
+                 'ACTIVE_CANCELLATION_MODE' (2) : Actively responds to commanded
+                                           head position relative to the
+                                           current position of robot base frame
+        """
+        pan_mode_dict = {0:'PASSIVE_MODE', 1:'ACTIVE_MODE',
+                         2:'ACTIVE_CANCELLATION_MODE'}
+        return pan_mode_dict[self._state['pan_mode']]
 
     def pan(self):
         """
@@ -93,15 +121,6 @@ class Head(object):
         """
         return self._state['pan']
 
-    def nodding(self):
-        """
-        Check if the head is currently nodding.
-
-        @rtype: bool
-        @return: True if the head is currently nodding, False otherwise.
-        """
-        return self._state['nodding']
-
     def panning(self):
         """
         Check if the head is currently panning.
@@ -111,7 +130,8 @@ class Head(object):
         """
         return self._state['panning']
 
-    def set_pan(self, angle, speed=1.0, timeout=10.0, scale_speed=False):
+    def set_pan(self, angle, speed=1.0, timeout=10.0,
+                active_cancellation=False):
         """
         Pan at the given speed to the desired angle.
 
@@ -123,57 +143,63 @@ class Head(object):
         @param timeout: Seconds to wait for the head to pan to the
                         specified angle. If 0, just command once and
                         return. [10]
-        @param scale_speed: Scale speed to pan at by a factor of 100,
-                            to use legacy range between 0-100 [100]
+        @param active_cancellation: Specifies if the head should aim at
+                        a location in the base frame. If this is set to True,
+                        the "angle" param is measured with respect to
+                        the "/base" frame, rather than the actual head joint
+                        value. Valid range is [-pi, pi) radians.
+        @type active_cancellation: bool
         """
-        if scale_speed:
-            cmd_speed = speed / 100.0;
-        else:
-            cmd_speed = speed
-        if (cmd_speed < HeadPanCommand.MIN_SPEED_RATIO or
-              cmd_speed > HeadPanCommand.MAX_SPEED_RATIO):
-            rospy.logerr(("Commanded Speed, ({0}), outside of valid range"
-                          " [{1}, {2}]").format(cmd_speed,
-                          HeadPanCommand.MIN_SPEED_RATIO,
+        if speed > HeadPanCommand.MAX_SPEED_RATIO:
+            rospy.logwarn(("Commanded Speed, ({0}), faster than Max speed of"
+                          " {1}. Clamping to Max.]").format(speed,
                           HeadPanCommand.MAX_SPEED_RATIO))
-        msg = HeadPanCommand(angle, cmd_speed, True)
+            speed = HeadPanCommand.MAX_SPEED_RATIO
+        elif speed < HeadPanCommand.MIN_SPEED_RATIO:
+            rospy.logwarn(("Commanded Speed, ({0}), slower than Min speed of"
+                           " {1}. Clamping to Min.]").format(speed,
+                           HeadPanCommand.MIN_SPEED_RATIO))
+            speed = HeadPanCommand.MIN_SPEED_RATIO
+        if active_cancellation:
+            def get_current_euler(axis, source_frame="base",
+                                  target_frame="head"):
+                rate = rospy.Rate(10) # Hz
+                counter = 1
+                quat = (0,0,0,1)
+                while not rospy.is_shutdown():
+                    try:
+                        pos, quat = self._tf_listener.lookupTransform(
+                            source_frame, target_frame,
+                            self._tf_listener.getLatestCommonTime(source_frame,
+                            target_frame))
+                    except tf.Exception:
+                        if not counter % 10: # essentially throttle 1.0 sec
+                            rospy.logwarn(("Active Cancellation: Trying again "
+                                           "to lookup transform from {0} to "
+                                           "{1}...").format(source_frame,
+                                           target_frame))
+                    else:
+                        break
+                    counter += 1
+                    rate.sleep()
+                euler = tf.transformations.euler_from_quaternion(quat)
+                return euler[axis]
+            tf_angle = -pi + (angle + pi) % (2*pi)
+            mode = HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE
+            stop_condition = lambda: (abs(get_current_euler(2) - tf_angle) <=
+                               settings.HEAD_PAN_ANGLE_TOLERANCE)
+        else:
+            mode = HeadPanCommand.SET_ACTIVE_MODE
+            stop_condition = lambda: (abs(self.pan() - angle) <=
+                               settings.HEAD_PAN_ANGLE_TOLERANCE)
+        msg = HeadPanCommand(angle, speed, mode)
         self._pub_pan.publish(msg)
-
         if not timeout == 0:
             intera_dataflow.wait_for(
-                lambda: (abs(self.pan() - angle) <=
-                         settings.HEAD_PAN_ANGLE_TOLERANCE),
+                stop_condition,
                 timeout=timeout,
                 rate=100,
-                timeout_msg="Failed to move head to pan command %f" % angle,
+                timeout_msg=("Failed to move head to pan"
+                             " command {0}").format(angle),
                 body=lambda: self._pub_pan.publish(msg)
                 )
-
-    def command_nod(self, timeout=5.0):
-        """
-        Command the head to nod once.
-
-        @type timeout: float
-        @param timeout: Seconds to wait for the head to nod.
-                        If 0, just command once and return. [0]
-        """
-        self._pub_nod.publish(True)
-
-        if not timeout == 0:
-            # Wait for nod to initiate
-            intera_dataflow.wait_for(
-                test=self.nodding,
-                timeout=timeout,
-                rate=100,
-                timeout_msg="Failed to initiate head nod command",
-                body=lambda: self._pub_nod.publish(True)
-            )
-
-            # Wait for nod to complete
-            intera_dataflow.wait_for(
-                test=lambda: not self.nodding(),
-                timeout=timeout,
-                rate=100,
-                timeout_msg="Failed to complete head nod command",
-                body=lambda: self._pub_nod.publish(False)
-            )
