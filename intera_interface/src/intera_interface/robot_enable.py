@@ -84,7 +84,7 @@ class RobotEnable(object):
 
         intera_dataflow.wait_for(
             lambda: not self._state is None,
-            timeout=2.0,
+            timeout=5.0,
             timeout_msg=("Failed to get robot state on %s" %
             (state_topic,)),
         )
@@ -94,12 +94,12 @@ class RobotEnable(object):
 
     def _toggle_enabled(self, status):
 
-        pub = rospy.Publisher('robot/set_super_enable', Bool, 
+        pub = rospy.Publisher('robot/set_super_enable', Bool,
                               queue_size=10)
 
         intera_dataflow.wait_for(
             test=lambda: self._state.enabled == status,
-            timeout=2.0 if status else 5.0,
+            timeout=5.0,
             timeout_msg=("Failed to %sable robot" %
                          ('en' if status else 'dis',)),
             body=lambda: pub.publish(status),
@@ -160,7 +160,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         try:
             intera_dataflow.wait_for(
                 test=is_reset,
-                timeout=3.0,
+                timeout=5.0,
                 timeout_msg=error_env,
                 body=pub.publish
             )
@@ -179,7 +179,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         pub = rospy.Publisher('robot/set_super_stop', Empty, queue_size=10)
         intera_dataflow.wait_for(
             test=lambda: self._state.stopped == True,
-            timeout=3.0,
+            timeout=5.0,
             timeout_msg="Failed to stop the robot",
             body=pub.publish,
         )
@@ -193,7 +193,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         can be overridden for all default examples by setting CHECK_VERSION
         to False.
         """
-        param_name = "rethink/software_version"
+        param_name = "/manifest/robot_software/version/HLR_VERSION_STRING"
         sdk_version = settings.SDK_VERSION
 
         # get local lock for rosparam threading bug
