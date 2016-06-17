@@ -54,6 +54,8 @@ class Head(object):
         """
         Constructor.
         """
+        self._pan_mode_dict = {0:'PASSIVE_MODE', 1:'ACTIVE_MODE',
+                           2:'ACTIVE_CANCELLATION_MODE', 3:'NO_CHANGE'}
         self._state = dict()
 
         self._pub_pan = rospy.Publisher(
@@ -97,16 +99,18 @@ class Head(object):
 
         @rtype: uint8
         @return: current mode -
-                 PASSIVE_MODE (0) : Compliant to user-induced external movement
-                 ACTIVE_MODE  (1) : Actively responds to absolute commanded
+                 'PASSIVE_MODE'(0) : Compliant to user-induced external movement
+                 'ACTIVE_MODE' (1)  : Actively responds to absolute commanded
                                     position
                                     Command limits are actual joint limits.
-                 ACTIVE_CANCELLATION_MODE (2) : Actively responds to commanded
+                 'ACTIVE_CANCELLATION_MODE' (2) : Actively responds to commanded
                                            head position relative to the
                                            current position of j0 joint
                                            Command limits are [-pi, pi] rads.
         """
-        return self._state['pan_mode']
+        pan_mode_dict = {0:'PASSIVE_MODE', 1:'ACTIVE_MODE',
+                         2:'ACTIVE_CANCELLATION_MODE'}
+        return pan_mode_dict[self._state['pan_mode']]
 
     def pan(self):
         """
@@ -126,7 +130,7 @@ class Head(object):
         """
         return self._state['panning']
 
-    def set_pan(self, angle, speed=1.0, timeout=10.0, scale_speed=False):
+    def set_pan(self, angle, speed=1.0, timeout=10.0):
         """
         Pan at the given speed to the desired angle.
 
@@ -138,29 +142,79 @@ class Head(object):
         @param timeout: Seconds to wait for the head to pan to the
                         specified angle. If 0, just command once and
                         return. [10]
-        @param scale_speed: Scale speed to pan at by a factor of 100,
-                            to use legacy range between 0-100 [100]
         """
-        if scale_speed:
-            cmd_speed = speed / 100.0;
-        else:
-            cmd_speed = speed
-        if (cmd_speed < HeadPanCommand.MIN_SPEED_RATIO or
-              cmd_speed > HeadPanCommand.MAX_SPEED_RATIO):
+        if (speed < HeadPanCommand.MIN_SPEED_RATIO or
+            speed > HeadPanCommand.MAX_SPEED_RATIO):
             rospy.logerr(("Commanded Speed, ({0}), outside of valid range"
-                          " [{1}, {2}]").format(cmd_speed,
+                          " [{1}, {2}]").format(speed,
                           HeadPanCommand.MIN_SPEED_RATIO,
                           HeadPanCommand.MAX_SPEED_RATIO))
-        msg = HeadPanCommand(angle, cmd_speed, True)
+        msg = HeadPanCommand(angle, speed, HeadPanCommand.SET_ACTIVE_MODE)
         self._pub_pan.publish(msg)
 
         if not timeout == 0:
+            intera_dataflow.wait_for(
+                lambda: (HeadPanCommand.SET_ACTIVE_MODE == self.pan_mode()),
+                timeout=timeout,
+                rate=100,
+                timeout_msg=("Failed to move head to pan"
+                             " command {0}").format(angle),
+                body=lambda: self._pub_pan.publish(msg)
+                )
+            msg.pan_mode = HeadPanCommand.NO_MODE_CHANGE
             intera_dataflow.wait_for(
                 lambda: (abs(self.pan() - angle) <=
                          settings.HEAD_PAN_ANGLE_TOLERANCE),
                 timeout=timeout,
                 rate=100,
-                timeout_msg="Failed to move head to pan command %f" % angle,
+                timeout_msg=("Failed to move head to pan"
+                             " command {0}").format(angle),
+                body=lambda: self._pub_pan.publish(msg)
+                )
+
+    def set_active_cancellation_pan(self, angle, speed=1.0, timeout=10.0):
+        """
+        Pan at the given speed to the desired angle.
+
+        @type angle: float
+        @param angle: Desired pan angle in radians.
+        @type speed: int
+        @param speed: Desired speed to pan at, range is 0-1.0 [1.0]
+        @type timeout: float
+        @param timeout: Seconds to wait for the head to pan to the
+                        specified angle. If 0, just command once and
+                        return. [10]
+        """
+        import tf2_ros
+        tfBuffer = tf2_ros.Buffer()
+        trans = tfBuffer.lookup_transform('base', 'head_pan', rospy.Time.now())
+        print trans
+        if (speed < HeadPanCommand.MIN_SPEED_RATIO or
+            speed > HeadPanCommand.MAX_SPEED_RATIO):
+            rospy.logerr(("Commanded Speed, ({0}), outside of valid range"
+                          " [{1}, {2}]").format(speed,
+                          HeadPanCommand.MIN_SPEED_RATIO,
+                          HeadPanCommand.MAX_SPEED_RATIO))
+        msg = HeadPanCommand(angle, speed, HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE)
+        self._pub_pan.publish(msg)
+
+        if not timeout == 0:
+            intera_dataflow.wait_for(
+                lambda: (HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE == self.pan_mode()),
+                timeout=timeout,
+                rate=100,
+                timeout_msg=("Failed to move head to pan"
+                             " command {0}").format(angle),
+                body=lambda: self._pub_pan.publish(msg)
+                )
+            msg.pan_mode = HeadPanCommand.NO_MODE_CHANGE
+            intera_dataflow.wait_for(
+                lambda: (abs(self.pan() - angle) <=
+                         settings.HEAD_PAN_ANGLE_TOLERANCE),
+                timeout=timeout,
+                rate=100,
+                timeout_msg=("Failed to move head to pan"
+                             " command {0}").format(angle),
                 body=lambda: self._pub_pan.publish(msg)
                 )
 
