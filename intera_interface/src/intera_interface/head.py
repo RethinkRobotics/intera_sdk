@@ -68,6 +68,8 @@ class Head(object):
             HeadState,
             self._on_head_state)
 
+        self._tf_listener = tf.TransformListener()
+
         intera_dataflow.wait_for(
             lambda: len(self._state) != 0,
             timeout=5.0,
@@ -144,7 +146,7 @@ class Head(object):
                         return. [10]
         @param active_cancellation: Specifies if the head should aim at
                         a location in the base frame. If this is set to True,
-                        the "angle" argument is measured from Zero degrees in
+                        the "angle" param is measured with respect to
                         the "/base" frame, rather than the actual head joint
                         value. Valid range is [-pi, pi)
         @type active_cancellation: bool
@@ -156,15 +158,14 @@ class Head(object):
                           HeadPanCommand.MIN_SPEED_RATIO,
                           HeadPanCommand.MAX_SPEED_RATIO))
         if active_cancellation:
-            listener = tf.TransformListener()
             def get_current_euler(axis, source_frame="base",
                                   target_frame="head"):
                 rate = rospy.Rate(10) # Hz
                 counter = 1
-                quaternion = (0,0,0,1)
+                quat = (0,0,0,1)
                 while not rospy.is_shutdown():
                     try:
-                        position, quaternion = listener.lookupTransform(
+                        pos, quat = self._tf_listener.lookupTransform(
                             source_frame, target_frame,
                             listener.getLatestCommonTime(source_frame,
                             target_frame))
@@ -178,7 +179,7 @@ class Head(object):
                         break;
                     counter += 1;
                     rate.sleep()
-                euler = tf.transformations.euler_from_quaternion(quaternion)
+                euler = tf.transformations.euler_from_quaternion(quat)
                 return euler[axis]
             tf_angle = -pi + (angle + pi) % (2*pi)
             mode = HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE
