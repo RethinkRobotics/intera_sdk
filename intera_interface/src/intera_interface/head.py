@@ -106,8 +106,7 @@ class Head(object):
                                     Command limits are actual joint limits.
                  'ACTIVE_CANCELLATION_MODE' (2) : Actively responds to commanded
                                            head position relative to the
-                                           current position of j0 joint
-                                           Command limits are [-pi, pi] rads.
+                                           current position of robot base frame
         """
         pan_mode_dict = {0:'PASSIVE_MODE', 1:'ACTIVE_MODE',
                          2:'ACTIVE_CANCELLATION_MODE'}
@@ -148,15 +147,19 @@ class Head(object):
                         a location in the base frame. If this is set to True,
                         the "angle" param is measured with respect to
                         the "/base" frame, rather than the actual head joint
-                        value. Valid range is [-pi, pi)
+                        value. Valid range is [-pi, pi) radians.
         @type active_cancellation: bool
         """
-        if (speed < HeadPanCommand.MIN_SPEED_RATIO or
-            speed > HeadPanCommand.MAX_SPEED_RATIO):
-            rospy.logerr(("Commanded Speed, ({0}), outside of valid range"
-                          " [{1}, {2}]").format(speed,
-                          HeadPanCommand.MIN_SPEED_RATIO,
+        if speed > HeadPanCommand.MAX_SPEED_RATIO:
+            rospy.logwarn(("Commanded Speed, ({0}), faster than Max speed of"
+                          " {1}. Clamping to Max.]").format(speed,
                           HeadPanCommand.MAX_SPEED_RATIO))
+            speed = HeadPanCommand.MAX_SPEED_RATIO
+        elif speed < HeadPanCommand.MIN_SPEED_RATIO:
+            rospy.logwarn(("Commanded Speed, ({0}), slower than Min speed of"
+                           " {1}. Clamping to Min.]").format(speed,
+                           HeadPanCommand.MIN_SPEED_RATIO))
+            speed = HeadPanCommand.MIN_SPEED_RATIO
         if active_cancellation:
             def get_current_euler(axis, source_frame="base",
                                   target_frame="head"):
@@ -176,8 +179,8 @@ class Head(object):
                                            "{1}...").format(source_frame,
                                            target_frame))
                     else:
-                        break;
-                    counter += 1;
+                        break
+                    counter += 1
                     rate.sleep()
                 euler = tf.transformations.euler_from_quaternion(quat)
                 return euler[axis]
