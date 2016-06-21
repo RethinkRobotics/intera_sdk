@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from copy import deepcopy
-from math import fabs
+from math import fabs, pi
 
 import rospy
 import tf
@@ -55,8 +55,6 @@ class Head(object):
         """
         Constructor.
         """
-        self._pan_mode_dict = {0:'PASSIVE_MODE', 1:'ACTIVE_MODE',
-                           2:'ACTIVE_CANCELLATION_MODE', 3:'NO_CHANGE'}
         self._state = dict()
 
         self._pub_pan = rospy.Publisher(
@@ -131,7 +129,8 @@ class Head(object):
         """
         return self._state['panning']
 
-    def set_pan(self, angle, speed=1.0, timeout=10.0, active_cancellation=False):
+    def set_pan(self, angle, speed=1.0, timeout=10.0,
+                active_cancellation=False):
         """
         Pan at the given speed to the desired angle.
 
@@ -146,7 +145,8 @@ class Head(object):
         @param active_cancellation: Specifies if the head should aim at
                         a location in the base frame. If this is set to True,
                         the "angle" argument is measured from Zero degrees in
-                        the "/base" frame, rather than the actual head joint value.
+                        the "/base" frame, rather than the actual head joint
+                        value. Valid range is [-pi, pi)
         @type active_cancellation: bool
         """
         if (speed < HeadPanCommand.MIN_SPEED_RATIO or
@@ -156,21 +156,34 @@ class Head(object):
                           HeadPanCommand.MIN_SPEED_RATIO,
                           HeadPanCommand.MAX_SPEED_RATIO))
         if active_cancellation:
-            mode = HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE
             listener = tf.TransformListener()
-            def get_current_euler(axis):
+            def get_current_euler(axis, source_frame="base",
+                                  target_frame="head"):
+                rate = rospy.Rate(10) # Hz
+                counter = 1
+                quaternion = (0,0,0,1)
                 while not rospy.is_shutdown():
                     try:
-                        position, quaternion = listener.lookupTransform("base", "head",
-                            listener.getLatestCommonTime("base", "head"))
+                        position, quaternion = listener.lookupTransform(
+                            source_frame, target_frame,
+                            listener.getLatestCommonTime(source_frame,
+                            target_frame))
                     except tf.Exception:
-                        continue
+                        if not counter % 10: # essentially throttle 1.0 sec
+                            rospy.logwarn(("Active Cancellation: Trying again "
+                                           "to lookup transform from {0} to "
+                                           "{1}...").format(source_frame,
+                                           target_frame))
                     else:
                         break;
+                    counter += 1;
+                    rate.sleep()
                 euler = tf.transformations.euler_from_quaternion(quaternion)
                 return euler[axis]
-            stop_condition = lambda: (abs(angle - get_current_euler(2)) <=
-                            settings.HEAD_PAN_ANGLE_TOLERANCE)
+            tf_angle = -pi + (angle + pi) % (2*pi)
+            mode = HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE
+            stop_condition = lambda: (abs(get_current_euler(2) - tf_angle) <=
+                               settings.HEAD_PAN_ANGLE_TOLERANCE)
         else:
             mode = HeadPanCommand.SET_ACTIVE_MODE
             stop_condition = lambda: (abs(self.pan() - angle) <=
