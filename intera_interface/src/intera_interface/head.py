@@ -131,7 +131,7 @@ class Head(object):
         """
         return self._state['panning']
 
-    def set_pan(self, angle, speed=1.0, timeout=10.0):
+    def set_pan(self, angle, speed=1.0, timeout=10.0, active_cancellation=False):
         """
         Pan at the given speed to the desired angle.
 
@@ -143,6 +143,11 @@ class Head(object):
         @param timeout: Seconds to wait for the head to pan to the
                         specified angle. If 0, just command once and
                         return. [10]
+        @param active_cancellation: Specifies if the head should aim at
+                        a location in the base frame. If this is set to True,
+                        the "angle" argument is measured from Zero degrees in
+                        the "/base" frame, rather than the actual head joint value.
+        @type active_cancellation: bool
         """
         if (speed < HeadPanCommand.MIN_SPEED_RATIO or
             speed > HeadPanCommand.MAX_SPEED_RATIO):
@@ -150,67 +155,31 @@ class Head(object):
                           " [{1}, {2}]").format(speed,
                           HeadPanCommand.MIN_SPEED_RATIO,
                           HeadPanCommand.MAX_SPEED_RATIO))
-        msg = HeadPanCommand(angle, speed, HeadPanCommand.SET_ACTIVE_MODE)
-        self._pub_pan.publish(msg)
-
-        if not timeout == 0:
-            '''intera_dataflow.wait_for(
-                lambda: (HeadPanCommand.SET_ACTIVE_MODE == self.pan_mode()),
-                timeout=timeout,
-                rate=100,
-                timeout_msg=("Failed to move head to pan"
-                             " command {0}").format(angle),
-                body=lambda: self._pub_pan.publish(msg)
-                )
-            msg.pan_mode = HeadPanCommand.NO_MODE_CHANGE'''
-            intera_dataflow.wait_for(
-                lambda: (abs(self.pan() - angle) <=
-                         settings.HEAD_PAN_ANGLE_TOLERANCE),
-                timeout=timeout,
-                rate=100,
-                timeout_msg=("Failed to move head to pan"
-                             " command {0}").format(angle),
-                body=lambda: self._pub_pan.publish(msg)
-                )
-
-    def set_active_cancellation_pan(self, angle, speed=1.0, timeout=10.0):
-        """
-        Pan at the given speed to the desired angle.
-
-        @type angle: float
-        @param angle: Desired pan angle in radians.
-        @type speed: int
-        @param speed: Desired speed to pan at, range is 0-1.0 [1.0]
-        @type timeout: float
-        @param timeout: Seconds to wait for the head to pan to the
-                        specified angle. If 0, just command once and
-                        return. [10]
-        """
-        #import pdb; pdb.set_trace()
-        listener = tf.TransformListener()
-        def get_current_euler(axis):
-            while not rospy.is_shutdown():
-                try:
-                    position, quaternion = listener.lookupTransform("base", "head",
-                                           listener.getLatestCommonTime("base", "head"))
-                except tf.Exception:
-                    continue
-                else:
-                    break;
-            euler = tf.transformations.euler_from_quaternion(quaternion)
-            return euler[axis]
-        if (speed < HeadPanCommand.MIN_SPEED_RATIO or
-            speed > HeadPanCommand.MAX_SPEED_RATIO):
-            rospy.logerr(("Commanded Speed, ({0}), outside of valid range"
-                          " [{1}, {2}]").format(speed,
-                          HeadPanCommand.MIN_SPEED_RATIO,
-                          HeadPanCommand.MAX_SPEED_RATIO))
-        msg = HeadPanCommand(angle, speed, HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE)
+        if active_cancellation:
+            mode = HeadPanCommand.SET_ACTIVE_CANCELLATION_MODE
+            listener = tf.TransformListener()
+            def get_current_euler(axis):
+                while not rospy.is_shutdown():
+                    try:
+                        position, quaternion = listener.lookupTransform("base", "head",
+                            listener.getLatestCommonTime("base", "head"))
+                    except tf.Exception:
+                        continue
+                    else:
+                        break;
+                euler = tf.transformations.euler_from_quaternion(quaternion)
+                return euler[axis]
+            stop_condition = lambda: (abs(angle - get_current_euler(2)) <=
+                            settings.HEAD_PAN_ANGLE_TOLERANCE)
+        else:
+            mode = HeadPanCommand.SET_ACTIVE_MODE
+            stop_condition = lambda: (abs(self.pan() - angle) <=
+                               settings.HEAD_PAN_ANGLE_TOLERANCE)
+        msg = HeadPanCommand(angle, speed, mode)
         self._pub_pan.publish(msg)
         if not timeout == 0:
             intera_dataflow.wait_for(
-                lambda: (abs(get_current_euler(2) - angle) <=
-                         settings.HEAD_PAN_ANGLE_TOLERANCE),
+                stop_condition,
                 timeout=timeout,
                 rate=100,
                 timeout_msg=("Failed to move head to pan"
