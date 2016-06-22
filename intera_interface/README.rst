@@ -23,6 +23,7 @@ intera_interface Repository Overview
      .
      |
      +-- src/                                  intera_interface api
+     |   +-- io_interface/                     basic interface for IO Framework
      |   +-- intera_interface/                 intera component classes
      |       +-- analog_io.py
      |       +-- camera.py
