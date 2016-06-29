@@ -41,6 +41,50 @@ def _time_changed(time1, time2):
     """
     return (time1.secs != time2.secs) or (time1.nsecs != time2.nsecs)
 
+class IOCommand(object):
+    '''
+    Container for a generic io command
+    '''
+    def __init__(self, op, args=None):
+        self.op = op
+        self.args = args if args else {}
+
+class SetCommand(IOCommand):
+    '''
+    Container for a port or signal set command
+    '''
+    def __init__(self, args=None):
+        super(SetCommand, self).__init__('set', args)
+
+    def _set(self, components, component_name,
+             data_type, dimensions, *component_value):
+        '''
+        add a set component command
+        '''
+        self.args.setdefault(components, {})
+        self.args[components][component_name] = {
+            'format' : {'type' : data_type},
+            'data'   : [val for val in component_value]
+        }
+        if dimensions > 1:
+            self.args[components][component_name]['format']['dimensions'] = [dimensions]
+
+    def set_signal(self, signal_name, data_type, *signal_value):
+        '''
+        add a set signal command
+        '''
+        dimensions = len(signal_value)
+        self._set('signals', signal_name, data_type, dimensions, *signal_value)
+        return self
+
+    def set_port(self, port_name, data_type, *port_value):
+        '''
+        add a set port command
+        '''
+        dimensions = len(port_value)
+        self._set('ports', port_name, data_type, dimensions, *port_value)
+        return self
+
 class IOInterface(object):
     """
     Base class for IO interfaces.
@@ -147,18 +191,20 @@ class IOInterface(object):
             op=op,
             args=json.dumps(args))
         rospy.loginfo("publish_command %s %s" % (cmd_msg.op, cmd_msg.args))
-        timeout_time = rospy.Time.now() + rospy.Duration(timeout)
-        while not rospy.is_shutdown():
-            self._command_pub.publish(cmd_msg)
-            if self.is_valid():
-                if cmd_time in self.state.commands:
-                    rospy.loginfo("command %s acknowleged" % (cmd_msg.op,))
-                    return True
-            rospy.sleep(0.1)
-            if timeout_time < rospy.Time.now():
-                rospy.logwarn("Timed out waiting for command acknowlegment...")
-                break
-        return False
+        if timeout != None:
+            timeout_time = rospy.Time.now() + rospy.Duration(timeout)
+            while not rospy.is_shutdown():
+                self._command_pub.publish(cmd_msg)
+                if self.is_valid():
+                    if cmd_time in self.state.commands:
+                        rospy.loginfo("command %s acknowleged" % (cmd_msg.op,))
+                        return True
+                rospy.sleep(0.1)
+                if timeout_time < rospy.Time.now():
+                    rospy.logwarn("Timed out waiting for command acknowlegment...")
+                    break
+            return False
+        return True
 
 class IONodeInterface(IOInterface):
     """
@@ -209,14 +255,42 @@ class IODeviceInterface(IOInterface):
                     return json.loads(port.data)
         return None
 
-    def get_signal(self, signal_name):
+    def get_signal_value(self, signal_name):
         """
         return the status for the given signal, or none
         """
         with self.state_mutex:
             for signal in self.state.signals:
                 if signal.name == signal_name:
-                    return json.loads(signal.data)
+                    return json.loads(signal.data)[0]
+        return None
+
+    def set_signal_value(self, signal_name, signal_value, signal_type=None, timeout=5.0):
+        """
+        set the value for the given signal
+        return True if the signal ___ , False otherwise
+        """
+        if signal_type == None:
+            s_type = self.get_signal_type(signal_name)
+            if s_type == None:
+                return False
+        else:
+            s_type = signal_type
+        set_command = SetCommand().set_signal(signal_name, s_type, signal_value)
+        self._publish_device_command(set_command, timeout=timeout)
+        return True
+
+    def get_signal_type(self, signal_name):
+        """
+        return the status for the given signal, or none
+        """
+        with self.state_mutex:
+            for signal in self.state.signals:
+                if signal.name == signal_name:
+                    format = json.loads(signal.format)
+                    if "type" in format:
+                        return format["type"]
+                    break
         return None
 
     def list_signals(self):
@@ -232,3 +306,15 @@ class IODeviceInterface(IOInterface):
         """
         with self.state_mutex:
             return [port.name for port in self.state.ports]
+
+    def _publish_device_command(self, command, check_state=False, check_config=False, timeout=3.0):
+        '''
+        publish a command to the device
+        '''
+        if check_state:
+            dev_interface.invalidate_state()
+        if check_config:
+            dev_interface.invalidate_config()
+        self.publish_command(command.op, command.args, timeout=timeout)
+        # make sure both state and config are valid:
+        self.revalidate(timeout, invalidate_state=False, invalidate_config=False)
