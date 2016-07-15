@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Position Example: keyboard
+Sawyer RSDK Joint Position Example: keyboard
 """
 import argparse
 
@@ -41,11 +41,11 @@ from intera_interface import CHECK_VERSION
 
 
 def map_keyboard():
-    left = intera_interface.Limb('left')
     right = intera_interface.Limb('right')
-    grip_left = intera_interface.Gripper('left', CHECK_VERSION)
-    grip_right = intera_interface.Gripper('right', CHECK_VERSION)
-    lj = left.joint_names()
+    ##############################################################
+    # TODO: Fix gripper.py then enable gripper keyboard control. #
+    ##############################################################
+    #grip_right = intera_interface.Gripper('right', CHECK_VERSION)
     rj = right.joint_names()
 
     def set_j(limb, joint_name, delta):
@@ -54,42 +54,26 @@ def map_keyboard():
         limb.set_joint_positions(joint_command)
 
     bindings = {
-    #   key: (function, args, description)
-        '9': (set_j, [left, lj[0], 0.1], "left_s0 increase"),
-        '6': (set_j, [left, lj[0], -0.1], "left_s0 decrease"),
-        '8': (set_j, [left, lj[1], 0.1], "left_s1 increase"),
-        '7': (set_j, [left, lj[1], -0.1], "left_s1 decrease"),
-        'o': (set_j, [left, lj[2], 0.1], "left_e0 increase"),
-        'y': (set_j, [left, lj[2], -0.1], "left_e0 decrease"),
-        'i': (set_j, [left, lj[3], 0.1], "left_e1 increase"),
-        'u': (set_j, [left, lj[3], -0.1], "left_e1 decrease"),
-        'l': (set_j, [left, lj[4], 0.1], "left_w0 increase"),
-        'h': (set_j, [left, lj[4], -0.1], "left_w0 decrease"),
-        'k': (set_j, [left, lj[5], 0.1], "left_w1 increase"),
-        'j': (set_j, [left, lj[5], -0.1], "left_w1 decrease"),
-        '.': (set_j, [left, lj[6], 0.1], "left_w2 increase"),
-        'n': (set_j, [left, lj[6], -0.1], "left_w2 decrease"),
-        ',': (grip_left.close, [], "left: gripper close"),
-        'm': (grip_left.open, [], "left: gripper open"),
-        '/': (grip_left.calibrate, [], "left: gripper calibrate"),
-
-        '4': (set_j, [right, rj[0], 0.1], "right_s0 increase"),
-        '1': (set_j, [right, rj[0], -0.1], "right_s0 decrease"),
-        '3': (set_j, [right, rj[1], 0.1], "right_s1 increase"),
-        '2': (set_j, [right, rj[1], -0.1], "right_s1 decrease"),
-        'r': (set_j, [right, rj[2], 0.1], "right_e0 increase"),
-        'q': (set_j, [right, rj[2], -0.1], "right_e0 decrease"),
-        'e': (set_j, [right, rj[3], 0.1], "right_e1 increase"),
-        'w': (set_j, [right, rj[3], -0.1], "right_e1 decrease"),
-        'f': (set_j, [right, rj[4], 0.1], "right_w0 increase"),
-        'a': (set_j, [right, rj[4], -0.1], "right_w0 decrease"),
-        'd': (set_j, [right, rj[5], 0.1], "right_w1 increase"),
-        's': (set_j, [right, rj[5], -0.1], "right_w1 decrease"),
-        'v': (set_j, [right, rj[6], 0.1], "right_w2 increase"),
-        'z': (set_j, [right, rj[6], -0.1], "right_w2 decrease"),
-        'c': (grip_right.close, [], "right: gripper close"),
-        'x': (grip_right.open, [], "right: gripper open"),
-        'b': (grip_right.calibrate, [], "right: gripper calibrate"),
+        '0': (set_j, [right, rj[0], 0.1], "right_j0 increase"),
+        'p': (set_j, [right, rj[0], -0.1], "right_j0 decrease"),
+        '1': (set_j, [right, rj[1], 0.1], "right_j1 increase"),
+        'q': (set_j, [right, rj[1], -0.1], "right_j1 decrease"),
+        '2': (set_j, [right, rj[2], 0.1], "right_j2 increase"),
+        'w': (set_j, [right, rj[2], -0.1], "right_j2 decrease"),
+        '3': (set_j, [right, rj[3], 0.1], "right_j3 increase"),
+        'e': (set_j, [right, rj[3], -0.1], "right_j3 decrease"),
+        '4': (set_j, [right, rj[4], 0.1], "right_j4 increase"),
+        'r': (set_j, [right, rj[4], -0.1], "right_j4 decrease"),
+        '5': (set_j, [right, rj[5], 0.1], "right_j5 increase"),
+        't': (set_j, [right, rj[5], -0.1], "right_j5 decrease"),
+        '6': (set_j, [right, rj[6], 0.1], "right_j6 increase"),
+        'y': (set_j, [right, rj[6], -0.1], "right_j6 decrease"),
+        ##############################################################
+        # TODO: Fix gripper.py then enable gripper keyboard control. #
+        ##############################################################
+        #'c': (grip_right.close, [], "right: gripper close"),
+        #'x': (grip_right.open, [], "right: gripper open"),
+        #'b': (grip_right.calibrate, [], "right: gripper calibrate"),
      }
     done = False
     print("Controlling joints. Press ? for help, Esc to quit.")
@@ -102,7 +86,7 @@ def map_keyboard():
                 rospy.signal_shutdown("Example finished.")
             elif c in bindings:
                 cmd = bindings[c]
-                #expand binding to something like "set_j(right, 's0', 0.1)"
+                #expand binding to something like "set_j(right, 'j0', 0.1)"
                 cmd[0](*cmd[1])
                 print("command: %s" % (cmd[2],))
             else:
@@ -113,16 +97,17 @@ def map_keyboard():
                                        key=lambda x: x[1][2]):
                     print("  %s: %s" % (key, val[2]))
 
-
 def main():
     """RSDK Joint Position Example: Keyboard Control
 
     Use your dev machine's keyboard to control joint positions.
-
     Each key corresponds to increasing or decreasing the angle
-    of a joint on one of Baxter's arms. Each arm is represented
-    by one side of the keyboard and inner/outer key pairings
-    on each row for each joint.
+    of a joint on Sawyer's arm.
+
+    The current key map for joint control :
+    To increase the joint, press the number of the joint,
+    to decrease the joint, press the letter under the joint number.
+    For example: increase right_j0, press key '0', decrease right_j0, press key 'p'
     """
     epilog = """
 See help inside the example with the '?' key for key bindings.

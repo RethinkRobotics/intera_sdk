@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Position Waypoints Example
+Sawyer RSDK Joint Position Waypoints Example
 """
 import argparse
 import sys
@@ -161,7 +161,7 @@ def main():
                                      description=main.__doc__)
     required = parser.add_argument_group('required arguments')
     required.add_argument(
-        '-l', '--limb', required=True, choices=['left', 'right'],
+        '-l', '--limb', required=True, choices=['right'],
         help='limb to record/playback waypoints'
     )
     parser.add_argument(
