@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Position Example: joystick
+Sawyer RSDK Joint Position Example: joystick
 """
 import argparse
 
@@ -74,15 +74,14 @@ def map_joystick(joystick):
 
     @param joystick: an instance of a Joystick
     """
-    left = intera_interface.Limb('left')
     right = intera_interface.Limb('right')
-    grip_left = intera_interface.Gripper('left', CHECK_VERSION)
-    grip_right = intera_interface.Gripper('right', CHECK_VERSION)
-    lcmd = {}
+    ##############################################################
+    # TODO: Fix gripper.py then enable gripper joystick control. #
+    ##############################################################
+    #grip_right = intera_interface.Gripper('right', CHECK_VERSION)
     rcmd = {}
 
     #available joints
-    lj = left.joint_names()
     rj = right.joint_names()
 
     #abbreviations
@@ -101,38 +100,28 @@ def map_joystick(joystick):
 
     bindings_list = []
     bindings = (
-        ((bdn, ['rightTrigger']),
-         (grip_left.close,  []), "left gripper close"),
-        ((bup, ['rightTrigger']),
-         (grip_left.open,   []), "left gripper open"),
-        ((bdn, ['leftTrigger']),
-         (grip_right.close, []), "right gripper close"),
-        ((bup, ['leftTrigger']),
-         (grip_right.open,  []), "right gripper open"),
+        ##############################################################
+        # TODO: Fix gripper.py then enable gripper joystick control. #
+        ##############################################################
+        #((bdn, ['leftTrigger']),
+        # (grip_right.close, []), "right gripper close"),
+        #((bup, ['leftTrigger']),
+        # (grip_right.open,  []), "right gripper open"),
         ((jlo, ['leftStickHorz']),
          (set_j, [rcmd, right, rj, 0,  0.1]), lambda: "right inc " + rj[0]),
         ((jhi, ['leftStickHorz']),
          (set_j, [rcmd, right, rj, 0, -0.1]), lambda: "right dec " + rj[0]),
-        ((jlo, ['rightStickHorz']),
-         (set_j, [lcmd, left,  lj, 0,  0.1]), lambda: "left inc " + lj[0]),
-        ((jhi, ['rightStickHorz']),
-         (set_j, [lcmd, left,  lj, 0, -0.1]), lambda: "left dec " + lj[0]),
         ((jlo, ['leftStickVert']),
          (set_j, [rcmd, right, rj, 1,  0.1]), lambda: "right inc " + rj[1]),
         ((jhi, ['leftStickVert']),
          (set_j, [rcmd, right, rj, 1, -0.1]), lambda: "right dec " + rj[1]),
-        ((jlo, ['rightStickVert']),
-         (set_j, [lcmd, left,  lj, 1,  0.1]), lambda: "left inc " + lj[1]),
-        ((jhi, ['rightStickVert']),
-         (set_j, [lcmd, left,  lj, 1, -0.1]), lambda: "left dec " + lj[1]),
-        ((bdn, ['rightBumper']),
-         (rotate, [lj]), "left: cycle joint"),
         ((bdn, ['leftBumper']),
          (rotate, [rj]), "right: cycle joint"),
-        ((bdn, ['btnRight']),
-         (grip_left.calibrate, []), "left calibrate"),
-        ((bdn, ['btnLeft']),
-         (grip_right.calibrate, []), "right calibrate"),
+        ##############################################################
+        # TODO: Fix gripper.py then enable gripper joystick control. #
+        ##############################################################
+        #((bdn, ['btnLeft']),
+        # (grip_right.calibrate, []), "right calibrate"),
         ((bdn, ['function1']),
          (print_help, [bindings_list]), "help"),
         ((bdn, ['function2']),
@@ -151,9 +140,6 @@ def map_joystick(joystick):
                     print(doc())
                 else:
                     print(doc)
-        if len(lcmd):
-            left.set_joint_positions(lcmd)
-            lcmd.clear()
         if len(rcmd):
             right.set_joint_positions(rcmd)
             rcmd.clear()
@@ -165,11 +151,11 @@ def main():
     """RSDK Joint Position Example: Joystick Control
 
     Use a game controller to control the angular joint positions
-    of Baxter's arms.
+    of Sawyer's arms.
 
     Attach a game controller to your dev machine and run this
     example along with the ROS joy_node to control the position
-    of each joint in Baxter's arms using the joysticks. Be sure to
+    of each joint in Sawyer's arm using the joystick. Be sure to
     provide your *joystick* type to setup appropriate key mappings.
 
     Each stick axis maps to a joint angle; which joints are currently

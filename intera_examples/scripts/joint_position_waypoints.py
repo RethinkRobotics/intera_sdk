@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Position Waypoints Example
+Sawyer RSDK Joint Position Waypoints Example
 """
 import argparse
 import sys
@@ -39,7 +39,7 @@ import intera_interface
 
 
 class Waypoints(object):
-    def __init__(self, limb, speed, accuracy):
+    def __init__(self, speed, accuracy, limb="right"):
         # Create intera_interface limb instance
         self._arm = limb
         self._limb = intera_interface.Limb(self._arm)
@@ -159,11 +159,6 @@ def main():
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__)
-    required = parser.add_argument_group('required arguments')
-    required.add_argument(
-        '-l', '--limb', required=True, choices=['left', 'right'],
-        help='limb to record/playback waypoints'
-    )
     parser.add_argument(
         '-s', '--speed', default=0.3, type=float,
         help='joint position motion speed ratio [0.0-1.0] (default:= 0.3)'
@@ -176,9 +171,9 @@ def main():
     args = parser.parse_args(rospy.myargv()[1:])
 
     print("Initializing node... ")
-    rospy.init_node("rsdk_joint_position_waypoints_%s" % (args.limb,))
+    rospy.init_node("rsdk_joint_position_waypoints")
 
-    waypoints = Waypoints(args.limb, args.speed, args.accuracy)
+    waypoints = Waypoints(args.speed, args.accuracy)
 
     # Register clean shutdown
     rospy.on_shutdown(waypoints.clean_shutdown)
