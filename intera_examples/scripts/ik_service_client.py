@@ -28,14 +28,11 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Inverse Kinematics Example
+Sawyer RSDK Inverse Kinematics Example
 """
-import argparse
 import struct
 import sys
-
 import rospy
-
 from geometry_msgs.msg import (
     PoseStamped,
     Pose,
@@ -43,55 +40,46 @@ from geometry_msgs.msg import (
     Quaternion,
 )
 from std_msgs.msg import Header
+from sensor_msgs.msg import JointState
 
 from intera_core_msgs.srv import (
     SolvePositionIK,
     SolvePositionIKRequest,
 )
 
-
-def ik_test(limb):
+def ik_test(limb = "right"):
     rospy.init_node("rsdk_ik_service_client")
     ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
     iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
     ikreq = SolvePositionIKRequest()
     hdr = Header(stamp=rospy.Time.now(), frame_id='base')
     poses = {
-        'left': PoseStamped(
-            header=hdr,
-            pose=Pose(
-                position=Point(
-                    x=0.657579481614,
-                    y=0.851981417433,
-                    z=0.0388352386502,
-                ),
-                orientation=Quaternion(
-                    x=-0.366894936773,
-                    y=0.885980397775,
-                    z=0.108155782462,
-                    w=0.262162481772,
-                ),
-            ),
-        ),
         'right': PoseStamped(
             header=hdr,
             pose=Pose(
                 position=Point(
-                    x=0.656982770038,
-                    y=-0.852598021641,
-                    z=0.0388609422173,
+                    x=0.450628752997,
+                    y=0.161615832271,
+                    z=0.217447307078,
                 ),
                 orientation=Quaternion(
-                    x=0.367048116303,
-                    y=0.885911751787,
-                    z=-0.108908281936,
-                    w=0.261868353356,
+                    x=0.704020578925,
+                    y=0.710172716916,
+                    z=0.00244101361829,
+                    w=0.00194372088834,
                 ),
             ),
         ),
     }
-
+    # Add desired pose for inverse kinematics
     ikreq.pose_stamp.append(poses[limb])
+    # Avoid requiring nullspace goal
+    ikreq.use_nullspace_goal.append(False)
+    # Specify empty nullspace goal (as we are not using it anyway)
+    ikreq.nullspace_goal.append(JointState())
+    # Request inverse kinematics from base to "right_hand" link
+    ikreq.tip_names.append('right_hand')
+
     try:
         rospy.wait_for_service(ns, 5.0)
         resp = iksvc(ikreq)
@@ -129,22 +117,13 @@ def main():
     Service which returns the joint angles and validity for
     a requested Cartesian Pose.
 
-    Run this example, passing the *limb* to test, and the
-    example will call the Service with a sample Cartesian
+    Run this example, the example will use the default limb
+    and call the Service with a sample Cartesian
     Pose, pre-defined in the example code, printing the
     response of whether a valid joint solution was found,
     and if so, the corresponding joint angles.
     """
-    arg_fmt = argparse.RawDescriptionHelpFormatter
-    parser = argparse.ArgumentParser(formatter_class=arg_fmt,
-                                     description=main.__doc__)
-    parser.add_argument(
-        '-l', '--limb', choices=['left', 'right'], required=True,
-        help="the limb to test"
-    )
-    args = parser.parse_args(rospy.myargv()[1:])
-
-    return ik_test(args.limb)
+    return ik_test()
 
 if __name__ == '__main__':
     sys.exit(main())

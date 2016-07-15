@@ -43,7 +43,7 @@ def main():
     Record timestamped joint and gripper positions to a file for
     later play back.
 
-    Run this example while moving the robot's arms and grippers
+    Run this example while moving the robot's arm and gripper
     to record a time series of joint and gripper positions to a
     new csv file with the provided *filename*. This example can
     be run in parallel with any other example or standalone

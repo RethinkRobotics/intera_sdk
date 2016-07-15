@@ -28,15 +28,12 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Position Example: file playback
+Sawyer RSDK Joint Position Example: file playback
 """
 import argparse
 import sys
-
 import rospy
-
 import intera_interface
-
 from intera_interface import CHECK_VERSION
 
 
@@ -45,7 +42,6 @@ def try_float(x):
         return float(x)
     except ValueError:
         return None
-
 
 def clean_line(line, names):
     """
@@ -62,12 +58,9 @@ def clean_line(line, names):
     cleaned = [x for x in combined if x[1] is not None]
     #convert it to a dictionary with only valid commands
     command = dict(cleaned)
-    left_command = dict((key, command[key]) for key in command.keys()
-                        if key[:-2] == 'left_')
     right_command = dict((key, command[key]) for key in command.keys()
                          if key[:-2] == 'right_')
-    return (command, left_command, right_command, line)
-
+    return (command, right_command, line)
 
 def map_file(filename, loops=1):
     """
@@ -83,22 +76,22 @@ def map_file(filename, loops=1):
     name/value pairs. Names come from the column headers
     first column is the time stamp
     """
-    left = intera_interface.Limb('left')
     right = intera_interface.Limb('right')
-    grip_left = intera_interface.Gripper('left', CHECK_VERSION)
-    grip_right = intera_interface.Gripper('right', CHECK_VERSION)
+    #####################################################
+    # TODO: Fix gripper.py then enable gripper control. #
+    #####################################################
+    #grip_right = intera_interface.Gripper('right', CHECK_VERSION)
+
     rate = rospy.Rate(1000)
 
-    if grip_left.error():
-        grip_left.reset()
-    if grip_right.error():
-        grip_right.reset()
-    if (not grip_left.calibrated() and
-        grip_left.type() != 'custom'):
-        grip_left.calibrate()
-    if (not grip_right.calibrated() and
-        grip_right.type() != 'custom'):
-        grip_right.calibrate()
+    #####################################################
+    # TODO: Fix gripper.py then enable gripper control. #
+    #####################################################
+    #if grip_right.error():
+    #    grip_right.reset()
+    #if (not grip_right.calibrated() and
+    #    grip_right.type() != 'custom'):
+    #    grip_right.calibrate()
 
     print("Playing back: %s" % (filename,))
     with open(filename, 'r') as f:
@@ -111,9 +104,7 @@ def map_file(filename, loops=1):
         i = 0
         l += 1
         print("Moving to start position...")
-
-        _cmd, lcmd_start, rcmd_start, _raw = clean_line(lines[1], keys)
-        left.move_to_joint_positions(lcmd_start)
+        _cmd, rcmd_start, _raw = clean_line(lines[1], keys)
         right.move_to_joint_positions(rcmd_start)
         start_time = rospy.get_time()
         for values in lines[1:]:
@@ -122,27 +113,23 @@ def map_file(filename, loops=1):
             sys.stdout.write("\r Record %d of %d, loop %d of %s" %
                              (i, len(lines) - 1, l, loopstr))
             sys.stdout.flush()
-
-            cmd, lcmd, rcmd, values = clean_line(values, keys)
+            cmd, rcmd, values = clean_line(values, keys)
             #command this set of commands until the next frame
             while (rospy.get_time() - start_time) < values[0]:
                 if rospy.is_shutdown():
                     print("\n Aborting - ROS shutdown")
                     return False
-                if len(lcmd):
-                    left.set_joint_positions(lcmd)
                 if len(rcmd):
                     right.set_joint_positions(rcmd)
-                if ('left_gripper' in cmd and
-                    grip_left.type() != 'custom'):
-                    grip_left.command_position(cmd['left_gripper'])
-                if ('right_gripper' in cmd and
-                    grip_right.type() != 'custom'):
-                    grip_right.command_position(cmd['right_gripper'])
+                #####################################################
+                # TODO: Fix gripper.py then enable gripper control. #
+                #####################################################
+                #if ('right_gripper' in cmd and
+                #    grip_right.type() != 'custom'):
+                #    grip_right.command_position(cmd['right_gripper'])
                 rate.sleep()
         print
     return True
-
 
 def main():
     """RSDK Joint Position Example: File Playback

@@ -50,9 +50,7 @@ class Wobbler(object):
         """
         self._pub_rate = rospy.Publisher('robot/joint_state_publish_rate',
                                          UInt16, queue_size=10)
-        self._left_arm = intera_interface.limb.Limb("left")
         self._right_arm = intera_interface.limb.Limb("right")
-        self._left_joint_names = self._left_arm.joint_names()
         self._right_joint_names = self._right_arm.joint_names()
 
         # control parameters
@@ -72,7 +70,6 @@ class Wobbler(object):
         for _ in xrange(100):
             if rospy.is_shutdown():
                 return False
-            self._left_arm.exit_control_mode()
             self._right_arm.exit_control_mode()
             self._pub_rate.publish(100)  # 100Hz default joint state rate
             rate.sleep()
@@ -83,7 +80,6 @@ class Wobbler(object):
         Sets both arms back into a neutral pose.
         """
         print("Moving to neutral pose...")
-        self._left_arm.move_to_neutral()
         self._right_arm.move_to_neutral()
 
     def clean_shutdown(self):
@@ -127,15 +123,13 @@ class Wobbler(object):
         while not rospy.is_shutdown():
             self._pub_rate.publish(self._rate)
             elapsed = rospy.Time.now() - start
-            cmd = make_cmd(self._left_joint_names, elapsed)
-            self._left_arm.set_joint_velocities(cmd)
             cmd = make_cmd(self._right_joint_names, elapsed)
             self._right_arm.set_joint_velocities(cmd)
             rate.sleep()
 
 
 def main():
-    """RSDK Joint Velocity Example: Wobbler
+    """Sawyer RSDK Joint Velocity Example: Wobbler
 
     Commands joint velocities of randomly parameterized cosine waves
     to each joint. Demonstrates Joint Velocity Control Mode.
