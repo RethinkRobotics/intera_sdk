@@ -56,13 +56,20 @@ class Limb(object):
     Point = collections.namedtuple('Point', ['x', 'y', 'z'])
     Quaternion = collections.namedtuple('Quaternion', ['x', 'y', 'z', 'w'])
 
-    def __init__(self, limb):
+    def __init__(self, limb="right"):
         """
         Constructor.
 
         @type limb: str
         @param limb: limb to interface
         """
+        try:
+            joint_names = rospy.get_param(
+                            "robot_config/{0}_config/joint_names".format(limb))
+        except KeyError:
+            rospy.logerr(("intera_interface:Limb cannot detect joint_names for"
+                          " arm \"{0}\". Limb init() failed.").format(limb))
+            return
         self.name = limb
         self._joint_angle = dict()
         self._joint_velocity = dict()
@@ -70,13 +77,7 @@ class Limb(object):
         self._cartesian_pose = dict()
         self._cartesian_velocity = dict()
         self._cartesian_effort = dict()
-
-        self._joint_names = {
-            'left': ['left_s0', 'left_s1', 'left_e0', 'left_e1',
-                     'left_w0', 'left_w1', 'left_w2'],
-            'right': ['right_s0', 'right_s1', 'right_e0', 'right_e1',
-                      'right_w0', 'right_w1', 'right_w2']
-            }
+        self._joint_names = { limb: joint_names }
 
         ns = '/robot/limb/' + limb + '/'
 
@@ -118,7 +119,7 @@ class Limb(object):
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
         intera_dataflow.wait_for(lambda: len(self._joint_angle.keys()) > 0,
-                                 timeout_msg=err_msg)
+                                 timeout_msg=err_msg, timeout=5.0)
         err_msg = ("%s limb init failed to get current endpoint_state "
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
         intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
@@ -389,17 +390,18 @@ class Limb(object):
 
     def move_to_neutral(self, timeout=15.0):
         """
-        Command the joints to the center of their joint ranges
-
-        Neutral is defined as::
-          ['*_s0', '*_s1', '*_e0', '*_e1', '*_w0', '*_w1', '*_w2']
-          [0.0, -0.55, 0.0, 0.75, 0.0, 1.26, 0.0]
+        Command the Limb joints to a predefined set of "neutral" joint angles.
+        From rosparam named_poses/<limb>/poses/neutral.
 
         @type timeout: float
         @param timeout: seconds to wait for move to finish [15]
         """
-        angles = dict(zip(self.joint_names(),
-                          [0.0, -0.55, 0.0, 0.75, 0.0, 1.26, 0.0]))
+        try:
+            neutral_pose = rospy.get_param("named_poses/{0}/poses/neutral".format(self.name))
+        except KeyError:
+            rospy.logerr(("Get neutral pose failed, arm: \"{0}\".").format(self.name))
+            return
+        angles = dict(zip(self.joint_names(), neutral_pose))
         return self.move_to_joint_positions(angles, timeout)
 
     def move_to_joint_positions(self, positions, timeout=15.0,
