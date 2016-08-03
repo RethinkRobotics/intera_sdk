@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016, Rethink Robotics
+# Copyright (c) 2016, Rethink Robotics
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -228,7 +228,7 @@ class IODeviceInterface(IOInterface):
         if signal_type == None:
             s_type = self.get_signal_type(signal_name)
             if s_type == None:
-                rospy.logerr("Failed to get 'type' for signal '{0}''.".format(signal_name))
+                rospy.logerr("Failed to get 'type' for signal '{0}'.".format(signal_name))
                 return
         else:
             s_type = signal_type
@@ -273,7 +273,7 @@ class IODeviceInterface(IOInterface):
         if port_type == None:
             p_type = self.get_port_type(port_name)
             if p_type == None:
-                rospy.logerr("Failed to get 'type' for port '{0}''.".format(port_name))
+                rospy.logerr("Failed to get 'type' for port '{0}'.".format(port_name))
                 return
         else:
             p_type = port_type
