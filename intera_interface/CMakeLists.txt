@@ -4,6 +4,7 @@ project(intera_interface)
 find_package(catkin
   REQUIRED
   COMPONENTS
+  cv_bridge
   rospy
   actionlib
   sensor_msgs
@@ -28,6 +29,7 @@ add_dependencies(${PROJECT_NAME}_gencfg intera_core_msgs_generate_messages_py)
 
 catkin_package(
   CATKIN_DEPENDS
+  cv_bridge
   rospy
   actionlib
   sensor_msgs
