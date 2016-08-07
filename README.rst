@@ -32,12 +32,12 @@ Intera Repository Overview
      |
      +-- intera_sdk/          intera_sdk metapackage containing all intera sdk packages
      |
-     +-- intera_interface     Python API for communicating with Intera-enabled robots
+     +-- intera_interface     python API for communicating with Intera-enabled robots
      |   +-- cfg/
      |   +-- scripts/ 
      |   +-- src/
      |
-     +-- intera_examples       examples using the Python API for Intera-enable robots
+     +-- intera_examples      examples using the Python API for Intera-enabled robots
      |   +-- cfg/
      |   +-- launch/
      |   +-- share/images
