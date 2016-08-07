@@ -34,6 +34,7 @@ from .head_display import HeadDisplay
 from .limb import Limb
 from .navigator import Navigator
 from .robot_enable import RobotEnable
+from .robot_params import RobotParams
 from .settings import (
     JOINT_ANGLE_TOLERANCE,
     HEAD_PAN_ANGLE_TOLERANCE,

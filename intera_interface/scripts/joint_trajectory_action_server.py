@@ -28,69 +28,73 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Trajectory Controller
+Intera SDK Joint Trajectory Controller
     Unlike other robots running ROS, this is not a Motor Controller plugin,
     but a regular node using the SDK interface.
 """
 import argparse
+import importlib
 
 import rospy
-
 from dynamic_reconfigure.server import Server
+import intera_interface
 
-from intera_interface.cfg import (
-    PositionJointTrajectoryActionServerConfig,
-    VelocityJointTrajectoryActionServerConfig,
-    PositionFFJointTrajectoryActionServerConfig,
-)
 from joint_trajectory_action.joint_trajectory_action import (
     JointTrajectoryActionServer,
 )
-
 from trajectory_msgs.msg import (
     JointTrajectoryPoint,
 )
 
+def start_server(limb, rate, mode, valid_limbs):
+    rospy.loginfo("Initializing node... ")
+    rospy.init_node("sdk_{0}_joint_trajectory_action_server{1}".format(
+                        mode, "" if limb == 'all_limbs' else "_" + limb,))
 
-def start_server(limb, rate, mode):
-    print("Initializing node... ")
-    rospy.init_node("rsdk_%s_joint_trajectory_action_server%s" %
-                    (mode, "" if limb == 'both' else "_" + limb,))
-    print("Initializing joint trajectory action server...")
-
+    rospy.loginfo("Initializing joint trajectory action server...")
+    robot_name = intera_interface.RobotParams().get_robot_name().lower().capitalize()
+    config_module = "intera_interface.cfg"
     if mode == 'velocity':
-        dyn_cfg_srv = Server(VelocityJointTrajectoryActionServerConfig,
-                             lambda config, level: config)
+        config_name = ''.join([robot_name,"VelocityJointTrajectoryActionServerConfig"])
     elif mode == 'position':
-        dyn_cfg_srv = Server(PositionJointTrajectoryActionServerConfig,
-                             lambda config, level: config)
+        config_name = ''.join([robot_name,"PositionJointTrajectoryActionServerConfig"])
     else:
-        dyn_cfg_srv = Server(PositionFFJointTrajectoryActionServerConfig,
-                             lambda config, level: config)
+        config_name = ''.join([robot_name,"PositionFFJointTrajectoryActionServerConfig"])
+    cfg = importlib.import_module('.'.join([config_module,config_name]))
+    dyn_cfg_srv = Server(cfg, lambda config, level: config)
     jtas = []
-    if limb == 'both':
-        jtas.append(JointTrajectoryActionServer('right', dyn_cfg_srv,
-                                                rate, mode))
-        jtas.append(JointTrajectoryActionServer('left', dyn_cfg_srv,
-                                                rate, mode))
+    if limb == 'all_limbs':
+        for current_limb in valid_limbs:
+            jtas.append(JointTrajectoryActionServer(current_limb, dyn_cfg_srv,
+                                                    rate, mode))
     else:
         jtas.append(JointTrajectoryActionServer(limb, dyn_cfg_srv, rate, mode))
+
 
     def cleanup():
         for j in jtas:
             j.clean_shutdown()
 
     rospy.on_shutdown(cleanup)
-    print("Running. Ctrl-c to quit")
+    rospy.loginfo("Joint Trajectory Action Server Running. Ctrl-c to quit")
     rospy.spin()
 
 
 def main():
+    rp = intera_interface.RobotParams()
+    valid_limbs = rp.get_limb_names()
+    if not valid_limbs:
+        rp.log_message(("Cannot detect any limb parameters on this robot. "
+                        "Exiting."), "ERROR")
+        return
+    # Add an option for starting a server for all valid limbs
+    all_limbs = valid_limbs
+    all_limbs.append("all_limbs")
     arg_fmt = argparse.ArgumentDefaultsHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt)
     parser.add_argument(
-        "-l", "--limb", dest="limb", default="both",
-        choices=['both', 'left', 'right'],
+        "-l", "--limb", dest="limb", default=valid_limbs[0],
+        choices=all_limbs,
         help="joint trajectory action server limb"
     )
     parser.add_argument(
@@ -103,7 +107,7 @@ def main():
         help="control mode for trajectory execution"
     )
     args = parser.parse_args(rospy.myargv()[1:])
-    start_server(args.limb, args.rate, args.mode)
+    start_server(args.limb, args.rate, args.mode, valid_limbs)
 
 
 if __name__ == "__main__":

@@ -45,11 +45,12 @@ from intera_core_msgs.msg import (
     EndpointState,
 )
 from intera_interface import settings
+from robot_params import RobotParams
 
 
 class Limb(object):
     """
-    Interface class for a limb on the Baxter robot.
+    Interface class for a limb on Intera robots.
     """
 
     # Containers
@@ -63,12 +64,17 @@ class Limb(object):
         @type limb: str
         @param limb: limb to interface
         """
-        try:
-            joint_names = rospy.get_param(
-                            "robot_config/{0}_config/joint_names".format(limb))
-        except KeyError:
-            rospy.logerr(("intera_interface:Limb cannot detect joint_names for"
-                          " arm \"{0}\". Limb init() failed.").format(limb))
+        params = RobotParams()
+        limb_names = params.get_limb_names()
+        if limb not in limb_names:
+            rospy.logerr("Cannot detect limb {0} on this robot."
+                         " Valid limbs are {1}. Exiting Limb.init().".format(
+                                                            limb, limb_names))
+            return
+        joint_names = params.get_joint_names(limb)
+        if not joint_names:
+            rospy.logerr("Cannot detect joint names for limb {0} on this "
+                         "robot. Exiting Limb.init().".format(limb))
             return
         self.name = limb
         self._joint_angle = dict()
