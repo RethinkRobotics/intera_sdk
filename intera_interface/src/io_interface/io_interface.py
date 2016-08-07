@@ -33,8 +33,7 @@ from threading import Lock
 from intera_dataflow import Signal
 from io_command import SetCommand
 
-from intera_core_msgs.msg import IONodeConfiguration, IODeviceConfiguration, \
-                                 IONodeStatus, IODeviceStatus, \
+from intera_core_msgs.msg import IODeviceConfiguration, IODeviceStatus, \
                                  IOComponentCommand
 
 def _time_changed(time1, time2):
@@ -222,8 +221,8 @@ class IODeviceInterface(IOInterface):
         set the value for the given signal
         return True if the signal value is set, False if the requested signal is invalid
         """
-        if signal_name not in list_signal_names():
-            rospy.logerr("Cannot find signal '{0}' in this IO Device.")
+        if signal_name not in self.list_signal_names():
+            rospy.logerr("Cannot find signal '{0}' in this IO Device.".format(signal_name))
             return
         if signal_type == None:
             s_type = self.get_signal_type(signal_name)
@@ -268,7 +267,7 @@ class IODeviceInterface(IOInterface):
         return True if the port value is set, False if the requested port is invalid
         """
         if port_name not in list_port_names():
-            rospy.logerr("Cannot find port '{0}' in this IO Device.")
+            rospy.logerr("Cannot find port '{0}' in this IO Device.".format(port_name))
             return
         if port_type == None:
             p_type = self.get_port_type(port_name)
