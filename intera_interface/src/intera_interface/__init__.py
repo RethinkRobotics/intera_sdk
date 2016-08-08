@@ -30,6 +30,7 @@ from .camera import CameraController
 from .digital_io import DigitalIO
 from .gripper import Gripper
 from .head import Head
+from .head_display import HeadDisplay
 from .limb import Limb
 from .navigator import Navigator
 from .robot_enable import RobotEnable
