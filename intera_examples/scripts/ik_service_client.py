@@ -73,10 +73,6 @@ def ik_test(limb = "right"):
     }
     # Add desired pose for inverse kinematics
     ikreq.pose_stamp.append(poses[limb])
-    # Avoid requiring nullspace goal
-    ikreq.use_nullspace_goal.append(False)
-    # Specify empty nullspace goal (as we are not using it anyway)
-    ikreq.nullspace_goal.append(JointState())
     # Request inverse kinematics from base to "right_hand" link
     ikreq.tip_names.append('right_hand')
 
