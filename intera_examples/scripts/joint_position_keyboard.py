@@ -41,17 +41,22 @@ from intera_interface import CHECK_VERSION
 
 
 def map_keyboard():
+    gripper = intera_interface.Gripper()
     right = intera_interface.Limb('right')
-    ##############################################################
-    # TODO: Fix gripper.py then enable gripper keyboard control. #
-    ##############################################################
-    #grip_right = intera_interface.Gripper('right', CHECK_VERSION)
     rj = right.joint_names()
 
     def set_j(limb, joint_name, delta):
         current_position = limb.joint_angle(joint_name)
         joint_command = {joint_name: current_position + delta}
         limb.set_joint_positions(joint_command)
+
+    def set_g(action):
+        if action == "close":
+            gripper.close()
+        elif action == "open":
+            gripper.open()
+        elif action == "calibrate":
+            gripper.calibrate()
 
     bindings = {
         '1': (set_j, [right, rj[0], 0.1], "right_j0 increase"),
@@ -68,12 +73,9 @@ def map_keyboard():
         'y': (set_j, [right, rj[5], -0.1], "right_j5 decrease"),
         '7': (set_j, [right, rj[6], 0.1], "right_j6 increase"),
         'u': (set_j, [right, rj[6], -0.1], "right_j6 decrease"),
-        ##############################################################
-        # TODO: Fix gripper.py then enable gripper keyboard control. #
-        ##############################################################
-        #'8': (grip_right.close, [], "right: gripper close"),
-        #'i': (grip_right.open, [], "right: gripper open"),
-        #'9': (grip_right.calibrate, [], "right: gripper calibrate"),
+        '8': (set_g, "close", "right gripper close"),
+        'i': (set_g, "open", "right gripper open"),
+        '9': (set_g, "calibrate", "right gripper calibrate")
      }
     done = False
     print("Controlling joints. Press ? for help, Esc to quit.")
@@ -86,9 +88,13 @@ def map_keyboard():
                 rospy.signal_shutdown("Example finished.")
             elif c in bindings:
                 cmd = bindings[c]
-                #expand binding to something like "set_j(right, 'j0', 0.1)"
-                cmd[0](*cmd[1])
-                print("command: %s" % (cmd[2],))
+                if c == '8' or c == 'i' or c == '9':
+                    cmd[0](cmd[1])
+                    print("command: %s" % (cmd[2],))
+                else:
+                    #expand binding to something like "set_j(right, 'j0', 0.1)"
+                    cmd[0](*cmd[1])
+                    print("command: %s" % (cmd[2],))
             else:
                 print("key bindings: ")
                 print("  Esc: Quit")
@@ -122,7 +128,7 @@ See help inside the example with the '?' key for key bindings.
     init_state = rs.state().enabled
 
     def clean_shutdown():
-        print("\nExiting example...")
+        print("\nExiting example.")
         if not init_state:
             print("Disabling robot...")
             rs.disable()

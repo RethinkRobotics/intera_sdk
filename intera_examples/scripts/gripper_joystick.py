@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2013-2016, Rethink Robotics
+# Copyright (c) 2016, Rethink Robotics
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Gripper Example: joystick
+RSDK Gripper Example: joystick
 """
 import argparse
 
@@ -37,8 +37,6 @@ import rospy
 import intera_interface
 import intera_external_devices
 
-from intera_interface import CHECK_VERSION
-
 
 def map_joystick(joystick):
     """
@@ -46,23 +44,9 @@ def map_joystick(joystick):
 
     @param joystick: an instance of a Joystick
     """
-    # initialize interfaces
-    print("Getting robot state... ")
-    rs = intera_interface.RobotEnable(CHECK_VERSION)
-    init_state = rs.state().enabled
-    left = intera_interface.Gripper('left', CHECK_VERSION)
-    right = intera_interface.Gripper('right', CHECK_VERSION)
-
-    def clean_shutdown():
-        print("\nExiting example...")
-        if not init_state:
-            print("Disabling robot...")
-            rs.disable()
-    rospy.on_shutdown(clean_shutdown)
-
+    gripper = intera_interface.Gripper()
     # decrease position dead_band
-    left.set_dead_band(2.5)
-    right.set_dead_band(2.5)
+    gripper.set_dead_zone(2.5)
 
     # abbreviations
     jhi = lambda s: joystick.stick_value(s) > 0
@@ -78,76 +62,46 @@ def map_joystick(joystick):
                     doc = doc()
                 print("%s: %s" % (str(test[1]), doc))
 
-    def capability_warning(gripper, cmd):
-        msg = ("%s %s - not capable of '%s' command" %
-               (gripper.name, gripper.type(), cmd))
-        print msg
+    def capability_warning(cmd):
+        msg = ("%s - not capable of '%s' command" %
+               (gripper.name, cmd))
+        rospy.logwarn(msg)
 
-    def offset_position(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'set_position')
+    def offset_position(offset):
+        if gripper.name != 'right_gripper':
+            capability_warning('command_position')
             return
-        current = gripper.position()
-        gripper.command_position(current + offset)
+        current = gripper.get_position()
+        gripper.set_position(current + offset)
 
-    def offset_holding(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'set_holding_force')
+    def offset_holding(offset):
+        if gripper.name != 'right_gripper':
+            capability_warning('set_holding_force')
             return
-        current = gripper.parameters()['holding_force']
+        current = gripper.get_force()
         gripper.set_holding_force(current + offset)
-
-    def offset_velocity(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'set_velocity')
-            return
-        current = gripper.parameters()['velocity']
-        gripper.set_velocity(current + offset)
 
     bindings_list = []
     bindings = (
         #(test, command, description)
-        ((bdn, ['btnDown']), (left.reboot, []), "left: reboot"),
-        ((bdn, ['btnLeft']), (right.reboot, []), "right: reboot"),
-        ((bdn, ['btnRight']), (left.calibrate, []), "left: calibrate"),
-        ((bdn, ['btnUp']), (right.calibrate, []), "right: calibrate"),
-        ((bdn, ['rightTrigger']), (left.close, []), "left: close"),
-        ((bdn, ['leftTrigger']), (right.close, []), "right: close"),
-        ((bup, ['rightTrigger']), (left.open, []), "left: open (release)"),
-        ((bup, ['leftTrigger']), (right.open, []), "right: open (release)"),
-        ((bdn, ['rightBumper']), (left.stop, []), "left: stop"),
-        ((bdn, ['leftBumper']), (right.stop, []), "right: stop"),
-        ((jlo, ['rightStickHorz']), (offset_position, [left, -15.0]),
-                                     "left:  decrease position"),
-        ((jlo, ['leftStickHorz']), (offset_position, [right, -15.0]),
-                                    "right:  decrease position"),
-        ((jhi, ['rightStickHorz']), (offset_position, [left, 15.0]),
-                                     "left:  increase position"),
-        ((jhi, ['leftStickHorz']), (offset_position, [right, 15.0]),
-                                     "right:  increase position"),
-        ((jlo, ['rightStickVert']), (offset_holding, [left, -5.0]),
-                                     "left:  decrease holding force"),
-        ((jlo, ['leftStickVert']), (offset_holding, [right, -5.0]),
-                                    "right:  decrease holding force"),
-        ((jhi, ['rightStickVert']), (offset_holding, [left, 5.0]),
-                                     "left:  increase holding force"),
-        ((jhi, ['leftStickVert']), (offset_holding, [right, 5.0]),
-                                    "right:  increase holding force"),
-        ((bdn, ['dPadDown']), (offset_velocity, [left, -5.0]),
-                               "left:  decrease velocity"),
-        ((bdn, ['dPadLeft']), (offset_velocity, [right, -5.0]),
-                               "right:  decrease velocity"),
-        ((bdn, ['dPadRight']), (offset_velocity, [left, 5.0]),
-                                "left:  increase velocity"),
-        ((bdn, ['dPadUp']), (offset_velocity, [right, 5.0]),
-                             "right:  increase velocity"),
+        ((bdn, ['btnLeft']), (gripper.reboot, []), "reboot"),
+        ((bdn, ['btnUp']), (gripper.calibrate, []), "calibrate"),
+        ((bdn, ['leftTrigger']), (gripper.close, []), "close"),
+        ((bup, ['leftTrigger']), (gripper.open, []), "open (release)"),
+        ((bdn, ['leftBumper']), (gripper.stop, []), "stop"),
+        ((jlo, ['leftStickHorz']), (offset_position, [-15.0]),
+                                    "decrease position"),
+        ((jhi, ['leftStickHorz']), (offset_position, [15.0]),
+                                     "increase position"),
+        ((jlo, ['leftStickVert']), (offset_holding, [-5.0]),
+                                    "decrease holding force"),
+        ((jhi, ['leftStickVert']), (offset_holding, [5.0]),
+                                    "increase holding force"),
         ((bdn, ['function1']), (print_help, [bindings_list]), "help"),
         ((bdn, ['function2']), (print_help, [bindings_list]), "help"),
     )
     bindings_list.append(bindings)
 
-    print("Enabling robot...")
-    rs.enable()
     rate = rospy.Rate(100)
     print_help(bindings_list)
     print("Press <Start> button for help; Ctrl-C to stop...")
@@ -167,8 +121,8 @@ def main():
     Use a game controller to control the grippers.
 
     Attach a game controller to your dev machine and run this
-    example along with the ROS joy_node to control Baxter's
-    grippers using the joysticks and buttons. Be sure to provide
+    example along with the ROS joy_node to control gripper
+    using the joysticks and buttons. Be sure to provide
     the *joystick* type you are using as an argument to setup
     appropriate key mappings.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2013-2016, Rethink Robotics
+# Copyright (c) 2016, Rethink Robotics
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Gripper Example: keyboard
+RSDK Gripper Example: keyboard
 """
 import argparse
 
@@ -37,105 +37,46 @@ import rospy
 import intera_interface
 import intera_external_devices
 
-from intera_interface import CHECK_VERSION
-
 
 def map_keyboard():
     # initialize interfaces
-    print("Getting robot state... ")
-    rs = intera_interface.RobotEnable(CHECK_VERSION)
-    init_state = rs.state().enabled
-    left = intera_interface.Gripper('left', CHECK_VERSION)
-    right = intera_interface.Gripper('right', CHECK_VERSION)
+    gripper = intera_interface.Gripper()
 
-    def clean_shutdown():
-        if not init_state:
-            print("Disabling robot...")
-            rs.disable()
-        print("Exiting example.")
-    rospy.on_shutdown(clean_shutdown)
-
-    def capability_warning(gripper, cmd):
-        msg = ("%s %s - not capable of '%s' command" %
-               (gripper.name, gripper.type(), cmd))
+    def capability_warning(cmd):
+        msg = ("%s - not capable of '%s' command" %
+               (gripper.name, cmd))
         rospy.logwarn(msg)
 
-    def offset_position(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'command_position')
+    def offset_position(offset):
+        if gripper.name != 'right_gripper':
+            capability_warning('command_position')
             return
-        current = gripper.position()
-        gripper.command_position(current + offset)
+        current = gripper.get_position()
+        gripper.set_position(current + offset)
 
-    def offset_holding(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'set_holding_force')
+    def offset_holding(offset):
+        if gripper.name != 'right_gripper':
+            capability_warning('set_holding_force')
             return
-        current = gripper.parameters()['holding_force']
+        current = gripper.get_force()
         gripper.set_holding_force(current + offset)
-
-    def offset_moving(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'set_moving_force')
-            return
-        current = gripper.parameters()['moving_force']
-        gripper.set_moving_force(current + offset)
-
-    def offset_velocity(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'set_velocity')
-            return
-        current = gripper.parameters()['velocity']
-        gripper.set_velocity(current + offset)
-
-    def offset_dead_band(gripper, offset):
-        if gripper.type() != 'electric':
-            capability_warning(gripper, 'set_dead_band')
-            return
-        current = gripper.parameters()['dead_zone']
-        gripper.set_dead_band(current + offset)
 
     bindings = {
     #   key: (function, args, description)
-        'r': (left.reboot, [], "left: reboot"),
-        'R': (right.reboot, [], "right: reboot"),
-        'c': (left.calibrate, [], "left: calibrate"),
-        'C': (right.calibrate, [], "right: calibrate"),
-        'q': (left.close, [], "left: close"),
-        'Q': (right.close, [], "right: close"),
-        'w': (left.open, [], "left: open"),
-        'W': (right.open, [], "right: open"),
-        '[': (left.set_velocity, [100.0], "left:  set 100% velocity"),
-        '{': (right.set_velocity, [100.0], "right:  set 100% velocity"),
-        ']': (left.set_velocity, [30.0], "left:  set 30% velocity"),
-        '}': (right.set_velocity, [30.0], "right:  set 30% velocity"),
-        's': (left.stop, [], "left: stop"),
-        'S': (right.stop, [], "right: stop"),
-        'z': (offset_dead_band, [left, -1.0], "left:  decrease dead band"),
-        'Z': (offset_dead_band, [right, -1.0], "right:  decrease dead band"),
-        'x': (offset_dead_band, [left, 1.0], "left:  increase dead band"),
-        'X': (offset_dead_band, [right, 1.0], "right:  increase dead band"),
-        'f': (offset_moving, [left, -5.0], "left:  decrease moving force"),
-        'F': (offset_moving, [right, -5.0], "right:  decrease moving force"),
-        'g': (offset_moving, [left, 5.0], "left:  increase moving force"),
-        'G': (offset_moving, [right, 5.0], "right:  increase moving force"),
-        'h': (offset_holding, [left, -5.0], "left:  decrease holding force"),
-        'H': (offset_holding, [right, -5.0], "right:  decrease holding force"),
-        'j': (offset_holding, [left, 5.0], "left:  increase holding force"),
-        'J': (offset_holding, [right, 5.0], "right:  increase holding force"),
-        'v': (offset_velocity, [left, -5.0], "left:  decrease velocity"),
-        'V': (offset_velocity, [right, -5.0], "right:  decrease velocity"),
-        'b': (offset_velocity, [left, 5.0], "left:  increase velocity"),
-        'B': (offset_velocity, [right, 5.0], "right:  increase velocity"),
-        'u': (offset_position, [left, -15.0], "left:  decrease position"),
-        'U': (offset_position, [right, -15.0], "right:  decrease position"),
-        'i': (offset_position, [left, 15.0], "left:  increase position"),
-        'I': (offset_position, [right, 15.0], "right:  increase position"),
+        'R': (gripper.reboot, [], "reboot"),
+        'C': (gripper.calibrate, [], "calibrate"),
+        'Q': (gripper.close, [], "close"),
+        'O': (gripper.open, [], "open"),
+        '+': (gripper.set_velocity, [100.0], "set 100% velocity"),
+        '-': (gripper.set_velocity, [30.0], "set 30% velocity"),
+        'S': (gripper.stop, [], "stop"),
+        'H': (offset_holding, [-5.0], "decrease holding force"),
+        'J': (offset_holding, [5.0], "increase holding force"),
+        'U': (offset_position, [-15.0], "decrease position"),
+        'I': (offset_position, [15.0], "increase position"),
     }
 
     done = False
-    print("Enabling robot... ")
-    rs.enable()
     print("Controlling grippers. Press ? for help, Esc to quit.")
     while not done and not rospy.is_shutdown():
         c = intera_external_devices.getch()
