@@ -18,9 +18,9 @@ find_package(catkin
 catkin_python_setup()
 
 generate_dynamic_reconfigure_options(
-  cfg/PositionJointTrajectoryActionServer.cfg
-  cfg/VelocityJointTrajectoryActionServer.cfg
-  cfg/PositionFFJointTrajectoryActionServer.cfg
+  cfg/SawyerPositionJointTrajectoryActionServer.cfg
+  cfg/SawyerVelocityJointTrajectoryActionServer.cfg
+  cfg/SawyerPositionFFJointTrajectoryActionServer.cfg
   cfg/GripperActionServer.cfg
   cfg/HeadActionServer.cfg
 )

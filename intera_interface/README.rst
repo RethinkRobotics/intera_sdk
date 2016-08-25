@@ -33,6 +33,7 @@ intera_interface Repository Overview
      |       +-- limb.py
      |       +-- navigator.py
      |       +-- robot_enable.py
+     |       +-- robot_params.py
      |       +-- settings.py
      |   +-- intera_control/                   generic control utilities
      |   +-- intera_dataflow/                  timing/program flow utilities
