@@ -237,22 +237,25 @@ class JointTrajectoryActionServer(object):
                     break
                 rospy.sleep(1.0 / self._control_rate)
         elif self._mode == 'position' or self._mode == 'position_w_id':
-            raw_pos_mode = (self._mode == 'position_w_id')
-            if raw_pos_mode:
-                pnt = JointTrajectoryPoint()
-                pnt.positions = self._get_current_position(joint_names)
+            pnt = JointTrajectoryPoint()
+            pnt.positions = self._get_current_position(joint_names)
+            if self._mode == 'position_w_id':
                 if dimensions_dict['velocities']:
                     pnt.velocities = [0.0] * len(joint_names)
                 if dimensions_dict['accelerations']:
                     pnt.accelerations = [0.0] * len(joint_names)
+            ff_pnt = self._reorder_joints_ff_cmd(joint_names, pnt)
             while (not self._server.is_new_goal_available() and self._alive
                    and self.robot_is_enabled()):
-                self._limb.set_joint_positions(joint_angles, raw=raw_pos_mode)
                 # zero inverse dynamics feedforward command
-                if self._mode == 'position_w_id':
-                    pnt.time_from_start = rospy.Duration(rospy.get_time() - start_time)
-                    ff_pnt = self._reorder_joints_ff_cmd(joint_names, pnt)
-                    self._pub_ff_cmd.publish(ff_pnt)
+                if self._mode == 'position' and self._alive:
+                    self._limb.set_joint_positions(dict(zip(joint_names, point.positions)))
+                if self._mode == 'position_w_id' and self._alive:
+                    self._limb.set_joint_trajectory(joint_names,
+                                            ff_pnt.positions,
+                                            ff_pnt.velocities,
+                                            ff_pnt.accelerations)
+
                 if self._cuff_state:
                     self._limb.exit_control_mode()
                     break
@@ -277,17 +280,16 @@ class JointTrajectoryActionServer(object):
                 return False
             if self._mode == 'velocity':
                 velocities.append(self._pid[delta[0]].compute_output(delta[1]))
-        if ((self._mode == 'position' or self._mode == 'position_w_id')
-              and self._alive):
-            cmd = dict(zip(joint_names, point.positions))
-            raw_pos_mode = (self._mode == 'position_w_id')
-            self._limb.set_joint_positions(cmd, raw=raw_pos_mode)
-            if raw_pos_mode:
-                ff_pnt = self._reorder_joints_ff_cmd(joint_names, point)
-                self._pub_ff_cmd.publish(ff_pnt)
+
+        if self._mode == 'position' and self._alive:
+            self._limb.set_joint_positions(dict(zip(joint_names, point.positions)))
+        if self._mode == 'position_w_id' and self._alive:
+            self._limb.set_joint_trajectory(joint_names,
+                                            point.positions,
+                                            point.velocities,
+                                            point.accelerations)
         elif self._alive:
-            cmd = dict(zip(joint_names, velocities))
-            self._limb.set_joint_velocities(cmd)
+            self._limb.set_joint_velocities(dict(zip(joint_names, velocities)))
         return True
 
     def _get_bezier_point(self, b_matrix, idx, t, cmd_time, dimensions_dict):

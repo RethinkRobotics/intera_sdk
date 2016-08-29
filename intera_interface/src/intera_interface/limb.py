@@ -336,7 +336,31 @@ class Limb(object):
         """
         self._pub_speed_ratio.publish(Float64(speed))
 
-    def set_joint_positions(self, positions, raw=False):
+    def set_joint_trajectory(self, names, positions, velocities, accelerations):
+        """
+        Commands the joints of this limb to the specified positions.
+
+        B{IMPORTANT:} 'raw' joint position control mode allows for commanding
+        joint positions, without modification, directly to the JCBs
+        (Joint Controller Boards). While this results in more unaffected
+        motions, 'raw' joint position control mode bypasses the safety system
+        modifications (e.g. collision avoidance).
+        Please use with caution.
+
+        @type positions: dict({str:float})
+        @param positions: joint_name:angle command
+        @type raw: bool
+        @param raw: advanced, direct position control mode
+        """
+        self._command_msg.names = names
+        self._command_msg.position = positions
+        self._command_msg.velocity = velocities
+        self._command_msg.acceleration = accelerations
+        self._command_msg.mode = JointCommand.TRAJECTORY_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
+        self._pub_joint_cmd.publish(self._command_msg)
+
+    def set_joint_positions(self, positions):
         """
         Commands the joints of this limb to the specified positions.
 
@@ -353,11 +377,9 @@ class Limb(object):
         @param raw: advanced, direct position control mode
         """
         self._command_msg.names = positions.keys()
-        self._command_msg.command = positions.values()
-        if raw:
-            self._command_msg.mode = JointCommand.RAW_POSITION_MODE
-        else:
-            self._command_msg.mode = JointCommand.POSITION_MODE
+        self._command_msg.position = positions.values()
+        self._command_msg.mode = JointCommand.POSITION_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def set_joint_velocities(self, velocities):
@@ -373,8 +395,9 @@ class Limb(object):
         @param velocities: joint_name:velocity command
         """
         self._command_msg.names = velocities.keys()
-        self._command_msg.command = velocities.values()
+        self._command_msg.velocity = velocities.values()
         self._command_msg.mode = JointCommand.VELOCITY_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def set_joint_torques(self, torques):
@@ -390,8 +413,9 @@ class Limb(object):
         @param torques: joint_name:torque command
         """
         self._command_msg.names = torques.keys()
-        self._command_msg.command = torques.values()
+        self._command_msg.effort = torques.values()
         self._command_msg.mode = JointCommand.TORQUE_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def move_to_neutral(self, timeout=15.0):
