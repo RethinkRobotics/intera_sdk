@@ -60,7 +60,7 @@ import intera_interface
 
 class JointTrajectoryActionServer(object):
     def __init__(self, limb, reconfig_server, rate=100.0,
-                 mode='position_w_id', interpolation='minjerk'): 
+                 mode='position_w_id', interpolation='minjerk'):
         self._dyn = reconfig_server
         self._ns = 'robot/limb/' + limb
         self._fjt_ns = self._ns + '/follow_joint_trajectory'
@@ -269,20 +269,21 @@ class JointTrajectoryActionServer(object):
             self._server.set_preempted()
             self._command_stop(joint_names, self._limb.joint_angles(), start_time, dimensions_dict)
             return False
-        velocities = []
-        deltas = self._get_current_error(joint_names, point.positions)
-        for delta in deltas:
-            if ((math.fabs(delta[1]) >= self._path_thresh[delta[0]]
-                and self._path_thresh[delta[0]] >= 0.0)) or not self.robot_is_enabled():
-                rospy.logerr("%s: Exceeded Error Threshold on %s: %s" %
-                             (self._action_name, delta[0], str(delta[1]),))
-                self._result.error_code = self._result.PATH_TOLERANCE_VIOLATED
-                self._server.set_aborted(self._result)
-                self._command_stop(joint_names, self._limb.joint_angles(), start_time, dimensions_dict)
-                return False
-            if self._mode == 'velocity':
+        if self._mode == 'velocity':
+            velocities = []
+            deltas = self._get_current_error(joint_names, point.positions)
+            for delta in deltas:
+                if ((math.fabs(delta[1]) >= self._path_thresh[delta[0]]
+                      and self._path_thresh[delta[0]] >= 0.0)) or not self.robot_is_enabled():
+                    rospy.logerr("%s: Exceeded Error Threshold on %s: %s" %
+                                 (self._action_name, delta[0], str(delta[1]),))
+                    self._result.error_code = self._result.PATH_TOLERANCE_VIOLATED
+                    self._server.set_aborted(self._result)
+                    self._command_stop(joint_names, self._limb.joint_angles(), start_time, dimensions_dict)
+                    return False
                 velocities.append(self._pid[delta[0]].compute_output(delta[1]))
-
+            if self._alive:
+                self._limb.set_joint_velocities(dict(zip(joint_names, velocities)))
         if self._mode == 'position' and self._alive:
             self._limb.set_joint_positions(dict(zip(joint_names, point.positions)))
         if self._mode == 'position_w_id' and self._alive:
@@ -290,8 +291,6 @@ class JointTrajectoryActionServer(object):
                                             point.positions,
                                             point.velocities,
                                             point.accelerations)
-        elif self._alive:
-            self._limb.set_joint_velocities(dict(zip(joint_names, velocities)))
         return True
 
     def _get_bezier_point(self, b_matrix, idx, t, cmd_time, dimensions_dict):
@@ -468,7 +467,6 @@ class JointTrajectoryActionServer(object):
         end_time = trajectory_points[-1].time_from_start.to_sec()
         while (now_from_start < end_time and not rospy.is_shutdown() and
                self.robot_is_enabled()):
-            #Acquire Mutex
             now = rospy.get_time()
             now_from_start = now - start_time
             idx = bisect.bisect(pnt_times, now_from_start)
@@ -491,14 +489,14 @@ class JointTrajectoryActionServer(object):
                 point = self._get_bezier_point(b_matrix, idx,
                                                t, cmd_time,
                                                dimensions_dict)
-
             # Command Joint Position, Velocity, Acceleration
             command_executed = self._command_joints(joint_names, point, start_time, dimensions_dict)
-            self._update_feedback(deepcopy(point), joint_names, now_from_start)
-            # Release the Mutex
+            self._update_feedback(point, joint_names, now_from_start)
             if not command_executed:
                 return
+            # Sleep to make sure the publish is at a consistent time
             control_rate.sleep()
+
         # Keep trying to meet goal until goal_time constraint expired
         last = trajectory_points[-1]
         last_time = trajectory_points[-1].time_from_start.to_sec()

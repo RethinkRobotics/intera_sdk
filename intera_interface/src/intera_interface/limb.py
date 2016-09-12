@@ -99,7 +99,7 @@ class Limb(object):
             ns + 'joint_command',
             JointCommand,
             tcp_nodelay=True,
-            queue_size=1)
+            queue_size=None)
 
         self._pub_joint_cmd_timeout = rospy.Publisher(
             ns + 'joint_command_timeout',
