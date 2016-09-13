@@ -26,6 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import collections
+import warnings
 
 from copy import deepcopy
 
@@ -57,12 +58,28 @@ class Limb(object):
     Point = collections.namedtuple('Point', ['x', 'y', 'z'])
     Quaternion = collections.namedtuple('Quaternion', ['x', 'y', 'z', 'w'])
 
-    def __init__(self, limb="right"):
+    def __init__(self, limb="right", synchronous_pub=False):
         """
         Constructor.
 
         @type limb: str
         @param limb: limb to interface
+
+        @type synchronous_pub: bool
+        @param synchronous_pub: designates the JointCommand Publisher
+            as Synchronous if True and Asynchronous if False.
+
+            Synchronous Publishing means that all joint_commands publishing to
+            the robot's joints will block until the message has been serialized
+            into a buffer and that buffer has been written to the transport
+            of every current Subscriber. This yields predicable and consistent
+            timing of messages being delivered from this Publisher. However,
+            when using this mode, it is possible for a blocking Subscriber to
+            prevent the joint_command functions from exiting. Unless you need exact
+            JointCommand timing, default to Asynchronous Publishing (False).
+
+            For more information about Synchronous Publishing see:
+            http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#queue_size:_publish.28.29_behavior_and_queuing
         """
         params = RobotParams()
         limb_names = params.get_limb_names()
@@ -95,18 +112,20 @@ class Limb(object):
             latch=True,
             queue_size=10)
 
-        self._pub_joint_cmd = rospy.Publisher(
-            ns + 'joint_command',
-            JointCommand,
-            tcp_nodelay=True,
-            queue_size=None)
+        queue_size = None if synchronous_pub else 1
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._pub_joint_cmd = rospy.Publisher(
+                ns + 'joint_command',
+                JointCommand,
+                tcp_nodelay=True,
+                queue_size=queue_size)
 
         self._pub_joint_cmd_timeout = rospy.Publisher(
             ns + 'joint_command_timeout',
             Float64,
             latch=True,
             queue_size=10)
-
         _cartesian_state_sub = rospy.Subscriber(
             ns + 'endpoint_state',
             EndpointState,

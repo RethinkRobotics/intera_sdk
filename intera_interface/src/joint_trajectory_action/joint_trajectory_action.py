@@ -70,7 +70,7 @@ class JointTrajectoryActionServer(object):
             execute_cb=self._on_trajectory_action,
             auto_start=False)
         self._action_name = rospy.get_name()
-        self._limb = intera_interface.Limb(limb)
+        self._limb = intera_interface.Limb(limb, synchronous_pub=True)
         self._enable = intera_interface.RobotEnable()
         self._name = limb
         self._interpolation = interpolation
