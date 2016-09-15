@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 from .analog_io import AnalogIO
-from .camera import CameraController
+from .camera import Cameras
 from .digital_io import DigitalIO
 from .gripper import Gripper
 from .head import Head

@@ -25,325 +25,181 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import errno
 
 import rospy
+from sensor_msgs.msg import Image
+from io_interface import IODeviceInterface
+from robot_params import RobotParams
 
-from intera_core_msgs.msg import (
-    CameraControl,
-    CameraSettings,
-)
-from intera_core_msgs.srv import (
-    CloseCamera,
-    ListCameras,
-    OpenCamera,
-)
-
-
-class CameraController(object):
+class Cameras(object):
     """
-    Interface class for controlling camera settings on the Baxter robot.
+    Base class for the interface to the robot's Cameras.
     """
 
-    # Valid resolutions
-    MODES = [
-             (1280, 800),
-             (960, 600),
-             (640, 400),
-             (480, 300),
-             (384, 240),
-             (320, 200),
-             ]
+    def __init__(self):
+        camera_param_dict = RobotParams().get_camera_details()
+        camera_list = camera_param_dict.keys()
+        # check to make sure cameras is not an empty list
+        if not camera_list:
+            rospy.logerr(' '.join(["camera list is empty: ", ' , '.join(camera_list)]))
+            return
+        camera_color_dict = {"mono":['cognex'], "color":['ienso_ethernet']}
+        self.cameras_io = dict()
+        for camera in camera_list:
+            if camera_param_dict[camera]['cameraType'] in camera_color_dict[''
+            'color']:
+                is_color = True
+            else:
+                is_color = False
+            self.cameras_io[camera] = {'interface': IODeviceInterface("internal"
+                "_camera", camera), 'is_color': is_color}
 
-    # Used to represent when the camera is using automatic controls.
-    # Valid for exposure, gain and white balance.
-    CONTROL_AUTO = -1
-
-    def __init__(self, name):
+    def _camera_streaming_status(self, camera_name):
         """
-        Constructor.
+        Private function to check if the camera is currently in streaming mode.
 
-        @param name: camera identifier.  You can get a list of valid
-                     identifiers by calling the ROS service /cameras/list.
+        @type camera_name: str
+        @param camera_name: camera name
 
-                     Expected names are right_hand_camera, left_hand_camera
-                     and head_camera.  However if the cameras are not
-                     identified via the parameter server, they are simply
-                     indexed starting at 0.
+        @rtype: bool
+        @return: True if the camera is streaming, False otherwise
         """
-        self._id = name
+        return self.cameras_io[camera_name]['interface'].get_signal_value(
+            "camera_streaming")
 
-        list_svc = rospy.ServiceProxy('/cameras/list', ListCameras)
-        rospy.wait_for_service('/cameras/list', timeout=10)
-        if not self._id in list_svc().cameras:
-            raise AttributeError(
-                ("Cannot locate a service for camera name '{0}'. "
-                "Close a different camera first and try again.".format(self._id)))
-
-        self._open_svc = rospy.ServiceProxy('/cameras/open', OpenCamera)
-        self._close_svc = rospy.ServiceProxy('/cameras/close', CloseCamera)
-
-        self._settings = CameraSettings()
-        self._settings.width = 320
-        self._settings.height = 200
-        self._settings.fps = 20
-        self._open = False
-
-    def _reload(self):
-        self.open()
-
-    def _get_value(self, control, default):
-        lookup = [c.value for c in self._settings.controls if c.id == control]
-        try:
-            return lookup[0]
-        except IndexError:
-            return default
-
-    def _set_control_value(self, control, value):
-        lookup = [c for c in self._settings.controls if c.id == control]
-        try:
-            lookup[0].value = value
-        except IndexError:
-            self._settings.controls.append(CameraControl(control, value))
-
-    @property
-    def resolution(self):
+    def list_cameras(self):
         """
-        Camera resolution as a tuple.  (width, height).  Valid resolutions are
-        listed as tuples in CameraController.MODES
-        """
-        return (self._settings.width, self._settings.height)
+        Return the list of all camera names on current robot.
 
-    @resolution.setter
-    def resolution(self, res):
-        res = tuple(res)
-        if len(res) != 2:
-            raise AttributeError("Invalid resolution specified")
+        @rtype: [str]
+        @return: ordered list of camera names
+        """
+        return self.cameras_io.keys()
 
-        if not res in self.MODES:
-            raise ValueError("Invalid camera mode %dx%d" % (res[0], res[1]))
+    def verify_camera_exists(self, camera_name):
+        """
+        Verify if the given camera name is in the list of camera names or not.
 
-        self._settings.width = res[0]
-        self._settings.height = res[1]
-        self._reload()
+        @type camera_name: str
+        @param camera_name: camera name
 
-    @property
-    def fps(self):
+        @rtype: bool
+        @return: True if the name exists in camera name list, False otherwise.
         """
-        Camera frames per second
-        """
-        return self._settings.fps
+        if camera_name  not in self.list_cameras():
+            rospy.logerr(' '.join([camera_name, "not in the list of cameras"
+                " detected on this robot:", ' , '.join(self.list_cameras())]))
+            return False
+        return True
 
-    @fps.setter
-    def fps(self, fps):
-        self._settings.fps = fps
-        self._reload()
+    def is_camera_streaming(self, camera_name):
+        """
+        Check the given camera name is streaming or not.
 
-    @property
-    def exposure(self):
-        """
-        Camera exposure.  If autoexposure is on, returns
-        CameraController.CONTROL_AUTO
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_EXPOSURE,
-                               self.CONTROL_AUTO)
+        @type camera_name: str
+        @param camera_name: camera name
 
-    @exposure.setter
-    def exposure(self, exposure):
+        @rtype: bool
+        @return: True if the camera is streaming, False camera is not
+                 streaming, False with log error means camera name not exists
+                 in camera name list
         """
-        Camera Exposure.  Valid range is 0-100 or CameraController.CONTROL_AUTO
-        """
-        exposure = int(exposure)
-        if (exposure < 0 or exposure > 100) and exposure != self.CONTROL_AUTO:
-            raise ValueError("Invalid exposure value")
+        if self.verify_camera_exists(camera_name):
+            return self._camera_streaming_status(camera_name)
+        return False
 
-        self._set_control_value(CameraControl.CAMERA_CONTROL_EXPOSURE,
-                                exposure)
-        self._reload()
+    def set_callback(self, camera_name, callback, callback_args=None,
+        queue_size=10, rectify_image=True):
+        """
+        Setup the callback function to show image.
 
-    @property
-    def gain(self):
+        @type camera_name: str
+        @param camera_name: camera name
+        @type callback: fn(msg, cb_args)
+        @param callback: function to call when data is received
+        @type callback_args: any
+        @param callback_args: additional arguments to pass to the callback
+        @type queue_size: int
+        @param queue_size: maximum number of messages to receive at a time
+        @type rectify_image: bool
+        @param rectify_image: specify whether subscribe to the rectified or
+                              raw (unrectified) image topic
         """
-        Camera gain.  If autogain is on, returns CameraController.CONTROL_AUTO
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_GAIN,
-                               self.CONTROL_AUTO)
+        if self.verify_camera_exists(camera_name):
+            if rectify_image == True:
+                if self.cameras_io[camera_name]['is_color']:
+                    image_string = "image_rect_color"
+                else:
+                    image_string = "image_rect"
+            else:
+                image_string = "image_raw"
+            rospy.Subscriber('/'.join(["/io/internal_camera", camera_name,
+                image_string]), Image, callback, callback_args=callback_args)
 
-    @gain.setter
-    def gain(self, gain):
+    def start_streaming(self, camera_name):
         """
-        Camera gain.  Range is 0-79 or CameraController.CONTROL_AUTO
-        """
-        gain = int(gain)
-        if (gain < 0 or gain > 79) and gain != self.CONTROL_AUTO:
-            raise ValueError("Invalid gain value")
+        Start camera streaming for the given camera name, This only allows
+        one camera open at one time and forces closed any other open cameras
+        before open the wanted one.
 
-        self._set_control_value(CameraControl.CAMERA_CONTROL_GAIN, gain)
-        self._reload()
+        @type camera_name: str
+        @param camera_name: camera name
 
-    @property
-    def white_balance_red(self):
+        @rtype: bool
+        @return: False if camera not exists in camera_name_list or the
+                 interface is not able to stop streaming other camera.
+                 Additionally, returns False if the interface is not able
+                 to start streaming the desired camera. Returns True if the
+                 camera already streaming or the camera successfully start
+                 streaming.
         """
-        White balance red.  If autocontrol is on, returns
-        CameraController.CONTROL_AUTO
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_WHITE_BALANCE_R,
-                               self.CONTROL_AUTO)
+        if not self.verify_camera_exists(camera_name):
+            return False
+        elif not self._camera_streaming_status(camera_name):
+            other_cameras_list = list(set(self.list_cameras())-set([
+                camera_name]))
+            for other_camera in other_cameras_list:
+                if self._camera_streaming_status(other_camera):
+                    self.cameras_io[other_camera]['interface'].set_signal_value(
+                        "camera_streaming", False)
+                    if self._camera_streaming_status(other_camera):
+                        rospy.logerr(' '.join(["Failed to stop",
+                            other_camera, "from streaming on this robot. "
+                            "Unable to start streaming from", camera_name]))
+                        return False
+            self.cameras_io[camera_name]['interface'].set_signal_value(
+                "camera_streaming", True)
+            if not self._camera_streaming_status(camera_name):
+                rospy.logerr(' '.join(["Failed to start", camera_name, "Unable"
+                    " to start streaming from", camera_name]))
+                return False
+            else:
+                return True
+        else: # Camera is already streaming
+            return True
 
-    @white_balance_red.setter
-    def white_balance_red(self, value):
+    def stop_streaming(self, camera_name):
         """
-        White balance red.  Range is 0-4095 or CameraController.CONTROL_AUTO
-        """
-        value = int(value)
-        if (value < 0 or value > 4095) and value != self.CONTROL_AUTO:
-            raise ValueError("Invalid white balance value")
+        Stop camera streaming by given the camera name.
 
-        self._set_control_value(CameraControl.CAMERA_CONTROL_WHITE_BALANCE_R,
-                                value)
-        self._reload()
+        @type camera_name: str
+        @param camera_name: camera name
 
-    @property
-    def white_balance_green(self):
+        @rtype: bool
+        @return: False if camera not exists in camera name list or not able
+                 to stop streaming camera. True if the camera not is streaming
+                 mode or the camera successfully stop streaming.
         """
-        White balance green.  If autocontrol is on, returns
-        CameraController.CONTROL_AUTO
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_WHITE_BALANCE_G,
-                               self.CONTROL_AUTO)
-
-    @white_balance_green.setter
-    def white_balance_green(self, value):
-        """
-        White balance green.  Range is 0-4095 or CameraController.CONTROL_AUTO
-        """
-        value = int(value)
-        if (value < 0 or value > 4095) and value != self.CONTROL_AUTO:
-            raise ValueError("Invalid white balance value")
-
-        self._set_control_value(CameraControl.CAMERA_CONTROL_WHITE_BALANCE_G,
-                                value)
-        self._reload()
-
-    @property
-    def white_balance_blue(self):
-        """
-        White balance blue.  If autocontrol is on, returns
-        CameraController.CONTROL_AUTO
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_WHITE_BALANCE_B,
-                               self.CONTROL_AUTO)
-
-    @white_balance_blue.setter
-    def white_balance_blue(self, value):
-        """
-        White balance blue.  Range is 0-4095 or CameraController.CONTROL_AUTO
-        """
-        value = int(value)
-        if (value < 0 or value > 4095) and value != self.CONTROL_AUTO:
-            raise ValueError("Invalid white balance value")
-
-        self._set_control_value(CameraControl.CAMERA_CONTROL_WHITE_BALANCE_B,
-                                value)
-        self._reload()
-
-    @property
-    def window(self):
-        """
-        Camera windowing, returns a tuple, (x, y)
-        """
-        x = self._get_value(CameraControl.CAMERA_CONTROL_WINDOW_X,
-                            self.CONTROL_AUTO)
-        if (x == self.CONTROL_AUTO):
-            return (tuple(map(lambda x: x / 2, self.resolution)) if
-            self.half_resolution else
-            self.resolution)
-        else:
-            return (x, self._get_value(CameraControl.CAMERA_CONTROL_WINDOW_Y,
-                                       self.CONTROL_AUTO))
-
-    @window.setter
-    def window(self, win):
-        """
-        Set camera window.  The max size is a function of the current camera
-        resolution and if half_resolution is enabled or not.
-        """
-        x, y = tuple(win)
-        cur_x, cur_y = self.resolution
-        limit_x = 1280 - cur_x
-        limit_y = 800 - cur_y
-
-        if self.half_resolution:
-            limit_x /= 2
-            limit_y /= 2
-
-        if x < 0 or x > limit_x:
-            raise ValueError("Max X window is %d" % (limit_x,))
-
-        if y < 0 or y > limit_y:
-            raise ValueError("Max Y window is %d" % (limit_y,))
-
-        self._set_control_value(CameraControl.CAMERA_CONTROL_WINDOW_X, x)
-        self._set_control_value(CameraControl.CAMERA_CONTROL_WINDOW_Y, y)
-        self._reload()
-
-    @property
-    def flip(self):
-        """
-        Camera flip. Returns True if flip is enabled on the camera.
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_FLIP, False)
-
-    @flip.setter
-    def flip(self, value):
-        self._set_control_value(CameraControl.CAMERA_CONTROL_FLIP,
-                                int(value != 0))
-        self._reload()
-
-    @property
-    def mirror(self):
-        """
-        Camera mirror. Returns True if mirror is enabled on the camera.
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_MIRROR, False)
-
-    @mirror.setter
-    def mirror(self, value):
-        self._set_control_value(CameraControl.CAMERA_CONTROL_MIRROR,
-                                int(value != 0))
-        self._reload()
-
-    @property
-    def half_resolution(self):
-        """
-        Return True if binning/half resolution is enabled on the camera.
-        """
-        return self._get_value(CameraControl.CAMERA_CONTROL_RESOLUTION_HALF,
-                               False)
-
-    @half_resolution.setter
-    def half_resolution(self, value):
-        self._set_control_value(CameraControl.CAMERA_CONTROL_RESOLUTION_HALF,
-                                int(value != 0))
-        self._reload()
-
-    def open(self):
-        """
-        Open the camera currently under control.
-        """
-        if self._id == 'head_camera':
-            self._set_control_value(CameraControl.CAMERA_CONTROL_FLIP, True)
-            self._set_control_value(CameraControl.CAMERA_CONTROL_MIRROR, True)
-        ret = self._open_svc(self._id, self._settings)
-        if ret.err != 0:
-            raise OSError(ret.err, "Failed to open camera")
-        self._open = True
-
-    def close(self):
-        """
-        Close, if necessary the camera.
-        """
-        ret = self._close_svc(self._id)
-        if ret.err != 0 and ret.err != errno.EINVAL:
-            raise OSError(ret.err, "Failed to close camera")
-        self._open = False
+        if not self.verify_camera_exists(camera_name):
+            return False
+        elif self._camera_streaming_status(camera_name):
+            self.cameras_io[camera_name]['interface'].set_signal_value(
+                "camera_streaming", False)
+            if self._camera_streaming_status(camera_name):
+                rospy.logerr(' '.join(["Failed to stop", camera_name,
+                " from streaming on this robot."]))
+                return False
+            else:
+                return True
+        else: # Camera not in streaming mode
+            return True
