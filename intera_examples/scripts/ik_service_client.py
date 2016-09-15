@@ -28,10 +28,9 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Sawyer RSDK Inverse Kinematics Example
+Intera RSDK Inverse Kinematics Example
 """
 import struct
-import sys
 import rospy
 from geometry_msgs.msg import (
     PoseStamped,
@@ -47,8 +46,7 @@ from intera_core_msgs.srv import (
     SolvePositionIKRequest,
 )
 
-def ik_test(limb = "right"):
-    rospy.init_node("rsdk_ik_service_client")
+def ik_service_client(limb = "right"):
     ns = "ExternalTools/" + limb + "/PositionKinematicsNode/IKService"
     iksvc = rospy.ServiceProxy(ns, SolvePositionIK)
     ikreq = SolvePositionIKRequest()
@@ -93,15 +91,15 @@ def ik_test(limb = "right"):
                     ikreq.SEED_CURRENT: 'Current Joint Angles',
                     ikreq.SEED_NS_MAP: 'Nullspace Setpoints',
                    }.get(resp_seeds[0], 'None')
-        print("SUCCESS - Valid Joint Solution Found from Seed Type: %s" %
+        rospy.loginfo("SUCCESS - Valid Joint Solution Found from Seed Type: %s" %
               (seed_str,))
         # Format solution into Limb API-compatible dictionary
         limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
-        print "\nIK Joint Solution:\n", limb_joints
-        print "------------------"
-        print "Response Message:\n", resp
+        rospy.loginfo("\nIK Joint Solution:\n", limb_joints)
+        rospy.loginfo("------------------")
+        rospy.loginfo("Response Message:\n%s", resp)
     else:
-        print("INVALID POSE - No Valid Joint Solution Found.")
+        rospy.loginfo("INVALID POSE - No Valid Joint Solution Found.")
 
     return 0
 
@@ -119,7 +117,8 @@ def main():
     response of whether a valid joint solution was found,
     and if so, the corresponding joint angles.
     """
-    return ik_test()
+    rospy.init_node("rsdk_ik_service_client")
+    return ik_service_client()
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

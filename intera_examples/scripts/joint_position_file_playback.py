@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Sawyer RSDK Joint Position Example: file playback
+Intera RSDK Joint Position Example: file playback
 """
 import argparse
 import sys
