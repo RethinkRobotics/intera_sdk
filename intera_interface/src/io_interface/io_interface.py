@@ -30,6 +30,7 @@ import sys
 import json
 import copy
 from threading import Lock
+import intera_dataflow
 from intera_dataflow import Signal
 from io_command import SetCommand
 
@@ -66,6 +67,13 @@ class IOInterface(object):
                                            self.handle_state)
         self._command_pub = rospy.Publisher(self._path + "/command",
                                             IOComponentCommand, queue_size=10)
+
+        # Wait for the state to be populated
+        intera_dataflow.wait_for(
+                          lambda: not self.state is None,
+                          timeout=5.0,
+                          timeout_msg=("Failed to get state.")
+                          )
 
         rospy.logdebug("Making new IOInterface on %s" % (self._path,))
 
@@ -112,7 +120,7 @@ class IOInterface(object):
         if invalidate_config:
             self.invalidate_config()
         timeout_time = rospy.Time.now() + rospy.Duration(timeout)
-        while not self.is_valid() and not rospy.is_shutdown():
+        while not self.is_state_valid() and not rospy.is_shutdown():
             rospy.sleep(0.1)
             if timeout_time < rospy.Time.now():
                 rospy.logwarn("Timed out waiting for node interface valid...")
@@ -166,7 +174,7 @@ class IOInterface(object):
             timeout_time = rospy.Time.now() + rospy.Duration(timeout)
             while not rospy.is_shutdown():
                 self._command_pub.publish(cmd_msg)
-                if self.is_valid():
+                if self.is_state_valid():
                     if cmd_time in self.state.commands:
                         rospy.logdebug("command %s acknowleged" % (cmd_msg.op,))
                         return True
