@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Sawyer RSDK Joint Position Example: keyboard
+Intera RSDK Joint Position Example: keyboard
 """
 import argparse
 
