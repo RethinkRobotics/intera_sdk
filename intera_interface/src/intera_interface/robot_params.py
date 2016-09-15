@@ -41,6 +41,31 @@ class RobotParams(object):
         self._color_prefix = "\033[1;{0}m"
         self._color_suffix = "\033[1;m"
 
+    def get_camera_names(self):
+        """ Return the names of the camera.
+        @rtype: [str]
+        @return: ordered list of camera names
+        """
+        return self.get_camera_details().keys()
+
+    def get_camera_details(self):
+        """
+        Return the details of the cameras.
+
+        @rtype: [str]
+        @return: ordered list of camera details
+        """
+        camera_dict = dict()
+        camera_config_param = "/robot_config/camera_config"
+        try:
+            camera_dict = rospy.get_param(camera_config_param)
+        except KeyError:
+            rospy.logerr("RobotParam:get_camera_details cannot detect any "
+                "cameras under the parameter {0}".format(camera_config_param))
+        except (socket.error, socket.gaierror):
+            self._log_networking_error()
+        return  camera_dict
+
     def get_limb_names(self):
         """
         Return the names of the robot's articulated limbs from ROS parameter.
@@ -50,7 +75,7 @@ class RobotParams(object):
                  (e.g. right, left). on networked robot
         """
         limbs = list()
-        non_limb_assemblies = ['torso','head']
+        non_limb_assemblies = ['torso', 'head']
         try:
             assemblies = rospy.get_param("/robot_config/assembly_names")
             limbs = [assembly for assembly in assemblies if assembly not in non_limb_assemblies]
@@ -63,7 +88,8 @@ class RobotParams(object):
 
     def get_joint_names(self, limb_name):
         """
-        Return the names of the joints for the specified limb from ROS parameter.
+        Return the names of the joints for the specified
+        limb from ROS parameter.
 
         @type  limb_name: str
         @param limb_name: name of the limb for which to retrieve joint names
@@ -108,7 +134,7 @@ class RobotParams(object):
                "ROS Networking Reference:        {1}").format(
                         self._sdk_networking_url,
                         self._ros_networking_url)
-        self.log_message(msg,"ERROR")
+        self.log_message(msg, "ERROR")
 
     def log_message(self, msg, level="INFO"):
         """
