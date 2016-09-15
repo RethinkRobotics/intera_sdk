@@ -28,10 +28,8 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Sawyer RSDK Forward Kinematics Example
+Intera RSDK Forward Kinematics Example
 """
-import struct
-import sys
 import rospy
 from geometry_msgs.msg import (
     PoseStamped,
@@ -47,8 +45,7 @@ from intera_core_msgs.srv import (
     SolvePositionFKRequest,
 )
 
-def fk_test(limb = "right"):
-    rospy.init_node("rsdk_fk_service_client")
+def fk_service_client(limb = "right"):
     ns = "ExternalTools/" + limb + "/PositionKinematicsNode/FKService"
     fksvc = rospy.ServiceProxy(ns, SolvePositionFK)
     fkreq = SolvePositionFKRequest()
@@ -71,12 +68,12 @@ def fk_test(limb = "right"):
 
     # Check if result valid
     if (resp.isValid[0]):
-        print("SUCCESS - Valid Cartesian Solution Found")
-        print "\nFK Cartesian Solution:\n"
-        print "------------------"
-        print "Response Message:\n", resp
+        rospy.loginfo("SUCCESS - Valid Cartesian Solution Found")
+        rospy.loginfo("\nFK Cartesian Solution:\n")
+        rospy.loginfo("------------------")
+        rospy.loginfo("Response Message:\n%s", resp)
     else:
-        print("INVALID JOINTS - No Cartesian Solution Found.")
+        rospy.loginfo("INVALID JOINTS - No Cartesian Solution Found.")
 
     return 0
 
@@ -93,7 +90,8 @@ def main():
     response of whether a valid Cartesian solution was found,
     and if so, the corresponding Cartesian pose.
     """
-    return fk_test()
+    rospy.init_node("rsdk_fk_service_client")
+    return fk_service_client()
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()

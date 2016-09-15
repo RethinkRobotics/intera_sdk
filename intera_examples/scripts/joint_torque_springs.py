@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """
-Sawyer RSDK Joint Torque Example: joint springs
+Intera RSDK Joint Torque Example: joint springs
 """
 
 import rospy

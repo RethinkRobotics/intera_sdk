@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Sawyer RSDK Joint Position Waypoints Example
+Intera RSDK Joint Position Waypoints Example
 """
 import argparse
 import sys
