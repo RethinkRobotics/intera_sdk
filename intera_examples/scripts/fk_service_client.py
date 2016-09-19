@@ -64,7 +64,7 @@ def fk_service_client(limb = "right"):
         resp = fksvc(fkreq)
     except (rospy.ServiceException, rospy.ROSException), e:
         rospy.logerr("Service call failed: %s" % (e,))
-        return 1
+        return False
 
     # Check if result valid
     if (resp.isValid[0]):
@@ -75,7 +75,7 @@ def fk_service_client(limb = "right"):
     else:
         rospy.loginfo("INVALID JOINTS - No Cartesian Solution Found.")
 
-    return 0
+    return True
 
 
 def main():
@@ -91,7 +91,12 @@ def main():
     and if so, the corresponding Cartesian pose.
     """
     rospy.init_node("rsdk_fk_service_client")
-    return fk_service_client()
+
+    if fk_service_client():
+        rospy.loginfo("Simple FK call passed!")
+    else:
+        rospy.logerror("Simple FK call FAILED")
+
 
 if __name__ == '__main__':
     main()
