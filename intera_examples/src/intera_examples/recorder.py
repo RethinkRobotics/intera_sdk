@@ -85,7 +85,6 @@ class JointRecorder(object):
                 f.write('right_gripper\n')
 
                 while not self.done():
-                    # Look for gripper button presses
                     if self._gripper.is_gripping():
                         self._gripper.open()
                     else:
@@ -93,9 +92,7 @@ class JointRecorder(object):
 
                     angles_right = [self._limb_right.joint_angle(j)
                                     for j in joints_right]
-
                     f.write("%f," % (self._time_stamp(),))
                     f.write(','.join([str(x) for x in angles_right]) + ',')
                     f.write(str(self._gripper.get_position()) + '\n')
-
                     self._rate.sleep()
