@@ -67,6 +67,18 @@ def set_j(cmd, limb, joints, index, delta):
     joint = joints[index]
     cmd[joint] = delta + limb.joint_angle(joint)
 
+def set_g(action):
+    """
+    Set gripper action
+
+    @param action: the gripper action name
+    """
+    if action == "close":
+        gripper.close()
+    elif action == "open":
+        gripper.open()
+    elif action == "calibrate":
+        gripper.calibrate()
 
 def map_joystick(joystick):
     """
@@ -75,10 +87,7 @@ def map_joystick(joystick):
     @param joystick: an instance of a Joystick
     """
     right = intera_interface.Limb('right')
-    ##############################################################
-    # TODO: Fix gripper.py then enable gripper joystick control. #
-    ##############################################################
-    #grip_right = intera_interface.Gripper('right', CHECK_VERSION)
+    gripper = intera_interface.Gripper()
     rcmd = {}
 
     #available joints
@@ -100,32 +109,16 @@ def map_joystick(joystick):
 
     bindings_list = []
     bindings = (
-        ##############################################################
-        # TODO: Fix gripper.py then enable gripper joystick control. #
-        ##############################################################
-        #((bdn, ['leftTrigger']),
-        # (grip_right.close, []), "right gripper close"),
-        #((bup, ['leftTrigger']),
-        # (grip_right.open,  []), "right gripper open"),
-        ((jlo, ['leftStickHorz']),
-         (set_j, [rcmd, right, rj, 0,  0.1]), lambda: "right inc " + rj[0]),
-        ((jhi, ['leftStickHorz']),
-         (set_j, [rcmd, right, rj, 0, -0.1]), lambda: "right dec " + rj[0]),
-        ((jlo, ['leftStickVert']),
-         (set_j, [rcmd, right, rj, 1,  0.1]), lambda: "right inc " + rj[1]),
-        ((jhi, ['leftStickVert']),
-         (set_j, [rcmd, right, rj, 1, -0.1]), lambda: "right dec " + rj[1]),
-        ((bdn, ['leftBumper']),
-         (rotate, [rj]), "right: cycle joint"),
-        ##############################################################
-        # TODO: Fix gripper.py then enable gripper joystick control. #
-        ##############################################################
-        #((bdn, ['btnLeft']),
-        # (grip_right.calibrate, []), "right calibrate"),
-        ((bdn, ['function1']),
-         (print_help, [bindings_list]), "help"),
-        ((bdn, ['function2']),
-         (print_help, [bindings_list]), "help"),
+        ((bdn, ['leftTrigger']), (set_g, ['close']), "right gripper close"),
+        ((bup, ['leftTrigger']), (set_g, ['open']), "right gripper open"),
+        ((jlo, ['leftStickHorz']), (set_j, [rcmd, right, rj, 0,  0.1]), lambda: "right inc " + rj[0]),
+        ((jhi, ['leftStickHorz']), (set_j, [rcmd, right, rj, 0, -0.1]), lambda: "right dec " + rj[0]),
+        ((jlo, ['leftStickVert']), (set_j, [rcmd, right, rj, 1,  0.1]), lambda: "right inc " + rj[1]),
+        ((jhi, ['leftStickVert']), (set_j, [rcmd, right, rj, 1, -0.1]), lambda: "right dec " + rj[1]),
+        ((bdn, ['leftBumper']), (rotate, [rj]), "right: cycle joint"),
+        ((bdn, ['btnLeft']), (set_g, ['calibrate']), "right calibrate"),
+        ((bdn, ['function1']), (print_help, [bindings_list]), "help"),
+        ((bdn, ['function2']), (print_help, [bindings_list]), "help"),
         )
     bindings_list.append(bindings)
 
@@ -134,12 +127,15 @@ def map_joystick(joystick):
     print("Press Ctrl-C to stop. ")
     while not rospy.is_shutdown():
         for (test, cmd, doc) in bindings:
-            if test[0](*test[1]):
-                cmd[0](*cmd[1])
-                if callable(doc):
-                    print(doc())
-                else:
-                    print(doc)
+            if cmd[1] == 'close' or cmd[1] == 'open' or cmd[1] == 'calibrate':
+                cmd[0](cmd[1])
+            else:
+                if test[0](*test[1]):
+                    cmd[0](*cmd[1])
+            if callable(doc):
+                print(doc())
+            else:
+                print(doc)
         if len(rcmd):
             right.set_joint_positions(rcmd)
             rcmd.clear()

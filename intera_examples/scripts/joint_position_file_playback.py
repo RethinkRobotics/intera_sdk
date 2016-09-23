@@ -77,21 +77,14 @@ def map_file(filename, loops=1):
     first column is the time stamp
     """
     right = intera_interface.Limb('right')
-    #####################################################
-    # TODO: Fix gripper.py then enable gripper control. #
-    #####################################################
-    #grip_right = intera_interface.Gripper('right', CHECK_VERSION)
+    gripper = intera_interface.Gripper()
 
     rate = rospy.Rate(1000)
 
-    #####################################################
-    # TODO: Fix gripper.py then enable gripper control. #
-    #####################################################
-    #if grip_right.error():
-    #    grip_right.reset()
-    #if (not grip_right.calibrated() and
-    #    grip_right.type() != 'custom'):
-    #    grip_right.calibrate()
+    if gripper.has_error():
+        gripper.reboot()
+    if not gripper.is_calibrated():
+        gripper.calibrate()
 
     print("Playing back: %s" % (filename,))
     with open(filename, 'r') as f:
@@ -121,12 +114,8 @@ def map_file(filename, loops=1):
                     return False
                 if len(rcmd):
                     right.set_joint_positions(rcmd)
-                #####################################################
-                # TODO: Fix gripper.py then enable gripper control. #
-                #####################################################
-                #if ('right_gripper' in cmd and
-                #    grip_right.type() != 'custom'):
-                #    grip_right.command_position(cmd['right_gripper'])
+                if 'right_gripper' in cmd:
+                    gripper.set_position(cmd['right_gripper'])
                 rate.sleep()
         print
     return True
