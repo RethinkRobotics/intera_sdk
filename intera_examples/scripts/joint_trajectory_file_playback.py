@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """
-Baxter RSDK Joint Trajectory Example: file playback
+RSDK Joint Trajectory Example: file playback
 """
 
 import argparse
@@ -59,35 +59,27 @@ from intera_interface import CHECK_VERSION
 class Trajectory(object):
     def __init__(self):
         #create our action server clients
-        self._left_client = actionlib.SimpleActionClient(
-            'robot/limb/left/follow_joint_trajectory',
-            FollowJointTrajectoryAction,
-        )
         self._right_client = actionlib.SimpleActionClient(
             'robot/limb/right/follow_joint_trajectory',
             FollowJointTrajectoryAction,
         )
 
         #verify joint trajectory action servers are available
-        l_server_up = self._left_client.wait_for_server(rospy.Duration(10.0))
         r_server_up = self._right_client.wait_for_server(rospy.Duration(10.0))
-        if not l_server_up or not r_server_up:
+        if not r_server_up:
             msg = ("Action server not available."
                    " Verify action server availability.")
             rospy.logerr(msg)
             rospy.signal_shutdown(msg)
             sys.exit(1)
         #create our goal request
-        self._l_goal = FollowJointTrajectoryGoal()
         self._r_goal = FollowJointTrajectoryGoal()
 
         #limb interface - current angles needed for start move
-        self._l_arm = intera_interface.Limb('left')
         self._r_arm = intera_interface.Limb('right')
 
         #gripper interface - for gripper command playback
-        self._l_gripper = intera_interface.Gripper('left', CHECK_VERSION)
-        self._r_gripper = intera_interface.Gripper('right', CHECK_VERSION)
+        self._r_gripper = intera_interface.Gripper()
 
         #flag to signify the arm trajectories have begun executing
         self._arm_trajectory_started = False
@@ -95,19 +87,13 @@ class Trajectory(object):
         self._lock = threading.RLock()
 
         # Verify Grippers Have No Errors and are Calibrated
-        if self._l_gripper.error():
-            self._l_gripper.reset()
         if self._r_gripper.error():
             self._r_gripper.reset()
-        if (not self._l_gripper.calibrated() and
-            self._l_gripper.type() != 'custom'):
-            self._l_gripper.calibrate()
         if (not self._r_gripper.calibrated() and
             self._r_gripper.type() != 'custom'):
             self._r_gripper.calibrate()
 
         #gripper goal trajectories
-        self._l_grip = FollowJointTrajectoryGoal()
         self._r_grip = FollowJointTrajectoryGoal()
 
         # Timing offset to prevent gripper playback before trajectory has started
@@ -124,7 +110,6 @@ class Trajectory(object):
     def _execute_gripper_commands(self):
         start_time = rospy.get_time() - self._trajectory_actual_offset.to_sec()
         r_cmd = self._r_grip.trajectory.points
-        l_cmd = self._l_grip.trajectory.points
         pnt_times = [pnt.time_from_start.to_sec() for pnt in r_cmd]
         end_time = pnt_times[-1]
         rate = rospy.Rate(self._gripper_rate)
@@ -134,8 +119,6 @@ class Trajectory(object):
             idx = bisect(pnt_times, now_from_start) - 1
             if self._r_gripper.type() != 'custom':
                 self._r_gripper.command_position(r_cmd[idx].positions[0])
-            if self._l_gripper.type() != 'custom':
-                self._l_gripper.command_position(l_cmd[idx].positions[0])
             rate.sleep()
             now_from_start = rospy.get_time() - start_time
 
@@ -176,12 +159,8 @@ class Trajectory(object):
         point = JointTrajectoryPoint()
         point.positions = copy(positions)
         point.time_from_start = rospy.Duration(time)
-        if side == 'left':
-            self._l_goal.trajectory.points.append(point)
-        elif side == 'right':
+        if side == 'right':
             self._r_goal.trajectory.points.append(point)
-        elif side == 'left_gripper':
-            self._l_grip.trajectory.points.append(point)
         elif side == 'right_gripper':
             self._r_grip.trajectory.points.append(point)
 
@@ -196,12 +175,9 @@ class Trajectory(object):
             lines = f.readlines()
         #read joint names specified in file
         joint_names = lines[0].rstrip().split(',')
-        #parse joint names for the left and right limbs
+        #parse joint names for right limb
         for name in joint_names:
-            if 'left' == name[:-3]:
-                self._l_goal.trajectory.joint_names.append(name)
-            elif 'right' == name[:-3]:
-                self._r_goal.trajectory.joint_names.append(name)
+            self._r_goal.trajectory.joint_names.append(name)
 
         def find_start_offset(pos):
             #create empty lists
@@ -212,16 +188,10 @@ class Trajectory(object):
             #for all joints find our current and first commanded position
             #reading default velocities from the parameter server if specified
             for name in joint_names:
-                if 'left' == name[:-3]:
-                    cmd.append(pos[name])
-                    cur.append(self._l_arm.joint_angle(name))
-                    prm = rospy.get_param(vel_param % name, 0.25)
-                    dflt_vel.append(prm)
-                elif 'right' == name[:-3]:
-                    cmd.append(pos[name])
-                    cur.append(self._r_arm.joint_angle(name))
-                    prm = rospy.get_param(vel_param % name, 0.25)
-                    dflt_vel.append(prm)
+                cmd.append(pos[name])
+                cur.append(self._r_arm.joint_angle(name))
+                prm = rospy.get_param(vel_param % name, 0.25)
+                dflt_vel.append(prm)
             diffs = map(operator.sub, cmd, cur)
             diffs = map(operator.abs, diffs)
             #determine the largest time offset necessary across all joints
@@ -237,8 +207,6 @@ class Trajectory(object):
                 # This ensures we move slowly to the starting point of the
                 # trajectory from the current pose - The user may have moved
                 # arm since recording
-                cur_cmd = [self._l_arm.joint_angle(jnt) for jnt in self._l_goal.trajectory.joint_names]
-                self._add_point(cur_cmd, 'left', 0.0)
                 cur_cmd = [self._r_arm.joint_angle(jnt) for jnt in self._r_goal.trajectory.joint_names]
                 self._add_point(cur_cmd, 'right', 0.0)
                 start_offset = find_start_offset(cmd)
@@ -247,12 +215,8 @@ class Trajectory(object):
                 self._slow_move_offset = start_offset
                 self._trajectory_start_offset = rospy.Duration(start_offset + values[0])
             #add a point for this set of commands with recorded time
-            cur_cmd = [cmd[jnt] for jnt in self._l_goal.trajectory.joint_names]
-            self._add_point(cur_cmd, 'left', values[0] + start_offset)
             cur_cmd = [cmd[jnt] for jnt in self._r_goal.trajectory.joint_names]
             self._add_point(cur_cmd, 'right', values[0] + start_offset)
-            cur_cmd = [cmd['left_gripper']]
-            self._add_point(cur_cmd, 'left_gripper', values[0] + start_offset)
             cur_cmd = [cmd['right_gripper']]
             self._add_point(cur_cmd, 'right_gripper', values[0] + start_offset)
 
@@ -280,7 +244,6 @@ class Trajectory(object):
         """
         Sends FollowJointTrajectoryAction request
         """
-        self._left_client.send_goal(self._l_goal, feedback_cb=self._feedback)
         self._right_client.send_goal(self._r_goal, feedback_cb=self._feedback)
         # Syncronize playback by waiting for the trajectories to start
         while not rospy.is_shutdown() and not self._get_trajectory_flag():
@@ -291,10 +254,6 @@ class Trajectory(object):
         """
         Preempts trajectory execution by sending cancel goals
         """
-        if (self._left_client.gh is not None and
-            self._left_client.get_state() == actionlib.GoalStatus.ACTIVE):
-            self._left_client.cancel_goal()
-
         if (self._right_client.gh is not None and
             self._right_client.get_state() == actionlib.GoalStatus.ACTIVE):
             self._right_client.cancel_goal()
@@ -314,13 +273,11 @@ class Trajectory(object):
                                  last_time +
                                  time_buffer)
 
-        l_finish = self._left_client.wait_for_result(timeout)
         r_finish = self._right_client.wait_for_result(timeout)
-        l_result = (self._left_client.get_result().error_code == 0)
         r_result = (self._right_client.get_result().error_code == 0)
 
         #verify result
-        if all([l_finish, r_finish, l_result, r_result]):
+        if all([r_finish, r_result]):
             return True
         else:
             msg = ("Trajectory action failed or did not finish before "
