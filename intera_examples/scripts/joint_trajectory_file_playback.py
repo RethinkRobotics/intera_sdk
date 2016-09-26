@@ -27,7 +27,7 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """
-Baxter RSDK Joint Trajectory Example: file playback
+RSDK Joint Trajectory Example: file playback
 """
 
 import argparse
