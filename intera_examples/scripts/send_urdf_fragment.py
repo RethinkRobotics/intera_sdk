@@ -88,11 +88,11 @@ def main():
         help='Path to URDF file to send'
     )
     required.add_argument(
-        '-l', '--link', required=False, default="left_hand",
+        '-l', '--link', required=False, default="right_hand",
         help='URDF Link already to attach fragment to (usually <left/right>_hand)'
     )
     required.add_argument(
-        '-j', '--joint', required=False, default="left_gripper_base",
+        '-j', '--joint', required=False, default="right_gripper_base",
         help='Root joint for fragment (usually <left/right>_gripper_base)'
     )
     args = parser.parse_args(rospy.myargv()[1:])
