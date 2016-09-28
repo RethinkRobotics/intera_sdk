@@ -26,6 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import collections
+import warnings
 
 from copy import deepcopy
 
@@ -57,12 +58,28 @@ class Limb(object):
     Point = collections.namedtuple('Point', ['x', 'y', 'z'])
     Quaternion = collections.namedtuple('Quaternion', ['x', 'y', 'z', 'w'])
 
-    def __init__(self, limb="right"):
+    def __init__(self, limb="right", synchronous_pub=False):
         """
         Constructor.
 
         @type limb: str
         @param limb: limb to interface
+
+        @type synchronous_pub: bool
+        @param synchronous_pub: designates the JointCommand Publisher
+            as Synchronous if True and Asynchronous if False.
+
+            Synchronous Publishing means that all joint_commands publishing to
+            the robot's joints will block until the message has been serialized
+            into a buffer and that buffer has been written to the transport
+            of every current Subscriber. This yields predicable and consistent
+            timing of messages being delivered from this Publisher. However,
+            when using this mode, it is possible for a blocking Subscriber to
+            prevent the joint_command functions from exiting. Unless you need exact
+            JointCommand timing, default to Asynchronous Publishing (False).
+
+            For more information about Synchronous Publishing see:
+            http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#queue_size:_publish.28.29_behavior_and_queuing
         """
         params = RobotParams()
         limb_names = params.get_limb_names()
@@ -95,18 +112,20 @@ class Limb(object):
             latch=True,
             queue_size=10)
 
-        self._pub_joint_cmd = rospy.Publisher(
-            ns + 'joint_command',
-            JointCommand,
-            tcp_nodelay=True,
-            queue_size=1)
+        queue_size = None if synchronous_pub else 1
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._pub_joint_cmd = rospy.Publisher(
+                ns + 'joint_command',
+                JointCommand,
+                tcp_nodelay=True,
+                queue_size=queue_size)
 
         self._pub_joint_cmd_timeout = rospy.Publisher(
             ns + 'joint_command_timeout',
             Float64,
             latch=True,
             queue_size=10)
-
         _cartesian_state_sub = rospy.Subscriber(
             ns + 'endpoint_state',
             EndpointState,
@@ -336,7 +355,31 @@ class Limb(object):
         """
         self._pub_speed_ratio.publish(Float64(speed))
 
-    def set_joint_positions(self, positions, raw=False):
+    def set_joint_trajectory(self, names, positions, velocities, accelerations):
+        """
+        Commands the joints of this limb to the specified positions.
+
+        B{IMPORTANT:} 'raw' joint position control mode allows for commanding
+        joint positions, without modification, directly to the JCBs
+        (Joint Controller Boards). While this results in more unaffected
+        motions, 'raw' joint position control mode bypasses the safety system
+        modifications (e.g. collision avoidance).
+        Please use with caution.
+
+        @type positions: dict({str:float})
+        @param positions: joint_name:angle command
+        @type raw: bool
+        @param raw: advanced, direct position control mode
+        """
+        self._command_msg.names = names
+        self._command_msg.position = positions
+        self._command_msg.velocity = velocities
+        self._command_msg.acceleration = accelerations
+        self._command_msg.mode = JointCommand.TRAJECTORY_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
+        self._pub_joint_cmd.publish(self._command_msg)
+
+    def set_joint_positions(self, positions):
         """
         Commands the joints of this limb to the specified positions.
 
@@ -353,11 +396,9 @@ class Limb(object):
         @param raw: advanced, direct position control mode
         """
         self._command_msg.names = positions.keys()
-        self._command_msg.command = positions.values()
-        if raw:
-            self._command_msg.mode = JointCommand.RAW_POSITION_MODE
-        else:
-            self._command_msg.mode = JointCommand.POSITION_MODE
+        self._command_msg.position = positions.values()
+        self._command_msg.mode = JointCommand.POSITION_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def set_joint_velocities(self, velocities):
@@ -373,8 +414,9 @@ class Limb(object):
         @param velocities: joint_name:velocity command
         """
         self._command_msg.names = velocities.keys()
-        self._command_msg.command = velocities.values()
+        self._command_msg.velocity = velocities.values()
         self._command_msg.mode = JointCommand.VELOCITY_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def set_joint_torques(self, torques):
@@ -390,8 +432,9 @@ class Limb(object):
         @param torques: joint_name:torque command
         """
         self._command_msg.names = torques.keys()
-        self._command_msg.command = torques.values()
+        self._command_msg.effort = torques.values()
         self._command_msg.mode = JointCommand.TORQUE_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def move_to_neutral(self, timeout=15.0):
