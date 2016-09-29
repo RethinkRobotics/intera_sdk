@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Intera RSDK Joint Position Example: file playback
+SDK Joint Position Example: file playback
 """
 import argparse
 import sys
@@ -62,7 +62,7 @@ def clean_line(line, names):
                          if key[:-2] == 'right_')
     return (command, right_command, line)
 
-def map_file(filename, loops=1):
+def map_file(filename, limb, loops=1):
     """
     Loops through csv file
 
@@ -76,22 +76,20 @@ def map_file(filename, loops=1):
     name/value pairs. Names come from the column headers
     first column is the time stamp
     """
-    right = intera_interface.Limb('right')
-    #####################################################
-    # TODO: Fix gripper.py then enable gripper control. #
-    #####################################################
-    #grip_right = intera_interface.Gripper('right', CHECK_VERSION)
+    limb_interface = intera_interface.Limb(limb)
+    has_gripper = True
+    try:
+        gripper = intera_interface.Gripper(limb)
+    except ValueError:
+        has_gripper = False
+        rospy.loginfo("Could not detect a gripper attached to the robot")
 
-    rate = rospy.Rate(1000)
-
-    #####################################################
-    # TODO: Fix gripper.py then enable gripper control. #
-    #####################################################
-    #if grip_right.error():
-    #    grip_right.reset()
-    #if (not grip_right.calibrated() and
-    #    grip_right.type() != 'custom'):
-    #    grip_right.calibrate()
+    rate = rospy.Rate(100)
+    if has_gripper:
+        if gripper.has_error():
+            gripper.reboot()
+        if not gripper.is_calibrated():
+            gripper.calibrate()
 
     print("Playing back: %s" % (filename,))
     with open(filename, 'r') as f:
@@ -104,8 +102,8 @@ def map_file(filename, loops=1):
         i = 0
         l += 1
         print("Moving to start position...")
-        _cmd, rcmd_start, _raw = clean_line(lines[1], keys)
-        right.move_to_joint_positions(rcmd_start)
+        _cmd, cmd_start, _raw = clean_line(lines[1], keys)
+        limb_interface.move_to_joint_positions(cmd_start)
         start_time = rospy.get_time()
         for values in lines[1:]:
             i += 1
@@ -113,20 +111,16 @@ def map_file(filename, loops=1):
             sys.stdout.write("\r Record %d of %d, loop %d of %s" %
                              (i, len(lines) - 1, l, loopstr))
             sys.stdout.flush()
-            cmd, rcmd, values = clean_line(values, keys)
+            cmd, limb_cmd, values = clean_line(values, keys)
             #command this set of commands until the next frame
             while (rospy.get_time() - start_time) < values[0]:
                 if rospy.is_shutdown():
                     print("\n Aborting - ROS shutdown")
                     return False
-                if len(rcmd):
-                    right.set_joint_positions(rcmd)
-                #####################################################
-                # TODO: Fix gripper.py then enable gripper control. #
-                #####################################################
-                #if ('right_gripper' in cmd and
-                #    grip_right.type() != 'custom'):
-                #    grip_right.command_position(cmd['right_gripper'])
+                if len(limb_cmd):
+                    limb_interface.set_joint_positions(limb_cmd)
+                if has_gripper and gripper.name in cmd:
+                        gripper.set_position(cmd[gripper.name])
                 rate.sleep()
         print
     return True
@@ -150,6 +144,12 @@ def main():
 Related examples:
   joint_recorder.py; joint_trajectory_file_playback.py.
     """
+    rp = intera_interface.RobotParams()
+    valid_limbs = rp.get_limb_names()
+    if not valid_limbs:
+        rp.log_message(("Cannot detect any limb parameters on this robot. "
+                        "Exiting."), "ERROR")
+        return
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__,
@@ -159,13 +159,17 @@ Related examples:
         help='path to input file'
     )
     parser.add_argument(
+        "-l", "--limb", dest="limb", default=valid_limbs[0],
+        choices=valid_limbs,
+        help="Limb on which to run the joint posotion file playback example.")
+    parser.add_argument(
         '-l', '--loops', type=int, default=1,
         help='number of times to loop the input file. 0=infinite.'
     )
     args = parser.parse_args(rospy.myargv()[1:])
 
     print("Initializing node... ")
-    rospy.init_node("rsdk_joint_position_file_playback")
+    rospy.init_node("sdk_joint_position_file_playback")
     print("Getting robot state... ")
     rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state().enabled
@@ -180,7 +184,7 @@ Related examples:
     print("Enabling robot... ")
     rs.enable()
 
-    map_file(args.file, args.loops)
+    map_file(args.file, args.limb, args.loops)
 
 
 if __name__ == '__main__':

@@ -33,32 +33,32 @@ from intera_interface import CHECK_VERSION
 
 
 class JointRecorder(object):
-    def __init__(self, filename, rate):
+    def __init__(self, filename, rate, side="right"):
         """
         Records joint data to a file at a specified rate.
         """
+        self.gripper_name = '_'.join([side, 'gripper'])
         self._filename = filename
         self._raw_rate = rate
         self._rate = rospy.Rate(rate)
         self._start_time = rospy.get_time()
         self._done = False
 
-        self._limb_right = intera_interface.Limb("right")
-        #####################################################
-        # TODO: Fix gripper.py then enable gripper control. #
-        #####################################################
-        #self._gripper_right = intera_interface.Gripper("right", CHECK_VERSION)
-        #self._io_right_lower = intera_interface.DigitalIO('right_lower_button')
-        #self._io_right_upper = intera_interface.DigitalIO('right_upper_button')
-        #####################################################
-        # TODO: Fix gripper.py then enable gripper control. #
-        #####################################################
+        self._limb_right = intera_interface.Limb(side)
+        try:
+            self._gripper = intera_interface.Gripper(side)
+        except:
+            self.has_gripper = False
+            rospy.logerr("Could not initalize the gripper.")
+        else:
+            self.has_gripper = True
+
         # Verify Gripper Have No Errors and are Calibrated
-        #if self._gripper_right.error():
-        #    self._gripper_right.reset()
-        #if (not self._gripper_right.calibrated() and
-        #    self._gripper_right.type() != 'custom'):
-        #    self._gripper_right.calibrate()
+        if self.has_gripper:
+            if self._gripper.has_error():
+                self._gripper.reboot()                
+            if not self._gripper.is_calibrated():
+                self._gripper.calibrate()
 
     def _time_stamp(self):
         return rospy.get_time() - self._start_time
@@ -89,29 +89,23 @@ class JointRecorder(object):
             joints_right = self._limb_right.joint_names()
             with open(self._filename, 'w') as f:
                 f.write('time,')
-                # TODO: Once have gripper data, rm '\n' in line below.
-                f.write(','.join([j for j in joints_right]) + ',' + '\n')
-                #f.write('right_gripper\n')
-
+                temp_str = '' if self.has_gripper else '\n'
+                f.write(','.join([j for j in joints_right]) + ',' + temp_str)
+                if self.has_gripper:
+                    f.write(self.gripper_name+'\n')
                 while not self.done():
-                    #####################################################
-                    # TODO: Fix gripper.py then enable gripper control. #
-                    #####################################################
-                    # Look for gripper button presses
-                    #if self._io_right_lower.state:
-                    #    self._gripper_right.open()
-                    #elif self._io_right_upper.state:
-                    #    self._gripper_right.close()
-
+                    if self.has_gripper:
+                        ####################################################
+                        # TODO: Add method to determine gripper open/close #
+                        ####################################################
+                        #if command gripper to open:
+                        #    self._gripper.open()
+                        #elif command gripper to close:
+                        #    self._gripper.close()
                     angles_right = [self._limb_right.joint_angle(j)
                                     for j in joints_right]
-
                     f.write("%f," % (self._time_stamp(),))
-                    # TODO: Once have gripper data, rm '\n' in line below.
-                    f.write(','.join([str(x) for x in angles_right]) + ','+ '\n')
-                    #####################################################
-                    # TODO: Fix gripper.py then enable gripper control. #
-                    #####################################################
-                    #f.write(str(self._gripper_right.position()) + '\n')
-
+                    f.write(','.join([str(x) for x in angles_right]) + ',' + temp_str)
+                    if self.has_gripper:
+                        f.write(str(self._gripper.get_position()) + '\n')
                     self._rate.sleep()
