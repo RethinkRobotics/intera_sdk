@@ -96,7 +96,6 @@ def main():
 
     def clean_shutdown():
         print("Shutting down camera_display node.")
-        camera.stop_streaming(args.camera)
         cv2.destroyAllWindows()
 
     rospy.on_shutdown(clean_shutdown)
