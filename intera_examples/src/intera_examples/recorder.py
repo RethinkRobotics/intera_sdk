@@ -102,6 +102,7 @@ class JointRecorder(object):
                         #    self._gripper.open()
                         #elif command gripper to close:
                         #    self._gripper.close()
+                        pass
                     angles_right = [self._limb_right.joint_angle(j)
                                     for j in joints_right]
                     f.write("%f," % (self._time_stamp(),))
