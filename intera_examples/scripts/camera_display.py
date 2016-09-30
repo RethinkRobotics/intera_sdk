@@ -78,8 +78,8 @@ def main():
         '-r', '--raw', action='store_true', 
         help='Specify use of the raw image (unrectified) topic')
     parser.add_argument(
-        '-u', '--unprocessed', action='store_true',
-        help='Display the unprocessed, streamed image (no Canny Edge Detection applied)')
+        '-e', '--edge', action='store_true',
+        help='Display the canny edge detection image')
     args = parser.parse_args()
 
     print("Initializing node... ")
@@ -90,7 +90,7 @@ def main():
         return
     camera.start_streaming(args.camera)
     rectify_image = not args.raw
-    use_canny_edge = not args.unprocessed
+    use_canny_edge = args.edge
     camera.set_callback(args.camera, show_image_callback,
         rectify_image=rectify_image, callback_args=(use_canny_edge, args.camera))
 

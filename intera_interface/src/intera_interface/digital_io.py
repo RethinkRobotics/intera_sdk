@@ -39,8 +39,7 @@ from intera_core_msgs.msg import (
 
 class DigitalIO(object):
     """
-    Interface class for a simple Digital Input and/or Output on the
-    Baxter robot
+    Interface class for a simple Digital Input and/or Output
 
     Input
       - read input state
