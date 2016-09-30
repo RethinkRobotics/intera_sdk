@@ -44,7 +44,9 @@ class JointRecorder(object):
         self._start_time = rospy.get_time()
         self._done = False
 
-        self._limb_right = intera_interface.Limb(side)
+        self._io_upper = intera_interface.DigitalIO('_'.join([side, 'upper_button']))
+
+        self._limb = intera_interface.Limb(side)
         try:
             self._gripper = intera_interface.Gripper(side)
         except:
@@ -86,7 +88,7 @@ class JointRecorder(object):
         If a file exists, the function will overwrite existing file.
         """
         if self._filename:
-            joints_right = self._limb_right.joint_names()
+            joints_right = self._limb.joint_names()
             with open(self._filename, 'w') as f:
                 f.write('time,')
                 temp_str = '' if self.has_gripper else '\n'
@@ -95,14 +97,12 @@ class JointRecorder(object):
                     f.write(self.gripper_name+'\n')
                 while not self.done():
                     if self.has_gripper:
-                        ####################################################
-                        # TODO: Add method to determine gripper open/close #
-                        ####################################################
-                        #if command gripper to open:
-                        #    self._gripper.open()
-                        #elif command gripper to close:
-                        #    self._gripper.close()
-                    angles_right = [self._limb_right.joint_angle(j)
+                        if self._io_upper.state:
+                            if self.is_gripping():
+                                self._gripper.open()
+                            else:
+                                self._gripper.close()
+                    angles_right = [self._limb.joint_angle(j)
                                     for j in joints_right]
                     f.write("%f," % (self._time_stamp(),))
                     f.write(','.join([str(x) for x in angles_right]) + ',' + temp_str)

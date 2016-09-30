@@ -35,7 +35,7 @@ class Gripper(object):
     """
     Interface class for a gripper on the Intera Research Robot.
     """
-    MAX_POSITION = 0.041666
+    MAX_POSITION = 0.041667
     MIN_POSITION = 0.0
     MAX_FORCE = 10.0
     MIN_FORCE = 0.0
@@ -49,7 +49,8 @@ class Gripper(object):
         """
         self.devices = None
         self.name = '_'.join([side, 'gripper'])
-        rospy.Subscriber('/io/end_effector/config', IONodeConfiguration, self._config_callback)
+        
+        self. _ee_config_sub = rospy.Subscriber('/io/end_effector/config', IONodeConfiguration, self._config_callback)
         # Wait for the gripper device status to be true
         intera_dataflow.wait_for(
             lambda: not self.devices is None, timeout=5.0,
