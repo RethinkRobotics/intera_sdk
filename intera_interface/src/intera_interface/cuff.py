@@ -80,4 +80,4 @@ class Cuff(object):
         ([0]: no pressing, [1]: pressing )
         @rtype: list
         """
-        return self.cuff_io.get_signal_value("has_error")
+        return self.cuff_io.get_signal_value("right_cuff")
