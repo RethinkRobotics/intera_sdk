@@ -87,7 +87,7 @@ class Trajectory(object):
             self.has_gripper = True
         except:
             self.has_gripper = False
-            rospy.logerr("Could not detect a connected electric gripper.")
+            rospy.loginfo("Did not detect a connected electric gripper.")
             
         #flag to signify the arm trajectories have begun executing
         self._arm_trajectory_started = False
