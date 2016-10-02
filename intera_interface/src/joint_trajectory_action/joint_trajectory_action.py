@@ -117,12 +117,6 @@ class JointTrajectoryActionServer(object):
              queue_size=10)
         self._pub_rate.publish(self._control_rate)
 
-        self._pub_ff_cmd = rospy.Publisher(
-            self._ns + '/inverse_dynamics_command',
-            JointTrajectoryPoint,
-            tcp_nodelay=True,
-            queue_size=1)
-
     def robot_is_enabled(self):
         return self._enable.state().enabled
 
@@ -210,83 +204,61 @@ class JointTrajectoryActionServer(object):
         self._fdbk.error.time_from_start = rospy.Duration.from_sec(cur_time)
         self._server.publish_feedback(self._fdbk)
 
-    def _reorder_joints_ff_cmd(self, joint_names, point):
-	joint_name_order = self._limb.joint_names()
-	pnt = JointTrajectoryPoint()
-	pnt.time_from_start = point.time_from_start
-	pos_cmd = dict(zip(joint_names, point.positions))
-	for jnt_name in joint_name_order:
-	    pnt.positions.append(pos_cmd[jnt_name])
-        if point.velocities:
-	    vel_cmd = dict(zip(joint_names, point.velocities))
-	    for jnt_name in joint_name_order:
-	        pnt.velocities.append(vel_cmd[jnt_name])
-        if point.accelerations:
-	    accel_cmd = dict(zip(joint_names, point.accelerations))
-	    for jnt_name in joint_name_order:
-	        pnt.accelerations.append(accel_cmd[jnt_name])
-        return pnt
-
     def _command_stop(self, joint_names, joint_angles, start_time, dimensions_dict):
-        if self._mode == 'velocity':
+        if (self._cuff_state or self._limb.has_collided() or
+              not self.robot_is_enabled() or not self._alive):
+            self._limb.exit_control_mode()
+        elif self._mode == 'velocity':
             velocities = [0.0] * len(joint_names)
             cmd = dict(zip(joint_names, velocities))
-            while (not self._server.is_new_goal_available() and self._alive
-                   and self.robot_is_enabled()):
-                self._limb.set_joint_velocities(cmd)
-                if self._cuff_state:
-                    self._limb.exit_control_mode()
-                    break
-                rospy.sleep(1.0 / self._control_rate)
+            self._limb.set_joint_velocities(cmd)
         elif self._mode == 'position' or self._mode == 'position_w_id':
             pnt = JointTrajectoryPoint()
             pnt.positions = self._get_current_position(joint_names)
-            if self._mode == 'position_w_id':
-                if dimensions_dict['velocities']:
-                    pnt.velocities = [0.0] * len(joint_names)
-                if dimensions_dict['accelerations']:
-                    pnt.accelerations = [0.0] * len(joint_names)
-            ff_pnt = self._reorder_joints_ff_cmd(joint_names, pnt)
-            while (not self._server.is_new_goal_available() and self._alive
-                   and self.robot_is_enabled()):
+            if self._mode == 'position' and self._alive:
+                self._limb.set_joint_positions(dict(zip(joint_names, pnt.positions)))
+            if self._mode == 'position_w_id' and self._alive:
                 # zero inverse dynamics feedforward command
-                if self._mode == 'position' and self._alive:
-                    self._limb.set_joint_positions(dict(zip(joint_names, point.positions)))
-                if self._mode == 'position_w_id' and self._alive:
-                    self._limb.set_joint_trajectory(joint_names,
-                                            ff_pnt.positions,
-                                            ff_pnt.velocities,
-                                            ff_pnt.accelerations)
-
-                if self._cuff_state:
-                    self._limb.exit_control_mode()
-                    break
-                rospy.sleep(1.0 / self._control_rate)
+                pnt.velocities = [0.0] * len(joint_names)
+                pnt.accelerations = [0.0] * len(joint_names)
+                self._limb.set_joint_trajectory(joint_names,
+                                        pnt.positions,
+                                        pnt.velocities,
+                                        pnt.accelerations)
 
     def _command_joints(self, joint_names, point, start_time, dimensions_dict):
-        if self._server.is_preempt_requested() or not self.robot_is_enabled():
-            rospy.loginfo("%s: Trajectory Preempted" % (self._action_name,))
-            self._server.set_preempted()
-            self._command_stop(joint_names, self._limb.joint_angles(), start_time, dimensions_dict)
-            return False
-        if self._mode == 'velocity':
-            velocities = []
-            deltas = self._get_current_error(joint_names, point.positions)
-            for delta in deltas:
-                if ((math.fabs(delta[1]) >= self._path_thresh[delta[0]]
-                      and self._path_thresh[delta[0]] >= 0.0)) or not self.robot_is_enabled():
-                    rospy.logerr("%s: Exceeded Error Threshold on %s: %s" %
-                                 (self._action_name, delta[0], str(delta[1]),))
-                    self._result.error_code = self._result.PATH_TOLERANCE_VIOLATED
-                    self._server.set_aborted(self._result)
-                    self._command_stop(joint_names, self._limb.joint_angles(), start_time, dimensions_dict)
-                    return False
+        if (self._limb.has_collided() or not self.robot_is_enabled()
+             or not self._alive or self._cuff_state):
+           rospy.logerr("{0}: Robot arm in Error state. Stopping execution.".format(
+                            self._action_name))
+           self._limb.exit_control_mode()
+           self._result.error_code = self._result.PATH_TOLERANCE_VIOLATED
+           self._server.set_aborted(self._result)
+           return False
+        elif self._server.is_preempt_requested():
+           rospy.logwarn("{0}: Trajectory execution Preempted. Stopping execution.".format(
+                            self._action_name))
+           self._limb.exit_control_mode()
+           self._server.set_preempted()
+           return False
+        velocities = []
+        deltas = self._get_current_error(joint_names, point.positions)
+        for delta in deltas:
+            if ((math.fabs(delta[1]) >= self._path_thresh[delta[0]]
+                  and self._path_thresh[delta[0]] >= 0.0)):
+                rospy.logerr("%s: Exceeded Error Threshold on %s: %s" %
+                             (self._action_name, delta[0], str(delta[1]),))
+                self._result.error_code = self._result.PATH_TOLERANCE_VIOLATED
+                self._server.set_aborted(self._result)
+                self._limb.exit_control_mode()
+                return False
+            if self._mode == 'velocity':
                 velocities.append(self._pid[delta[0]].compute_output(delta[1]))
-            if self._alive:
-                self._limb.set_joint_velocities(dict(zip(joint_names, velocities)))
-        if self._mode == 'position' and self._alive:
+        if self._mode == 'velocity':
+            self._limb.set_joint_velocities(dict(zip(joint_names, velocities)))
+        if self._mode == 'position':
             self._limb.set_joint_positions(dict(zip(joint_names, point.positions)))
-        if self._mode == 'position_w_id' and self._alive:
+        if self._mode == 'position_w_id':
             self._limb.set_joint_trajectory(joint_names,
                                             point.positions,
                                             point.velocities,
