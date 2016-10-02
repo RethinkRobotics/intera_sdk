@@ -60,6 +60,8 @@ class JointRecorder(object):
             if not self._gripper.is_calibrated():
                 self._gripper.calibrate()
 
+        self._cuff = intera_interface.Cuff()
+
     def _time_stamp(self):
         return rospy.get_time() - self._start_time
 
@@ -95,14 +97,10 @@ class JointRecorder(object):
                     f.write(self.gripper_name+'\n')
                 while not self.done():
                     if self.has_gripper:
-                        ####################################################
-                        # TODO: Add method to determine gripper open/close #
-                        ####################################################
-                        #if command gripper to open:
-                        #    self._gripper.open()
-                        #elif command gripper to close:
-                        #    self._gripper.close()
-                        pass
+                        if self._cuff.upper_button():
+                            self._gripper.open()
+                        elif self._cuff.lower_button():
+                            self._gripper.close()
                     angles_right = [self._limb_right.joint_angle(j)
                                     for j in joints_right]
                     f.write("%f," % (self._time_stamp(),))
