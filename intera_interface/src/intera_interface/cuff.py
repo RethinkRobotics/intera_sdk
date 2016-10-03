@@ -77,7 +77,7 @@ class Cuff(object):
         @rtype: bool
         @return: a variable representing button state: (True: pressed, False: unpressed)
         """
-        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "lower_button"])))
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "button_lower"])))
 
     def upper_button(self):
         """
@@ -86,7 +86,7 @@ class Cuff(object):
         @rtype: bool
         @return:  a variable representing button state: (True: pressed, False: unpressed)
         """
-        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "upper_button"])))
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "button_upper"])))
 
     def cuff_button(self):
         """

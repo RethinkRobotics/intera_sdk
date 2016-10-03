@@ -55,12 +55,13 @@ class JointRecorder(object):
 
         # Verify Gripper Have No Errors and are Calibrated
         if self.has_gripper:
+            self._gripper.set_holding_force(0.0)
             if self._gripper.has_error():
                 self._gripper.reboot()                
             if not self._gripper.is_calibrated():
                 self._gripper.calibrate()
 
-        self._cuff = intera_interface.Cuff()
+        self._cuff = intera_interface.Cuff(side)
 
     def _time_stamp(self):
         return rospy.get_time() - self._start_time
@@ -95,8 +96,7 @@ class JointRecorder(object):
                 f.write(','.join([j for j in joints_right]) + ',' + temp_str)
                 if self.has_gripper:
                     f.write(self.gripper_name+'\n')
-                while not self.done():
-                    if self.has_gripper:
+                    while not self.done():
                         if self._cuff.upper_button():
                             self._gripper.open()
                         elif self._cuff.lower_button():
