@@ -29,6 +29,7 @@ from .analog_io import AnalogIO
 from .camera import Cameras
 from .digital_io import DigitalIO
 from .gripper import Gripper
+from .cuff import Cuff
 from .head import Head
 from .head_display import HeadDisplay
 from .limb import Limb

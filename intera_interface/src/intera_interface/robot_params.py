@@ -74,17 +74,26 @@ class RobotParams(object):
         @return: ordered list of articulated limbs names
                  (e.g. right, left). on networked robot
         """
-        limbs = list()
         non_limb_assemblies = ['torso', 'head']
+        return list(set(self.get_robot_assemblies()).difference(non_limb_assemblies))
+
+    def get_robot_assemblies(self):
+        """
+        Return the names of the robot's assemblies from ROS parameter.
+
+        @rtype: [str]
+        @return: ordered list of assembly names
+                 (e.g. right, left, torso, head). on networked robot
+        """
+        assemblies = list()
         try:
             assemblies = rospy.get_param("/robot_config/assembly_names")
-            limbs = [assembly for assembly in assemblies if assembly not in non_limb_assemblies]
         except KeyError:
-            rospy.logerr("RobotParam:get_limb_names cannot detect limbs names"
+            rospy.logerr("RobotParam:get_robot_assemblies cannot detect assembly names"
                          " under param /robot_config/assembly_names")
         except (socket.error, socket.gaierror):
             self._log_networking_error()
-        return limbs
+        return assemblies
 
     def get_joint_names(self, limb_name):
         """
