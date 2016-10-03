@@ -77,12 +77,11 @@ class Wobbler(object):
         """
         Performs the wobbling
         """
-        self._head.command_nod()
         command_rate = rospy.Rate(1)
         control_rate = rospy.Rate(100)
         start = rospy.get_time()
         while not rospy.is_shutdown() and (rospy.get_time() - start < 10.0):
-            angle = random.uniform(-1.5, 1.5)
+            angle = random.uniform(-2.0, 0.95)
             while (not rospy.is_shutdown() and
                    not (abs(self._head.pan() - angle) <=
                        intera_interface.HEAD_PAN_ANGLE_TOLERANCE)):
