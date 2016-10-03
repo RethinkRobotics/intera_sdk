@@ -96,7 +96,8 @@ class JointRecorder(object):
                 f.write(','.join([j for j in joints_right]) + ',' + temp_str)
                 if self.has_gripper:
                     f.write(self.gripper_name+'\n')
-                    while not self.done():
+                while not self.done():
+                    if self.has_gripper:
                         if self._cuff.upper_button():
                             self._gripper.open()
                         elif self._cuff.lower_button():
