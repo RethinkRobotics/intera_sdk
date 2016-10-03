@@ -29,26 +29,38 @@ import rospy
 import intera_dataflow
 from io_interface import IODeviceInterface
 from intera_core_msgs.msg import IODeviceConfiguration
+from robot_params import RobotParams
 
 
 class Cuff(object):
     """
-    Interface class for cuff on the Intera Research Robot.
+    Interface class for cuff on the Intera robots.
     """
 
-    def __init__(self):
+    def __init__(self, limb="right"):
         """
+        Constructor.
+
+        @type limb: str
+        @param limb: limb side to interface
         """
+        params = RobotParams()
+        limb_names = params.get_limb_names()
+        if limb not in limb_names:
+            rospy.logerr("Cannot detect Cuff's limb {0} on this robot."
+                         " Valid limbs are {1}. Exiting Cuff.init().".format(
+                                                            limb, limb_names))
+            return
+        self.limb = limb
         self.device = None
         self.name = "cuff"
         self.cuff_config_sub = rospy.Subscriber('/io/robot/cuff/config', IODeviceConfiguration, self._config_callback)
         # Wait for the cuff status to be true
         intera_dataflow.wait_for(
             lambda: not self.device is None, timeout=5.0,
-            timeout_msg=("Failed to get cuff state.")
+            timeout_msg=("Failed find cuff on limb '{0}'.".format(limb))
             )
-
-        self.cuff_io = IODeviceInterface("robot", self.name)
+        self._cuff_io = IODeviceInterface("robot", self.name)
 
     def _config_callback(self, msg):
         """
@@ -56,28 +68,31 @@ class Cuff(object):
         """
         if msg.device != []:
             if str(msg.device.name) == self.name:
-                self.device = msg
+                self.device = msg.device
 
     def lower_button(self):
         """
-        Returns a list within a integer value describing whether the lower button on cuff is pressed.
-        ([0]: no pressing, [1]: pressing )
-        @rtype: list
+        Returns a boolean describing whether the lower button on cuff is pressed.
+
+        @rtype: bool
+        @return: a variable representing button state: (True: pressed, False: unpressed)
         """
-        return self.cuff_io.get_signal_value("right_button_lower")
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "lower_button"])))
 
     def upper_button(self):
         """
-        Returns a list within a integer value describing whether the upper button on cuff is pressed.
-        ([0]: no pressing, [1]: pressing )
-        @rtype: list
+        Returns a boolean describing whether the upper button on cuff is pressed.
+        (True: pressed, False: unpressed)
+        @rtype: bool
+        @return:  a variable representing button state: (True: pressed, False: unpressed)
         """
-        return self.cuff_io.get_signal_value("right_button_upper")
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "upper_button"])))
 
     def cuff(self):
         """
-        Returns a list within a integer value describing whether the cuff is pressed.
-        ([0]: no pressing, [1]: pressing )
-        @rtype: list
+        Returns a boolean describing whether the cuff button on cuff is pressed.
+        (True: pressed, False: unpressed)
+        @rtype: bool
+        @return:  a variable representing cuff button state: (True: pressed, False: unpressed)
         """
-        return self.cuff_io.get_signal_value("right_cuff")
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "cuff"])))
