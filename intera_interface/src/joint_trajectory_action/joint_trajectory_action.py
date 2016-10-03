@@ -74,8 +74,7 @@ class JointTrajectoryActionServer(object):
         self._enable = intera_interface.RobotEnable()
         self._name = limb
         self._interpolation = interpolation
-        self._cuff = intera_interface.DigitalIO('%s_lower_cuff' % (limb,))
-        self._cuff.state_changed.connect(self._cuff_cb)
+        self._cuff = intera_interface.Cuff(limb=limb)
         # Verify joint control mode
         self._mode = mode
         if (self._mode != 'position' and self._mode != 'position_w_id'
@@ -87,7 +86,6 @@ class JointTrajectoryActionServer(object):
             return
         self._server.start()
         self._alive = True
-        self._cuff_state = False
         # Action Feedback/Result
         self._fdbk = FollowJointTrajectoryFeedback()
         self._result = FollowJointTrajectoryResult()
@@ -123,9 +121,6 @@ class JointTrajectoryActionServer(object):
     def clean_shutdown(self):
         self._alive = False
         self._limb.exit_control_mode()
-
-    def _cuff_cb(self, value):
-        self._cuff_state = value
 
     def _get_trajectory_parameters(self, joint_names, goal):
         # For each input trajectory, if path, goal, or goal_time tolerances
@@ -205,7 +200,7 @@ class JointTrajectoryActionServer(object):
         self._server.publish_feedback(self._fdbk)
 
     def _command_stop(self, joint_names, joint_angles, start_time, dimensions_dict):
-        if (self._cuff_state or self._limb.has_collided() or
+        if (self._cuff.cuff_button() or self._limb.has_collided() or
               not self.robot_is_enabled() or not self._alive):
             self._limb.exit_control_mode()
         elif self._mode == 'velocity':
@@ -228,7 +223,7 @@ class JointTrajectoryActionServer(object):
 
     def _command_joints(self, joint_names, point, start_time, dimensions_dict):
         if (self._limb.has_collided() or not self.robot_is_enabled()
-             or not self._alive or self._cuff_state):
+             or not self._alive or self._cuff.cuff_button()):
            rospy.logerr("{0}: Robot arm in Error state. Stopping execution.".format(
                             self._action_name))
            self._limb.exit_control_mode()

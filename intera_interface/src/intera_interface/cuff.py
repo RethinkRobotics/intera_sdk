@@ -88,7 +88,7 @@ class Cuff(object):
         """
         return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "upper_button"])))
 
-    def cuff(self):
+    def cuff_button(self):
         """
         Returns a boolean describing whether the cuff button on cuff is pressed.
         (True: pressed, False: unpressed)
