@@ -44,6 +44,7 @@ import intera_dataflow
 from intera_core_msgs.msg import (
     JointCommand,
     EndpointState,
+    CollisionDetectionState,
 )
 from intera_interface import settings
 from robot_params import RobotParams
@@ -101,6 +102,7 @@ class Limb(object):
         self._cartesian_velocity = dict()
         self._cartesian_effort = dict()
         self._joint_names = { limb: joint_names }
+        self._collision_state = False
 
         ns = '/robot/limb/' + limb + '/'
 
@@ -126,10 +128,18 @@ class Limb(object):
             Float64,
             latch=True,
             queue_size=10)
+
         _cartesian_state_sub = rospy.Subscriber(
             ns + 'endpoint_state',
             EndpointState,
             self._on_endpoint_states,
+            queue_size=1,
+            tcp_nodelay=True)
+
+        _collision_state_sub = rospy.Subscriber(
+            ns + 'collision_detection_state',
+            CollisionDetectionState,
+            self._on_collision_state,
             queue_size=1,
             tcp_nodelay=True)
 
@@ -199,6 +209,19 @@ class Limb(object):
                 msg.wrench.torque.z,
             ),
         }
+
+    def _on_collision_state(self, msg):
+        if self._collision_state != msg.collision_state:
+            self._collision_state = msg.collision_state
+
+    def has_collided(self):
+        """
+        Return True if the specified limb has experienced a collision.
+
+        @rtype: bool
+        @return: True if the arm is in collision, False otherwise.
+        """
+        return self._collision_state
 
     def joint_names(self):
         """
@@ -357,19 +380,25 @@ class Limb(object):
 
     def set_joint_trajectory(self, names, positions, velocities, accelerations):
         """
-        Commands the joints of this limb to the specified positions.
+        Commands the joints of this limb to the specified positions using
+        the commanded velocities and accelerations to extrapolate between
+        commanded positions (prior to the next position being received).
 
-        B{IMPORTANT:} 'raw' joint position control mode allows for commanding
+        B{IMPORTANT:} Joint Trajectory control mode allows for commanding
         joint positions, without modification, directly to the JCBs
         (Joint Controller Boards). While this results in more unaffected
-        motions, 'raw' joint position control mode bypasses the safety system
+        motions, Joint Trajectory control mode bypasses the safety system
         modifications (e.g. collision avoidance).
         Please use with caution.
 
-        @type positions: dict({str:float})
-        @param positions: joint_name:angle command
-        @type raw: bool
-        @param raw: advanced, direct position control mode
+        @type names: list [str]
+        @param names: joint_names list of strings
+        @type positions: list [float]
+        @param positions: list of positions in radians
+        @type velocities: list [float]
+        @param velocities: list of velocities in radians/second
+        @type accelerations: list [float]
+        @param accelerations: list of accelerations in radians/seconds^2
         """
         self._command_msg.names = names
         self._command_msg.position = positions
