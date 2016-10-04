@@ -39,7 +39,7 @@ class Gripper(object):
     MIN_POSITION = 0.0
     MAX_FORCE = 10.0
     MIN_FORCE = 0.0
-    MAX_VELOCITY = 0.3
+    MAX_VELOCITY = 3.0
     MIN_VELOCITY = 0.15
 
     def __init__(self, side="right"):
