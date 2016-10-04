@@ -25,11 +25,12 @@ intera_interface Repository Overview
      +-- src/                                  intera_interface api
      |   +-- io_interface/                     basic interface for IO Framework
      |   +-- intera_interface/                 intera component classes
-     |       +-- analog_io.py
      |       +-- camera.py
+     |       +-- cuff.py
      |       +-- digital_io.py
      |       +-- gripper.py
      |       +-- head.py
+     |       +-- head_display.py
      |       +-- limb.py
      |       +-- navigator.py
      |       +-- robot_enable.py
@@ -42,9 +43,10 @@ intera_interface Repository Overview
      |   +-- head_action/                      head action implementation
      |
      +-- scripts/                              action server executables
-     |   +-- joint_trajectory_action_server.py
+     |   +-- enable_robot.py
      |   +-- gripper_action_server.py
      |   +-- head_action_server.py
+     |   +-- joint_trajectory_action_server.py
      |
      +-- cfg/                                  dynamic reconfigure action configs
 

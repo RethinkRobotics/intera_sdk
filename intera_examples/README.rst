@@ -22,13 +22,15 @@ intera_examples Repository Overview
      .
      |
      +-- scripts/                                  example program executables
-     |   +-- analog_io_rampup.py
+     |   +-- camera_display.py
      |   +-- digital_io_blink.py
+     |   +-- fk_service_client.py 
      |   +-- gripper_action_client.py
      |   +-- gripper_cuff_control.py
      |   +-- gripper_joystick.py
      |   +-- gripper_keyboard.py
      |   +-- head_action_client.py
+     |   +-- head_display_image.py
      |   +-- head_wobbler.py
      |   +-- ik_service_client.py
      |   +-- joint_position_file_playback.py
@@ -43,7 +45,6 @@ intera_examples Repository Overview
      |   +-- joint_velocity_wobbler.py
      |   +-- navigator_io.py
      |   +-- send_urdf_fragment.py
-     |   +-- xdisplay_image.py
      |
      +-- launch/                                   example program launch scripts
      |   +-- gripper_action_client.launch
