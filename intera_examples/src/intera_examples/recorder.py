@@ -55,7 +55,6 @@ class JointRecorder(object):
 
         # Verify Gripper Have No Errors and are Calibrated
         if self.has_gripper:
-            self._gripper.set_holding_force(0.0)
             if self._gripper.has_error():
                 self._gripper.reboot()                
             if not self._gripper.is_calibrated():
