@@ -362,7 +362,7 @@ class Limb(object):
         self.set_command_timeout(timeout)
         self.set_joint_positions(self.joint_angles())
 
-    def set_joint_position_speed(self, speed):
+    def set_joint_position_speed(self, speed=0.3):
         """
         Set ratio of max joint speed to use during joint position moves.
 
@@ -466,13 +466,16 @@ class Limb(object):
         self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
-    def move_to_neutral(self, timeout=15.0):
+    def move_to_neutral(self, timeout=15.0, speed=0.3):
         """
         Command the Limb joints to a predefined set of "neutral" joint angles.
         From rosparam named_poses/<limb>/poses/neutral.
 
         @type timeout: float
         @param timeout: seconds to wait for move to finish [15]
+        @type speed: float
+        @param speed: ratio of maximum joint speed for execution
+                      default= 0.3; range= [0.0-1.0]
         """
         try:
             neutral_pose = rospy.get_param("named_poses/{0}/poses/neutral".format(self.name))
@@ -480,6 +483,7 @@ class Limb(object):
             rospy.logerr(("Get neutral pose failed, arm: \"{0}\".").format(self.name))
             return
         angles = dict(zip(self.joint_names(), neutral_pose))
+        self.set_joint_position_speed(speed)
         return self.move_to_joint_positions(angles, timeout)
 
     def move_to_joint_positions(self, positions, timeout=15.0,
@@ -503,12 +507,6 @@ class Limb(object):
         """
         cmd = self.joint_angles()
 
-        def filtered_cmd():
-            # First Order Filter - 0.2 Hz Cutoff
-            for joint in positions.keys():
-                cmd[joint] = 0.012488 * positions[joint] + 0.98751 * cmd[joint]
-            return cmd
-
         def genf(joint, angle):
             def joint_diff():
                 return abs(angle - self._joint_angle[joint])
@@ -516,15 +514,21 @@ class Limb(object):
 
         diffs = [genf(j, a) for j, a in positions.items() if
                  j in self._joint_angle]
-
-        self.set_joint_positions(filtered_cmd())
+        fail_msg = "{0} limb failed to reach commanded joint positions.".format(
+                                                      self.name.capitalize())
+        def test_collision():
+            if self.has_collided():
+                rospy.logerr(' '.join(["Collision detected.", fail_msg]))
+                return True
+            return False
+        self.set_joint_positions(positions)
         intera_dataflow.wait_for(
-            test=lambda: callable(test) and test() == True or \
+            test=lambda: test_collision() or \
+                         (callable(test) and test() == True) or \
                          (all(diff() < threshold for diff in diffs)),
             timeout=timeout,
-            timeout_msg=("%s limb failed to reach commanded joint positions" %
-                         (self.name.capitalize(),)),
+            timeout_msg=fail_msg,
             rate=100,
             raise_on_error=False,
-            body=lambda: self.set_joint_positions(filtered_cmd())
+            body=lambda: self.set_joint_positions(positions)
             )
