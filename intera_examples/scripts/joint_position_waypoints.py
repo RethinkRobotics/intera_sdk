@@ -96,9 +96,9 @@ class Waypoints(object):
               "waypoints to begin playback")
         # Connect Navigator I/O signals
         # Navigator scroll wheel button press
-        self._navigator_io.button0_changed.connect(self._record_waypoint)
+        self._navigator_io.button_ok_changed.connect(self._record_waypoint)
         # Navigator Rethink button press
-        self._navigator_io.button2_changed.connect(self._stop_recording)
+        self._navigator_io.button_show_changed.connect(self._stop_recording)
 
         # Set recording flag
         self._is_recording = True
@@ -108,8 +108,8 @@ class Waypoints(object):
             rospy.sleep(1.0)
 
         # We are now done with the navigator I/O signals, disconnecting them
-        self._navigator_io.button0_changed.disconnect(self._record_waypoint)
-        self._navigator_io.button2_changed.disconnect(self._stop_recording)
+        self._navigator_io.button_ok_changed.disconnect(self._record_waypoint)
+        self._navigator_io.button_show_changed.disconnect(self._stop_recording)
 
     def playback(self):
         """

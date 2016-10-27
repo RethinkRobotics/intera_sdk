@@ -29,39 +29,34 @@ import rospy
 
 import intera_dataflow
 
-from intera_core_msgs.msg import (
-    NavigatorState,
-)
-
-from intera_interface import (
-    digital_io,
-)
+from intera_core_msgs.msg import NavigatorState
+from intera_interface import robot_params
 
 class Navigator(object):
     """
-    Interface class for a Navigator on the Baxter robot.
+    Interface class for a Navigator on the Intera Research Robot.
 
     Inputs:
-        Button 0     - press wheel
-        Button 1     - above wheel
-        Button 2     - below wheel
+        Button ok       - press wheel
+        Button back     - press back
+        Button show     - press rethink
+        Button triangle - press triangle
+        Button circle   - press circle
+        Button square   - press square
         Scroll wheel - 0-255
 
-    Outputs:
-        Inner LED
-        Outer LED
-
     Signals:
-        button0_changed - True/False
-        button1_changed - True/False
-        button2_changed - True/False
+        button_ok_changed       - True/False
+        button_back_changed     - True/False
+        button_show_changed     - True/False
+        button_triangle_changed - True/False
+        button_circle_changed   - True/False
+        button_square_changed   - True/False
         wheel_changed   - New wheel value
 
     Valid identifiers:
-        left, right, torso_left, torso_right
+        right, head, torso
     """
-
-    __LOCATIONS = ('left', 'right', 'torso_left', 'torso_right')
 
     def __init__(self, location):
         """
@@ -70,16 +65,19 @@ class Navigator(object):
         @type location: str
         @param location: body location (prefix) of Navigator to control.
 
-        Valid locations are in L{Navigator.__LOCATIONS}::
-          left, right, torso_left, torso_right
+        Valid locations are: right, head, torso
         """
-        if not location in self.__LOCATIONS:
+        self.locations = robot_params.RobotParams().get_robot_assemblies()
+        if not location in self.locations:
             raise AttributeError("Invalid Navigator name '%s'" % (location,))
         self._id = location
         self._state = None
-        self.button0_changed = intera_dataflow.Signal()
-        self.button1_changed = intera_dataflow.Signal()
-        self.button2_changed = intera_dataflow.Signal()
+        self.button_ok_changed = intera_dataflow.Signal()
+        self.button_back_changed = intera_dataflow.Signal()
+        self.button_show_changed = intera_dataflow.Signal()
+        self.button_triangle_changed = intera_dataflow.Signal()
+        self.button_circle_changed = intera_dataflow.Signal()
+        self.button_square_changed = intera_dataflow.Signal()
         self.wheel_changed = intera_dataflow.Signal()
 
         nav_state_topic = 'robot/navigators/{0}_navigator/state'.format(self._id)
@@ -87,14 +85,6 @@ class Navigator(object):
             nav_state_topic,
             NavigatorState,
             self._on_state)
-
-        self._inner_led = digital_io.DigitalIO(
-            '%s_inner_light' % (self._id,))
-        self._inner_led_idx = 0
-
-        self._outer_led = digital_io.DigitalIO(
-            '%s_outer_light' % (self._id,))
-        self._outer_led_idx = 1
 
         init_err_msg = ("Navigator init failed to get current state from %s" %
                         (nav_state_topic,))
@@ -109,80 +99,28 @@ class Navigator(object):
         return self._state.wheel
 
     @property
-    def button0(self):
+    def button_state(self, button_name):
         """
-        Current state of button 0
+        Current button state by providing button name
+        @type: str
+        @param: the button name
         """
-        return self._state.buttons[0]
-
-    @property
-    def button1(self):
-        """
-        Current state of button 1
-        """
-        return self._state.buttons[1]
-
-    @property
-    def button2(self):
-        """
-        Current state of button 2
-        """
-        return self._state.buttons[2]
-
-    @property
-    def inner_led(self):
-        """
-        Current state of the inner LED
-        """
-        return self._state.lights[self._inner_led_idx]
-
-    @inner_led.setter
-    def inner_led(self, enable):
-        """
-        Control the inner LED.
-
-        @type enable: bool
-        @param enable: True to enable the light, False otherwise
-        """
-        self._inner_led.set_output(enable)
-
-    @property
-    def outer_led(self):
-        """
-        Current state of the outer LED.
-        """
-        return self._state.lights[self._outer_led_idx]
-
-    @outer_led.setter
-    def outer_led(self, enable):
-        """
-        Control the outer LED.
-
-        @type enable: bool
-        @param enable: True to enable the light, False otherwise
-        """
-        self._outer_led.set_output(enable)
+        return self._state.buttons[self._state.button_names.index(button_name)]
 
     def _on_state(self, msg):
         if not self._state:
             self._state = msg
-            try:
-                self._inner_led_idx = self._state.light_names.index("inner")
-            except:
-                pass
-            try:
-                self._outer_led_idx = self._state.light_names.index("outer")
-            except:
-                pass
-        if self._state == msg:
             return
 
         old_state = self._state
         self._state = msg
 
-        buttons = [self.button0_changed,
-                   self.button1_changed,
-                   self.button2_changed
+        buttons = [self.button_ok_changed,
+                   self.button_back_changed,
+                   self.button_show_changed,
+                   self.button_triangle_changed,
+                   self.button_circle_changed,
+                   self.button_square_changed
                    ]
         for i, signal in enumerate(buttons):
             if old_state.buttons[i] != msg.buttons[i]:
@@ -194,3 +132,4 @@ class Navigator(object):
                 self.wheel_changed(diff % 256)
             else:
                 self.wheel_changed(diff % (-256))
+
