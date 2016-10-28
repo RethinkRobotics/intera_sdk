@@ -370,7 +370,7 @@ class JointTrajectoryActionServer(object):
         rospy.logdebug("Trajectory Points: {0}".format(trajectory_points))
         for jnt_name, jnt_value in self._get_current_error(
                 joint_names, trajectory_points[0].positions):
-            if self._path_thresh[jnt_name] < jnt_value:
+            if abs(self._path_thresh[jnt_name]) < abs(jnt_value):
                 rospy.logerr(("{0}: Initial Trajectory point violates "
                              "threshold on joint {1} with delta {2} radians. "
                              "Aborting trajectory execution.").format(
