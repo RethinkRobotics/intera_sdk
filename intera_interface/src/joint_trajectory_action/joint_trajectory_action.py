@@ -368,23 +368,18 @@ class JointTrajectoryActionServer(object):
         rospy.loginfo("%s: Executing requested joint trajectory" %
                       (self._action_name,))
         rospy.logdebug("Trajectory Points: {0}".format(trajectory_points))
+        for jnt_name, jnt_value in self._get_current_error(
+                joint_names, trajectory_points[0].positions):
+            if self._path_thresh[jnt_name] < jnt_value:
+                rospy.logerr(("{0}: Initial Trajectory point violates "
+                             "threshold on joint {1} with delta {2} radians. "
+                             "Aborting trajectory execution.").format(
+                             self._action_name, jnt_name, jnt_value))
+                self._server.set_aborted()
+                return
+
         control_rate = rospy.Rate(self._control_rate)
-
         dimensions_dict = self._determine_dimensions(trajectory_points)
-
-        if num_points == 1:
-            # Add current position as trajectory point
-            first_trajectory_point = JointTrajectoryPoint()
-            first_trajectory_point.positions = self._get_current_position(joint_names)
-            # To preserve desired velocities and accelerations, copy them to the first
-            # trajectory point if the trajectory is only 1 point.
-            if dimensions_dict['velocities']:
-                first_trajectory_point.velocities = deepcopy(trajectory_points[0].velocities)
-            if dimensions_dict['accelerations']:
-                first_trajectory_point.accelerations = deepcopy(trajectory_points[0].accelerations)
-            first_trajectory_point.time_from_start = rospy.Duration(0)
-            trajectory_points.insert(0, first_trajectory_point)
-            num_points = len(trajectory_points)
 
         # Force Velocites/Accelerations to zero at the final timestep
         # if they exist in the trajectory
