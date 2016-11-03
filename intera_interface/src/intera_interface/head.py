@@ -46,10 +46,9 @@ from intera_interface import settings
 
 class Head(object):
     """
-    Interface class for the head on the Baxter Robot.
+    Interface class for the head on an Intera Robot.
 
-    Used to control the head pan angle and to enable/disable the head nod
-    action.
+    Used to control the head pan angle.
     """
     def __init__(self):
         """

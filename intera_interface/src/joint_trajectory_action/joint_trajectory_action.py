@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Trajectory Action Server
+Intera RSDK Joint Trajectory Action Server
 """
 import bisect
 from copy import deepcopy

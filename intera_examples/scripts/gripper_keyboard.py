@@ -106,8 +106,7 @@ def map_keyboard(limb):
 def main():
     """RSDK Gripper Example: Keyboard Control
 
-    Use your dev machine's keyboard to control and configure
-    Baxter's grippers.
+    Use your dev machine's keyboard to control and configure grippers.
 
     Run this example to command various gripper movements while
     adjusting gripper parameters, including calibration, velocity,

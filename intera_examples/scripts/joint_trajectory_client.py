@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Trajectory Action Client Example
+Intera SDK Joint Trajectory Action Client Example
 """
 import argparse
 import sys

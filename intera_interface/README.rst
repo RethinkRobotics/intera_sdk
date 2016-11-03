@@ -2,7 +2,7 @@ intera_interface
 ================
 
 Python interface classes and action servers for control of
-the Baxter Research Robot from Rethink Robotics
+the Intera Research Robot from Rethink Robotics
 
 Code & Tickets
 --------------
