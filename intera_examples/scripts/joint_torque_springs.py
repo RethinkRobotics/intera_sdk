@@ -27,11 +27,13 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """
-Intera RSDK Joint Torque Example: joint springs
+Intera SDK Joint Torque Example: joint springs
 """
 
-import rospy
+import argparse
+import importlib
 
+import rospy
 from dynamic_reconfigure.server import (
     Server,
 )
@@ -40,11 +42,10 @@ from std_msgs.msg import (
 )
 
 import intera_interface
-
+from intera_interface import CHECK_VERSION
 from intera_examples.cfg import (
     JointSpringsExampleConfig,
 )
-from intera_interface import CHECK_VERSION
 
 
 class JointSprings(object):
@@ -87,8 +88,8 @@ class JointSprings(object):
 
     def _update_parameters(self):
         for joint in self._limb.joint_names():
-            self._springs[joint] = self._dyn.config[joint + '_spring_stiffness']
-            self._damping[joint] = self._dyn.config[joint + '_damping_coefficient']
+            self._springs[joint] = self._dyn.config[joint[-2:] + '_spring_stiffness']
+            self._damping[joint] = self._dyn.config[joint[-2:] + '_damping_coefficient']
 
     def _update_forces(self):
         """
@@ -172,11 +173,31 @@ def main():
     constant and damping coefficient for each joint using
     dynamic_reconfigure.
     """
+    # Querying the parameter server to determine Robot model and limb name(s)
+    rp = intera_interface.RobotParams()
+    valid_limbs = rp.get_limb_names()
+    if not valid_limbs:
+        rp.log_message(("Cannot detect any limb parameters on this robot. "
+                        "Exiting."), "ERROR")
+    robot_name = intera_interface.RobotParams().get_robot_name().lower().capitalize()
+    # Parsing Input Arguments
+    arg_fmt = argparse.ArgumentDefaultsHelpFormatter
+    parser = argparse.ArgumentParser(formatter_class=arg_fmt)
+    parser.add_argument(
+        "-l", "--limb", dest="limb", default=valid_limbs[0],
+        choices=valid_limbs,
+        help='limb on which to attach joint springs'
+        )
+    args = parser.parse_args(rospy.myargv()[1:])
+    # Grabbing Robot-specific parameters for Dynamic Reconfigure
+    config_name = ''.join([robot_name,"JointSpringsExampleConfig"])
+    config_module = "intera_examples.cfg"
+    cfg = importlib.import_module('.'.join([config_module,config_name]))
+    # Starting node connection to ROS
     print("Initializing node... ")
-    rospy.init_node("rsdk_joint_torque_springs")
-    dynamic_cfg_srv = Server(JointSpringsExampleConfig,
-                             lambda config, level: config)
-    js = JointSprings(dynamic_cfg_srv)
+    rospy.init_node("sdk_joint_torque_springs_{0}".format(args.limb))
+    dynamic_cfg_srv = Server(cfg, lambda config, level: config)
+    js = JointSprings(dynamic_cfg_srv, limb=args.limb)
     # register shutdown callback
     rospy.on_shutdown(js.clean_shutdown)
     js.move_to_neutral()
