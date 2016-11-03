@@ -46,7 +46,7 @@ def xacro_parse(filename):
 def send_urdf(parent_link, root_joint, urdf_filename):
     """
     Send the URDF Fragment located at the specified path to
-    modify the electric gripper on Baxter.
+    modify the electric gripper in intera_tools_description.
 
     @param parent_link: parent link to attach the URDF fragment to
                         (usually <side>_hand)

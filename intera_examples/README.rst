@@ -62,7 +62,7 @@ intera_examples Repository Overview
      +-- cfg/                                      dynamic reconfigure example configs
 
 
-Other Baxter Repositories
+Other Intera SDK Repositories
 -------------------------
 
 +------------------+-----------------------------------------------------+

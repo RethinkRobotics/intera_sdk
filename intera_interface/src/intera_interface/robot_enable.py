@@ -187,7 +187,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
     def version_check(self):
         """
         Verifies the version of the software running on the robot is
-        compatible with this local version of the Baxter RSDK.
+        compatible with this local version of the Intera SDK.
 
         Currently uses the variables in intera_interface.settings and
         can be overridden for all default examples by setting CHECK_VERSION
