@@ -19,7 +19,7 @@ find_package(catkin
 catkin_python_setup()
 
 generate_dynamic_reconfigure_options(
-  cfg/JointSpringsExample.cfg
+  cfg/SawyerJointSpringsExample.cfg
 )
 
 catkin_package(
