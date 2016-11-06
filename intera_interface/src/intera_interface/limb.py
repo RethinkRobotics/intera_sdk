@@ -46,7 +46,7 @@ from intera_core_msgs.msg import (
     EndpointState,
     CollisionDetectionState,
 )
-from intera_interface import settings
+import settings
 from robot_params import RobotParams
 
 

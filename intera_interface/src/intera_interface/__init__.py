@@ -31,6 +31,7 @@ from .gripper import Gripper
 from .cuff import Cuff
 from .head import Head
 from .head_display import HeadDisplay
+from .lights import Lights
 from .limb import Limb
 from .navigator import Navigator
 from .robot_enable import RobotEnable
