@@ -25,111 +25,138 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import threading
+import uuid
+
 import rospy
 
 import intera_dataflow
-
-from intera_core_msgs.msg import NavigatorState
-from intera_interface import robot_params
+from io_interface import IODeviceInterface
 
 class Navigator(object):
     """
     Interface class for a Navigator on the Intera Research Robot.
 
-    Inputs:
-        Button ok       - press wheel
-        Button back     - press back
-        Button show     - press rethink
-        Button triangle - press triangle
-        Button circle   - press circle
-        Button square   - press square
-        Scroll wheel - 0-255
-
     Signals:
-        button_ok_changed       - True/False
-        button_back_changed     - True/False
-        button_show_changed     - True/False
-        button_triangle_changed - True/False
-        button_circle_changed   - True/False
-        button_square_changed   - True/False
-        wheel_changed   - New wheel value
+        button_square_changed   - OFF/CLICK/LONG_PRESS/DOUBLE_CLICK
+        button_ok_changed
+        button_back_changed
+        button_show_changed
+        button_triangle_changed
+        button_circle_changed
+        wheel_changed           - Wheel value
 
-    Valid identifiers:
-        right, head, torso
     """
 
-    def __init__(self, location):
+    def __init__(self):
         """
         Constructor.
 
-        @type location: str
-        @param location: body location (prefix) of Navigator to control.
-
-        Valid locations are: right, head, torso
         """
-        self.locations = robot_params.RobotParams().get_robot_assemblies()
-        if not location in self.locations:
-            raise AttributeError("Invalid Navigator name '%s'" % (location,))
-        self._id = location
-        self._state = None
-        self.button_ok_changed = intera_dataflow.Signal()
-        self.button_back_changed = intera_dataflow.Signal()
-        self.button_show_changed = intera_dataflow.Signal()
-        self.button_triangle_changed = intera_dataflow.Signal()
-        self.button_circle_changed = intera_dataflow.Signal()
-        self.button_square_changed = intera_dataflow.Signal()
-        self.wheel_changed = intera_dataflow.Signal()
+        self._navigator_io = IODeviceInterface("robot", "navigator")
+        self._button_lookup = {0:'OFF',        1:'CLICK',
+                               2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
+        self._threads = dict()
+        self._signal_items = dict()
+        self._callback_functions = dict()
 
-        nav_state_topic = 'robot/navigators/{0}_navigator/state'.format(self._id)
-        self._state_sub = rospy.Subscriber(
-            nav_state_topic,
-            NavigatorState,
-            self._on_state)
 
-        init_err_msg = ("Navigator init failed to get current state from %s" %
-                        (nav_state_topic,))
-        intera_dataflow.wait_for(lambda: self._state != None,
-                                 timeout_msg=init_err_msg)
-
-    @property
-    def wheel(self):
+    def list_all_items(self):
         """
-        Current state of the wheel
-        """
-        return self._state.wheel
+        Returns a list of strings describing all available navigator items
 
-    @property
-    def button_state(self, button_name):
+        @rtype: list
+        @return: a list of string representing navigator items
+                 Each item name of the following format:
+                 '<assembly>_button_<function>'
+        """
+        return self._navigator_io.list_signal_names()
+
+
+    def get_wheel_state(self, wheel_name):
+        """
+        Current state of the wheel providing wheel name
+        @type: str
+        @param: the wheel name
+
+        @rtype: uint
+        @return: an integer representing how far the wheel has turned
+        """
+        return self._get_item_state(wheel_name)
+
+    def get_button_state(self, button_name):
         """
         Current button state by providing button name
         @type: str
         @param: the button name
+
+        @rtype: str
+        @return: a string representing the current button state
+                 Valid states:
+                 ['OFF', 'CLICK', 'LONG_PRESS', 'DOUBLE_CLICK']
         """
-        return self._state.buttons[self._state.button_names.index(button_name)]
+        return self._get_item_state(button_name)
 
-    def _on_state(self, msg):
-        if not self._state:
-            self._state = msg
-            return
+    def register_callback(self, callback_function, item_name, poll_rate=10):
+        """
+        Registers a supplied callback to a change in state of supplied
+        item_name's value. Spawns a thread that will call the callback with
+        the updated value.
 
-        old_state = self._state
-        self._state = msg
+        @type: function
+        @param: function handle for callback function
+        @type: str
+        @param: the item name (button or wheel) to poll for value change
+        @type: int
+        @param: the rate at which to poll for a value change (in a separate
+                thread)
 
-        buttons = [self.button_ok_changed,
-                   self.button_back_changed,
-                   self.button_show_changed,
-                   self.button_triangle_changed,
-                   self.button_circle_changed,
-                   self.button_square_changed
-                   ]
-        for i, signal in enumerate(buttons):
-            if old_state.buttons[i] != msg.buttons[i]:
-                signal(msg.buttons[i])
+        @rtype: str
+        @return: callback_id retuned if the callback was registered, and an
+                 empty string if the requested item_name does not exist in the
+                 Navigator
+        """
+        if item_name in self.list_all_items():
+            callback_id = uuid.uuid4()
+            self._signal_items[callback_id] = intera_dataflow.Signal()
+            def signal_spinner():
+                old_state = self._get_item_state(item_name)
+                r = rospy.Rate(poll_rate)
+                while not rospy.is_shutdown():
+                  new_state = self._get_item_state(item_name)
+                  if new_state != old_state:
+                      self._signal_items[callback_id](new_state)
+                  old_state = new_state
+                  r.sleep()
+            self._signal_items[callback_id].connect(callback_function)
+            t = threading.Thread(target=signal_spinner)
+            t.daemon = True
+            t.start()
+            self._threads[callback_id] = t
+            self._callback_functions[callback_id] = callback_function
+            return callback_id
+        else:
+            return str()
 
-        if old_state.wheel != msg.wheel:
-            diff = msg.wheel - old_state.wheel
-            if abs(diff % 256) < 127:
-                self.wheel_changed(diff % 256)
-            else:
-                self.wheel_changed(diff % (-256))
+    def deregister_callback(self, callback_id):
+        """
+        Deregisters a callback based on the supplied callback_id.
 
+        @type: str
+        @param: the callback_id string to deregister
+
+        @rtype: bool
+        @return: returns bool True if the callback was successfully
+                 deregistered, and False otherwise.
+        """
+        if callback_id in self._threads.keys():
+            self._signal_items[callback_id].disconnect(
+                              self._callback_functions[callback_id])
+            return True
+        else:
+            return False
+
+    def _get_item_state(self, item_name):
+        state = self._navigator_io.get_signal_value(item_name)
+        state = self._button_lookup[state] if 'wheel' not in item_name else state
+        return state
