@@ -43,7 +43,7 @@ import intera_dataflow
 from intera_core_msgs.msg import (
     AssemblyState,
 )
-from intera_interface import settings
+import settings
 
 
 class RobotEnable(object):

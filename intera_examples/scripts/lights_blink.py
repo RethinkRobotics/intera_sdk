@@ -31,67 +31,62 @@ import argparse
 
 import rospy
 
-import intera_interface.digital_io as DIO
+from intera_interface import Lights
 
 
-def test_interface(io_component='left_outer_light'):
-    """Blinks a Digital Output on then off."""
-    rospy.loginfo("Blinking Digital Output: %s", io_component)
-    b = DIO.DigitalIO(io_component)
-
-    print "Initial state: ", b.state
-
+def test_light_interface(light_name='head_green_light'):
+    """Blinks a desired Light on then off."""
+    l = Lights()
+    rospy.loginfo("All available lights on this robot:\n{0}\n".format(
+                                               ', '.join(l.list_all_lights())))
+    rospy.loginfo("Blinking Light: {0}".format(light_name))
+    on_off = lambda x: 'ON' if l.get_light_state(x) else 'OFF'
+    rospy.loginfo("Initial state: {0}".format(on_off(light_name)))
     # turn on light
-    b.set_output(True)
+    l.set_light_state(light_name, True)
     rospy.sleep(1)
-    print "New state: ", b.state
-
+    rospy.loginfo("New state: {0}".format(on_off(light_name)))
+    # turn off light
+    l.set_light_state(light_name, False)
+    rospy.sleep(1)
+    rospy.loginfo("New state: {0}".format(on_off(light_name)))
+    # turn on light
+    l.set_light_state(light_name, True)
+    rospy.sleep(1)
+    rospy.loginfo("New state: {0}".format(on_off(light_name)))
     # reset output
-    b.set_output(False)
+    l.set_light_state(light_name, False)
     rospy.sleep(1)
-    print "Final state:", b.state
+    rospy.loginfo("Final state: {0}".format(on_off(light_name)))
 
 
 def main():
-    """RSDK Digital IO Example: Blink
+    """Intera SDK Lights Example: Blink
 
-    Turns the output of a DigitalIO component on then off again
+    Toggles the Lights interface on then off again
     while printing the state at each step. Simple demonstration
-    of using the intera_interface.DigitalIO class.
+    of using the intera_interface.Lights class.
 
-    Run this example with default arguments and watch the light
-    on the left arm Navigator blink on and off while the console
-    echos the state. Use the component_id argument or ROS Parameter
-    to change the DigitalIO component used.
+    Run this example with default arguments and watch the green
+    light on the head blink on and off while the console
+    echos the state. Use the light names from Lights.list_all_lights()
+    to change lights to toggle.
     """
-    epilog = """
-ROS Parameters:
-  ~component_id        - name of DigitalIO component to use
-
-Baxter DigitalIO
-    Note that 'DigitalIO' components are only those that use
-    the custom ROS Messages intera_core_msgs/DigitalIOState
-    and intera_core_msgs/DigitalOutputCommand.
-
-    Component names can be found on the Wiki, or by echoing
-    the names field of the digital_io_states topic:
-      $ rostopic echo -n 1 /robot/digital_io_states/names
-    """
+    epilog = """ Intera Interface Lights """
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__,
                                      epilog=epilog)
     parser.add_argument(
-        '-c', '--component', dest='component_id',
-        default='left_outer_light',
-        help=('name of Digital IO component to use'
-              ' (default: left_outer_light)')
+        '-l', '--light_name', dest='light_name',
+        default='head_green_light',
+        help=('name of Light component to use'
+              ' (default: head_green_light)')
     )
     args = parser.parse_args(rospy.myargv()[1:])
 
-    rospy.init_node('rsdk_digital_io_blink', anonymous=True)
-    io_component = rospy.get_param('~component_id', args.component_id)
-    test_interface(io_component)
+    rospy.init_node('sdk_lights_blink', anonymous=True)
+    test_light_interface(args.light_name)
 
 if __name__ == '__main__':
     main()
