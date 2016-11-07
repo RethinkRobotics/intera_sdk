@@ -24,11 +24,9 @@ intera_examples Repository Overview
      +-- scripts/                                  example program executables
      |   +-- camera_display.py
      |   +-- fk_service_client.py 
-     |   +-- gripper_action_client.py
      |   +-- gripper_cuff_control.py
      |   +-- gripper_joystick.py
      |   +-- gripper_keyboard.py
-     |   +-- head_action_client.py
      |   +-- head_display_image.py
      |   +-- head_wobbler.py
      |   +-- ik_service_client.py
@@ -46,7 +44,6 @@ intera_examples Repository Overview
      |   +-- navigator_io.py
      |
      +-- launch/                                   example program launch scripts
-     |   +-- gripper_action_client.launch
      |   +-- gripper_joystick.launch
      |   +-- joint_position_joystick.launch
      |   +-- joint_trajectory_client.launch

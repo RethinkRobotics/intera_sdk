@@ -21,8 +21,6 @@ generate_dynamic_reconfigure_options(
   cfg/SawyerPositionJointTrajectoryActionServer.cfg
   cfg/SawyerVelocityJointTrajectoryActionServer.cfg
   cfg/SawyerPositionFFJointTrajectoryActionServer.cfg
-  cfg/GripperActionServer.cfg
-  cfg/HeadActionServer.cfg
 )
 
 add_dependencies(${PROJECT_NAME}_gencfg intera_core_msgs_generate_messages_py)
