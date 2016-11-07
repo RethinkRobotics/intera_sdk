@@ -25,172 +25,138 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import threading
+import uuid
+
 import rospy
 
 import intera_dataflow
-
-from intera_core_msgs.msg import (
-    NavigatorState,
-)
-
-from intera_interface import (
-    digital_io,
-)
+from io_interface import IODeviceInterface
 
 class Navigator(object):
     """
-    Interface class for a Navigator on the Baxter robot.
-
-    Inputs:
-        Button 0     - press wheel
-        Button 1     - above wheel
-        Button 2     - below wheel
-        Scroll wheel - 0-255
-
-    Outputs:
-        Inner LED
-        Outer LED
+    Interface class for a Navigator on the Intera Research Robot.
 
     Signals:
-        button0_changed - True/False
-        button1_changed - True/False
-        button2_changed - True/False
-        wheel_changed   - New wheel value
+        button_square_changed   - OFF/CLICK/LONG_PRESS/DOUBLE_CLICK
+        button_ok_changed
+        button_back_changed
+        button_show_changed
+        button_triangle_changed
+        button_circle_changed
+        wheel_changed           - Wheel value
 
-    Valid identifiers:
-        left, right, torso_left, torso_right
     """
 
-    __LOCATIONS = ('left', 'right', 'torso_left', 'torso_right')
-
-    def __init__(self, location):
+    def __init__(self):
         """
         Constructor.
 
-        @type location: str
-        @param location: body location (prefix) of Navigator to control.
-
-        Valid locations are in L{Navigator.__LOCATIONS}::
-          left, right, torso_left, torso_right
         """
-        if not location in self.__LOCATIONS:
-            raise AttributeError("Invalid Navigator name '%s'" % (location,))
-        self._id = location
-        self._state = None
-        self.button0_changed = intera_dataflow.Signal()
-        self.button1_changed = intera_dataflow.Signal()
-        self.button2_changed = intera_dataflow.Signal()
-        self.wheel_changed = intera_dataflow.Signal()
+        self._navigator_io = IODeviceInterface("robot", "navigator")
+        self._button_lookup = {0:'OFF',        1:'CLICK',
+                               2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
+        self._threads = dict()
+        self._signal_items = dict()
+        self._callback_functions = dict()
 
-        nav_state_topic = 'robot/navigators/{0}_navigator/state'.format(self._id)
-        self._state_sub = rospy.Subscriber(
-            nav_state_topic,
-            NavigatorState,
-            self._on_state)
 
-        self._inner_led = digital_io.DigitalIO(
-            '%s_inner_light' % (self._id,))
-        self._inner_led_idx = 0
-
-        self._outer_led = digital_io.DigitalIO(
-            '%s_outer_light' % (self._id,))
-        self._outer_led_idx = 1
-
-        init_err_msg = ("Navigator init failed to get current state from %s" %
-                        (nav_state_topic,))
-        intera_dataflow.wait_for(lambda: self._state != None,
-                                 timeout_msg=init_err_msg)
-
-    @property
-    def wheel(self):
+    def list_all_items(self):
         """
-        Current state of the wheel
-        """
-        return self._state.wheel
+        Returns a list of strings describing all available navigator items
 
-    @property
-    def button0(self):
+        @rtype: list
+        @return: a list of string representing navigator items
+                 Each item name of the following format:
+                 '<assembly>_button_<function>'
         """
-        Current state of button 0
-        """
-        return self._state.buttons[0]
+        return self._navigator_io.list_signal_names()
 
-    @property
-    def button1(self):
-        """
-        Current state of button 1
-        """
-        return self._state.buttons[1]
 
-    @property
-    def button2(self):
+    def get_wheel_state(self, wheel_name):
         """
-        Current state of button 2
+        Current state of the wheel providing wheel name
+        @type: str
+        @param: the wheel name
+
+        @rtype: uint
+        @return: an integer representing how far the wheel has turned
         """
-        return self._state.buttons[2]
+        return self._get_item_state(wheel_name)
 
-    @property
-    def inner_led(self):
+    def get_button_state(self, button_name):
         """
-        Current state of the inner LED
+        Current button state by providing button name
+        @type: str
+        @param: the button name
+
+        @rtype: str
+        @return: a string representing the current button state
+                 Valid states:
+                 ['OFF', 'CLICK', 'LONG_PRESS', 'DOUBLE_CLICK']
         """
-        return self._state.lights[self._inner_led_idx]
+        return self._get_item_state(button_name)
 
-    @inner_led.setter
-    def inner_led(self, enable):
+    def register_callback(self, callback_function, item_name, poll_rate=10):
         """
-        Control the inner LED.
+        Registers a supplied callback to a change in state of supplied
+        item_name's value. Spawns a thread that will call the callback with
+        the updated value.
 
-        @type enable: bool
-        @param enable: True to enable the light, False otherwise
+        @type: function
+        @param: function handle for callback function
+        @type: str
+        @param: the item name (button or wheel) to poll for value change
+        @type: int
+        @param: the rate at which to poll for a value change (in a separate
+                thread)
+
+        @rtype: str
+        @return: callback_id retuned if the callback was registered, and an
+                 empty string if the requested item_name does not exist in the
+                 Navigator
         """
-        self._inner_led.set_output(enable)
+        if item_name in self.list_all_items():
+            callback_id = uuid.uuid4()
+            self._signal_items[callback_id] = intera_dataflow.Signal()
+            def signal_spinner():
+                old_state = self._get_item_state(item_name)
+                r = rospy.Rate(poll_rate)
+                while not rospy.is_shutdown():
+                  new_state = self._get_item_state(item_name)
+                  if new_state != old_state:
+                      self._signal_items[callback_id](new_state)
+                  old_state = new_state
+                  r.sleep()
+            self._signal_items[callback_id].connect(callback_function)
+            t = threading.Thread(target=signal_spinner)
+            t.daemon = True
+            t.start()
+            self._threads[callback_id] = t
+            self._callback_functions[callback_id] = callback_function
+            return callback_id
+        else:
+            return str()
 
-    @property
-    def outer_led(self):
+    def deregister_callback(self, callback_id):
         """
-        Current state of the outer LED.
+        Deregisters a callback based on the supplied callback_id.
+
+        @type: str
+        @param: the callback_id string to deregister
+
+        @rtype: bool
+        @return: returns bool True if the callback was successfully
+                 deregistered, and False otherwise.
         """
-        return self._state.lights[self._outer_led_idx]
+        if callback_id in self._threads.keys():
+            self._signal_items[callback_id].disconnect(
+                              self._callback_functions[callback_id])
+            return True
+        else:
+            return False
 
-    @outer_led.setter
-    def outer_led(self, enable):
-        """
-        Control the outer LED.
-
-        @type enable: bool
-        @param enable: True to enable the light, False otherwise
-        """
-        self._outer_led.set_output(enable)
-
-    def _on_state(self, msg):
-        if not self._state:
-            self._state = msg
-            try:
-                self._inner_led_idx = self._state.light_names.index("inner")
-            except:
-                pass
-            try:
-                self._outer_led_idx = self._state.light_names.index("outer")
-            except:
-                pass
-        if self._state == msg:
-            return
-
-        old_state = self._state
-        self._state = msg
-
-        buttons = [self.button0_changed,
-                   self.button1_changed,
-                   self.button2_changed
-                   ]
-        for i, signal in enumerate(buttons):
-            if old_state.buttons[i] != msg.buttons[i]:
-                signal(msg.buttons[i])
-
-        if old_state.wheel != msg.wheel:
-            diff = msg.wheel - old_state.wheel
-            if abs(diff % 256) < 127:
-                self.wheel_changed(diff % 256)
-            else:
-                self.wheel_changed(diff % (-256))
+    def _get_item_state(self, item_name):
+        state = self._navigator_io.get_signal_value(item_name)
+        state = self._button_lookup[state] if 'wheel' not in item_name else state
+        return state

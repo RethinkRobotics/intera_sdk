@@ -28,7 +28,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Intera RSDK Joint Position Waypoints Example
+Intera SDK Joint Position Waypoints Example
 """
 import argparse
 import sys
@@ -62,7 +62,7 @@ class Waypoints(object):
         self._rs.enable()
 
         # Create Navigator I/O
-        self._navigator_io = intera_interface.Navigator(self._arm)
+        self._navigator = intera_interface.Navigator()
 
     def _record_waypoint(self, value):
         """
@@ -70,7 +70,7 @@ class Waypoints(object):
 
         Navigator 'OK/Wheel' button callback
         """
-        if value:
+        if value != 'OFF':
             print("Waypoint Recorded")
             self._waypoints.append(self._limb.joint_angles())
 
@@ -81,7 +81,8 @@ class Waypoints(object):
         Navigator 'Rethink' button callback
         """
         # On navigator Rethink button press, stop recording
-        if value:
+        if value != 'OFF':
+            print("Recording Stopped")
             self._is_recording = False
 
     def record(self):
@@ -94,22 +95,22 @@ class Waypoints(object):
         "joint position waypoint.")
         print("Press Navigator 'Rethink' button when finished recording "
               "waypoints to begin playback")
-        # Connect Navigator I/O signals
+        # Connect Navigator callbacks
         # Navigator scroll wheel button press
-        self._navigator_io.button0_changed.connect(self._record_waypoint)
+        ok_id = self._navigator.register_callback(self._record_waypoint, 'right_button_ok')
         # Navigator Rethink button press
-        self._navigator_io.button2_changed.connect(self._stop_recording)
+        show_id = self._navigator.register_callback(self._stop_recording, 'right_button_show')
 
         # Set recording flag
         self._is_recording = True
 
         # Loop until waypoints are done being recorded ('Rethink' Button Press)
-        while self._is_recording and not rospy.is_shutdown():
+        while not rospy.is_shutdown() and self._is_recording:
             rospy.sleep(1.0)
 
-        # We are now done with the navigator I/O signals, disconnecting them
-        self._navigator_io.button0_changed.disconnect(self._record_waypoint)
-        self._navigator_io.button2_changed.disconnect(self._stop_recording)
+        # We are now done with the navigator callbacks, disconnecting them
+        self._navigator.deregister_callback(ok_id)
+        self._navigator.deregister_callback(show_id)
 
     def playback(self):
         """
@@ -149,7 +150,7 @@ class Waypoints(object):
 
 
 def main():
-    """RSDK Joint Position Waypoints Example
+    """SDK Joint Position Waypoints Example
 
     Records joint positions each time the navigator 'OK/wheel'
     button is pressed.
@@ -171,7 +172,7 @@ def main():
     args = parser.parse_args(rospy.myargv()[1:])
 
     print("Initializing node... ")
-    rospy.init_node("rsdk_joint_position_waypoints")
+    rospy.init_node("sdk_joint_position_waypoints", anonymous=True)
 
     waypoints = Waypoints(args.speed, args.accuracy)
 

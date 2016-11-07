@@ -35,44 +35,38 @@ import rospy
 import intera_interface
 
 
-def blink():
-    navs = (
-        intera_interface.Navigator('left'),
-        intera_interface.Navigator('right'),
-        intera_interface.Navigator('torso_left'),
-        intera_interface.Navigator('torso_right'),)
+def echo_input(nav_name='right'):
+    def back_pressed(v):
+        print ("Button 'Back': {0}".format(v))
 
-    print ("Blinking LED's for 10 seconds")
-    rate = rospy.Rate(10)
-    i = 0
-    while not rospy.is_shutdown() and i < 100:
-        for nav in navs:
-            nav.inner_led = not nav.inner_led
-            nav.outer_led = not nav.outer_led
-        rate.sleep()
-        i += 1
+    def rethink_pressed(v):
+        print ("Button 'Rethink': {0}".format(v))
 
+    def circle_pressed(v):
+        print ("Button 'Circle': {0}".format(v))
 
-def echo_input():
-    def b0_pressed(v):
-        print ("Button 0: %s" % (v,))
+    def square_pressed(v):
+        print ("Button 'Square': {0}".format(v))
 
-    def b1_pressed(v):
-        print ("Button 1: %s" % (v,))
+    def x_pressed(v):
+        print ("Button 'X': {0}".format(v))
 
-    def b2_pressed(v):
-        print ("Button 2: %s" % (v,))
+    def ok_pressed(v):
+        print ("Button 'OK': {0}".format(v))
 
     def wheel_moved(v):
-        print ("Wheel Increment: %d, New Value: %s" % (v, nav.wheel))
+        print ("Wheel value: {0}".format(v))
 
-    nav = intera_interface.Navigator('left')
-    nav.button0_changed.connect(b0_pressed)
-    nav.button1_changed.connect(b1_pressed)
-    nav.button2_changed.connect(b2_pressed)
-    nav.wheel_changed.connect(wheel_moved)
+    nav = intera_interface.Navigator()
+    nav.register_callback(back_pressed, '_'.join([nav_name, 'button_back']))
+    nav.register_callback(rethink_pressed, '_'.join([nav_name, 'button_show']))
+    nav.register_callback(circle_pressed, '_'.join([nav_name, 'button_circle']))
+    nav.register_callback(square_pressed, '_'.join([nav_name, 'button_square']))
+    nav.register_callback(x_pressed, '_'.join([nav_name, 'button_triangle']))
+    nav.register_callback(ok_pressed, '_'.join([nav_name, 'button_ok']))
+    nav.register_callback(wheel_moved, '_'.join([nav_name, 'wheel']))
 
-    print ("Press input buttons on the left navigator, "
+    print ("Press input buttons on the right navigator, "
            "input will be echoed here.")
 
     rate = rospy.Rate(1)
@@ -83,36 +77,27 @@ def echo_input():
 
 
 def main():
-    """RSDK Navigator Input/Output Example
+    """SDK Navigator Example
 
-    Demonstrates Navigator output by blinking the lights, or
-    Navigator input by echoing input values from wheels and
+    Demonstrates Navigator by echoing input values from wheels and
     buttons.
 
-    Run this example, selecting either the input or output action
-    with the corresponding arguments, then follow the instructions
-    on screen.
-
-    Uses the intera_interface.Navigator class to interface with the
-    four Navigator button/LED controls. Also shows a nice example of
-    using the button_changed Signal feature.
+    Uses the intera_interface.Navigator class to demonstrate an
+    example of using the register_callback feature.
+        
+     Shows Navigator input of the arm for 10 seconds.
     """
-    arg_fmt = argparse.RawDescriptionHelpFormatter
-    parser = argparse.ArgumentParser(formatter_class=arg_fmt,
-                                     description=main.__doc__)
-    action_grp = parser.add_mutually_exclusive_group(required=True)
-    action_grp.add_argument(
-        '-b', '--blink', dest='action', action='store_const', const=blink,
-        help='Blink navigator lights for 10 seconds'
-    )
-    action_grp.add_argument(
-        '-i', '--input', dest='action', action='store_const', const=echo_input,
-        help='Show input of left arm for 10 seconds'
-    )
+    arg_fmt = argparse.ArgumentDefaultsHelpFormatter
+    parser = argparse.ArgumentParser(formatter_class=arg_fmt)
+    parser.add_argument(
+        "-n", "--navigator", dest="nav_name", default="right",
+        choices=["right", "head"],
+        help='Navigator on which to run example'
+        )
     args = parser.parse_args(rospy.myargv()[1:])
 
-    rospy.init_node('rsdk_navigator_io', anonymous=True)
-    args.action()
+    rospy.init_node('sdk_navigator', anonymous=True)
+    echo_input(args.nav_name)
     return 0
 
 if __name__ == '__main__':
