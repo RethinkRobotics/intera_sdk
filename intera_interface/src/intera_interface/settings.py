@@ -29,10 +29,10 @@ JOINT_ANGLE_TOLERANCE = 0.008726646
 HEAD_PAN_ANGLE_TOLERANCE = 0.1
 
 ## Versioning
-SDK_VERSION = '5.0.0'
+SDK_VERSION = '5.0.4'
 CHECK_VERSION = True
 # Version Compatibility Maps - {current: compatible}
-VERSIONS_SDK2ROBOT = {'5.0.0': ['5.0.0', '5.0.1', '5.0.2', '5.0.3']}
+VERSIONS_SDK2ROBOT = {'5.0.4': ['5.0.3', '5.0.4']}
 VERSIONS_SDK2GRIPPER = {'5.0.0':
                           {
                            'warn': '2014/5/20 00:00:00',  # Version 1.0.0
