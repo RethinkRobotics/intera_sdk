@@ -39,8 +39,12 @@ from intera_core_msgs.msg import (
 
 class DigitalIO(object):
     """
+    DEPRECATION WARNING: This interface will likely be removed in
+    the future. Transition to using the IO Framework and the wrapper
+    classes: gripper.py, cuff.py, camera.py
+
     Interface class for a simple Digital Input and/or Output on the
-    Baxter robot
+    Intera robots.
 
     Input
       - read input state
