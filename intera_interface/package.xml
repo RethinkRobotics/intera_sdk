@@ -3,8 +3,8 @@
   <name>intera_interface</name>
   <version>5.0.4</version>
   <description>
-    Convenient python interface classes for control
-    of the Intera-enable Robots from Rethink Robotics.
+    Python interface classes for control of
+    Intera-enable Robots from Rethink Robotics.
   </description>
 
   <maintainer email="rsdk.support@rethinkrobotics.com">
@@ -40,6 +40,7 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>trajectory_msgs</run_depend>
+  <run_depend>xacro</run_depend>
 
   <export>
     <rosdoc config="rosdoc.yaml" />

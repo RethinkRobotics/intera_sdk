@@ -23,7 +23,6 @@ intera_examples Repository Overview
      |
      +-- scripts/                                  example program executables
      |   +-- camera_display.py
-     |   +-- digital_io_blink.py
      |   +-- fk_service_client.py 
      |   +-- gripper_action_client.py
      |   +-- gripper_cuff_control.py
@@ -43,8 +42,8 @@ intera_examples Repository Overview
      |   +-- joint_trajectory_file_playback.py
      |   +-- joint_velocity_puppet.py
      |   +-- joint_velocity_wobbler.py
+     |   +-- lights_blink.py
      |   +-- navigator_io.py
-     |   +-- send_urdf_fragment.py
      |
      +-- launch/                                   example program launch scripts
      |   +-- gripper_action_client.launch
