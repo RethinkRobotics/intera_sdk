@@ -40,14 +40,10 @@ intera_interface Repository Overview
      |   +-- intera_control/                   generic control utilities
      |   +-- intera_dataflow/                  timing/program flow utilities
      |   +-- joint_trajectory_action/          joint trajectory action implementation
-     |   +-- gripper_action/                   gripper action implementation
-     |   +-- head_action/                      head action implementation
      |
      +-- scripts/                              utility executable scripts
      |   +-- calibrate_arm.py                  arm calibration action client
      |   +-- enable_robot.py                   enable / disable / reset the robot
-     |   +-- gripper_action_server.py          gripper action server
-     |   +-- head_action_server.py             head action server
      |   +-- home_joints.py                    script to home the joints on the robot
      |   +-- joint_trajectory_action_server.py trajectory action server for use with MoveIt
      |   +-- send_urdf_fragment.py             send URDF fragment to update robot's URDF
