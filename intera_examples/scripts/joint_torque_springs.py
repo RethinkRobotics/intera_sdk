@@ -34,19 +34,11 @@ import argparse
 import importlib
 
 import rospy
-from dynamic_reconfigure.server import (
-    Server,
-)
-from std_msgs.msg import (
-    Empty,
-)
+from dynamic_reconfigure.server import Server
+from std_msgs.msg import Empty
 
 import intera_interface
 from intera_interface import CHECK_VERSION
-from intera_examples.cfg import (
-    JointSpringsExampleConfig,
-)
-
 
 class JointSprings(object):
     """
