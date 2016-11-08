@@ -27,7 +27,7 @@
 
 import rospy
 import intera_dataflow
-from io_interface import IODeviceInterface
+from intera_io import IODeviceInterface
 from intera_core_msgs.msg import IONodeConfiguration
 
 

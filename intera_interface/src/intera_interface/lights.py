@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import rospy
-from io_interface import IODeviceInterface
+from intera_io import IODeviceInterface
 
 
 class Lights(object):

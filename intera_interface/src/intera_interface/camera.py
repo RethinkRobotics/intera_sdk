@@ -28,7 +28,7 @@
 
 import rospy
 from sensor_msgs.msg import Image
-from io_interface import IODeviceInterface
+from intera_io import IODeviceInterface
 from robot_params import RobotParams
 
 class Cameras(object):
