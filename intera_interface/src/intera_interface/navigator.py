@@ -31,7 +31,7 @@ import uuid
 import rospy
 
 import intera_dataflow
-from io_interface import IODeviceInterface
+from intera_io import IODeviceInterface
 
 class Navigator(object):
     """
