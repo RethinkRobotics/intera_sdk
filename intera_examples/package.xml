@@ -40,5 +40,6 @@
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>intera_core_msgs</run_depend>
   <run_depend>intera_interface</run_depend>
+  <run_depend>joystick_drivers</run_depend>
 
 </package>
