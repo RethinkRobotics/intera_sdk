@@ -1,7 +1,7 @@
 <launch>
 
   <!-- Joystick Type Argument: {xbox, ps3, logitech} -->
-  <arg name="joystick" />
+  <arg name="joystick" default="xbox"/>
 
   <!-- Joystick Device Argument-->
   <arg name="dev" default="/dev/input/js0" />
@@ -13,7 +13,7 @@
   </node>
 
   <!-- Run the Gripper Joystick Example -->
-  <node name="rsdk_gripper_control_joystick" pkg="intera_examples"
+  <node name="sdk_gripper_control_joystick" pkg="intera_examples"
   type="gripper_joystick.py" args="--joystick $(arg joystick)"
   required="true" output="screen" />
 
