@@ -45,7 +45,7 @@ def map_joystick(joystick, limb):
     @param joystick: an instance of a Joystick
     """
     print("Getting robot state... ")
-    rs = intera_interface.RobotEnable(CHECK_VERSION)
+    rs = intera_interface.RobotEnable(intera_interface.CHECK_VERSION)
     init_state = rs.state()
     try:
         gripper = intera_interface.Gripper(limb)
@@ -79,13 +79,22 @@ def map_joystick(joystick, limb):
 
     def offset_position(offset):
         current = gripper.get_position()
-        gripper.set_position(current + offset)
+        set_position = min(gripper.MAX_POSITION,
+                          max(gripper.MIN_POSITION,
+                             current + offset))
+        gripper.set_position(set_position)
 
     def offset_holding(offset):
         current = gripper.get_force()
-        gripper.set_holding_force(current + offset)
+        print("Current force {0}".format(current))
+        holding_force = min(gripper.MAX_FORCE,
+                           max(gripper.MIN_FORCE,
+                              current + offset))
+        gripper.set_holding_force(holding_force)
 
     num_steps = 10.0
+    position_step = (gripper.MAX_POSITION - gripper.MIN_POSITION) / num_steps
+    force_step = (gripper.MAX_FORCE - gripper.MIN_FORCE) / num_steps
     bindings_list = []
     bindings = (
         #(test, command, description)
@@ -94,13 +103,13 @@ def map_joystick(joystick, limb):
         ((bdn, ['leftTrigger']), (gripper.close, []), "close"),
         ((bup, ['leftTrigger']), (gripper.open, []), "open (release)"),
         ((bdn, ['leftBumper']), (gripper.stop, []), "stop"),
-        ((jlo, ['leftStickHorz']), (offset_position, [-(gripper.MAX_POSITION / num_steps)]),
+        ((jlo, ['leftStickVert']), (offset_position, [-position_step]),
                                     "decrease position"),
-        ((jhi, ['leftStickHorz']), (offset_position, [gripper.MAX_POSITION / num_steps]),
+        ((jhi, ['leftStickVert']), (offset_position, [position_step]),
                                      "increase position"),
-        ((jlo, ['leftStickVert']), (offset_holding, [-(gripper.MAX_FORCE / num_steps)]),
+        ((jlo, ['rightStickVert']), (offset_holding, [-force_step]),
                                     "decrease holding force"),
-        ((jhi, ['leftStickVert']), (offset_holding, [gripper.MAX_FORCE / num_steps]),
+        ((jhi, ['rightStickVert']), (offset_holding, [force_step]),
                                     "increase holding force"),
         ((bdn, ['function1']), (print_help, [bindings_list]), "help"),
         ((bdn, ['function2']), (print_help, [bindings_list]), "help"),
@@ -123,7 +132,7 @@ def map_joystick(joystick, limb):
 
 
 def main():
-    """RSDK Gripper Example: Joystick Control
+    """SDK Gripper Example: Joystick Control
 
     Use a game controller to control the grippers.
 
