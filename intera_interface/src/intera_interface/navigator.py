@@ -56,10 +56,6 @@ class Navigator(object):
         self._navigator_io = IODeviceInterface("robot", "navigator")
         self._button_lookup = {0:'OFF',        1:'CLICK',
                                2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
-        self._threads = dict()
-        self._signal_items = dict()
-        self._callback_functions = dict()
-
 
     def list_all_items(self):
         """
@@ -71,7 +67,6 @@ class Navigator(object):
                  '<assembly>_button_<function>'
         """
         return self._navigator_io.list_signal_names()
-
 
     def get_wheel_state(self, wheel_name):
         """
@@ -90,53 +85,52 @@ class Navigator(object):
         @type: str
         @param: the button name
 
-        @rtype: str
-        @return: a string representing the current button state
+        @rtype: uint
+        @return: an integer representing button values
                  Valid states:
-                 ['OFF', 'CLICK', 'LONG_PRESS', 'DOUBLE_CLICK']
+                 {0:'OFF', 1:'CLICK', 2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
         """
         return self._get_item_state(button_name)
 
-    def register_callback(self, callback_function, item_name, poll_rate=10):
+    def button_string_lookup(self, button_value):
+        """
+        Returns strings corresponding to the button state.
+
+        @type: int
+        @param: the value to lookup
+
+        @type: str
+        @param: 'INVALID_VALUE' if out of range, or if valid:
+                 {0:'OFF', 1:'CLICK', 2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
+        """
+        if button_value in self._button_lookup:
+            return self._button_lookup[button_value]
+        else:
+            return 'INVALID_VALUE'
+
+    def register_callback(self, callback_function, signal_name, poll_rate=10):
         """
         Registers a supplied callback to a change in state of supplied
-        item_name's value. Spawns a thread that will call the callback with
+        signal_name's value. Spawns a thread that will call the callback with
         the updated value.
 
         @type: function
         @param: function handle for callback function
         @type: str
-        @param: the item name (button or wheel) to poll for value change
+        @param: the name of the signal to poll for value change
         @type: int
         @param: the rate at which to poll for a value change (in a separate
                 thread)
 
         @rtype: str
         @return: callback_id retuned if the callback was registered, and an
-                 empty string if the requested item_name does not exist in the
+                 empty string if the requested signal_name does not exist in the
                  Navigator
         """
-        if item_name in self.list_all_items():
-            callback_id = uuid.uuid4()
-            self._signal_items[callback_id] = intera_dataflow.Signal()
-            def signal_spinner():
-                old_state = self._get_item_state(item_name)
-                r = rospy.Rate(poll_rate)
-                while not rospy.is_shutdown():
-                  new_state = self._get_item_state(item_name)
-                  if new_state != old_state:
-                      self._signal_items[callback_id](new_state)
-                  old_state = new_state
-                  r.sleep()
-            self._signal_items[callback_id].connect(callback_function)
-            t = threading.Thread(target=signal_spinner)
-            t.daemon = True
-            t.start()
-            self._threads[callback_id] = t
-            self._callback_functions[callback_id] = callback_function
-            return callback_id
-        else:
-            return str()
+        return self._navigator_io.register_callback(
+                                 callback_function=callback_function,
+                                 signal_name=signal_name,
+                                 poll_rate=poll_rate)
 
     def deregister_callback(self, callback_id):
         """
@@ -149,14 +143,8 @@ class Navigator(object):
         @return: returns bool True if the callback was successfully
                  deregistered, and False otherwise.
         """
-        if callback_id in self._threads.keys():
-            self._signal_items[callback_id].disconnect(
-                              self._callback_functions[callback_id])
-            return True
-        else:
-            return False
+        return self._navigator_io.deregister_callback(callback_id)
 
     def _get_item_state(self, item_name):
-        state = self._navigator_io.get_signal_value(item_name)
-        state = self._button_lookup[state] if 'wheel' not in item_name else state
-        return state
+        return self._navigator_io.get_signal_value(item_name)
+

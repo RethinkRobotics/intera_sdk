@@ -36,28 +36,28 @@ import intera_interface
 
 
 def echo_input(nav_name='right'):
+    nav = intera_interface.Navigator()
     def back_pressed(v):
-        print ("Button 'Back': {0}".format(v))
+        print ("Button 'Back': {0}".format(nav.button_string_lookup(v)))
 
     def rethink_pressed(v):
-        print ("Button 'Rethink': {0}".format(v))
+        print ("Button 'Rethink': {0}".format(nav.button_string_lookup(v)))
 
     def circle_pressed(v):
-        print ("Button 'Circle': {0}".format(v))
+        print ("Button 'Circle': {0}".format(nav.button_string_lookup(v)))
 
     def square_pressed(v):
-        print ("Button 'Square': {0}".format(v))
+        print ("Button 'Square': {0}".format(nav.button_string_lookup(v)))
 
     def x_pressed(v):
-        print ("Button 'X': {0}".format(v))
+        print ("Button 'X': {0}".format(nav.button_string_lookup(v)))
 
     def ok_pressed(v):
-        print ("Button 'OK': {0}".format(v))
+        print ("Button 'OK': {0}".format(nav.button_string_lookup(v)))
 
     def wheel_moved(v):
         print ("Wheel value: {0}".format(v))
 
-    nav = intera_interface.Navigator()
     nav.register_callback(back_pressed, '_'.join([nav_name, 'button_back']))
     nav.register_callback(rethink_pressed, '_'.join([nav_name, 'button_show']))
     nav.register_callback(circle_pressed, '_'.join([nav_name, 'button_circle']))

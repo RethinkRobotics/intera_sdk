@@ -76,4 +76,3 @@ class Lights(object):
         @return:  a variable representing light state: (True: on, False: off)
         """
         return self._lights_io.get_signal_value(name)
-

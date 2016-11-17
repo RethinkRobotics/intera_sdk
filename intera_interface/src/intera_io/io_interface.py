@@ -29,9 +29,10 @@ import rospy
 import sys
 import json
 import copy
+import threading
+import uuid
 from threading import Lock
 import intera_dataflow
-from intera_dataflow import Signal
 from io_command import SetCommand
 
 from intera_core_msgs.msg import IODeviceConfiguration, IODeviceStatus, \
@@ -56,8 +57,8 @@ class IOInterface(object):
         self.signals = dict()
         self.state = None
         self.config = None
-        self.state_changed = Signal()
-        self.config_changed = Signal()
+        self.state_changed = intera_dataflow.Signal()
+        self.config_changed = intera_dataflow.Signal()
 
         self._config_sub = rospy.Subscriber(self._path + "/config",
                                             config_msg_type,
@@ -198,6 +199,9 @@ class IODeviceInterface(IOInterface):
         self.state = IODeviceStatus()
         self.invalidate_config()
         self.invalidate_state()
+        self._threads = dict()
+        self._callback_items = dict()
+        self._callback_functions = dict()
 
     def list_signal_names(self):
         """
@@ -288,3 +292,58 @@ class IODeviceInterface(IOInterface):
         self.publish_command(set_command.op, set_command.args, timeout=timeout)
         # make sure both state and config are valid:
         self.revalidate(timeout, invalidate_state=False, invalidate_config=False)
+
+    def register_callback(self, callback_function, signal_name, poll_rate=10):
+        """
+        Registers a supplied callback to a change in state of supplied
+        signal_name's value. Spawns a thread that will call the callback with
+        the updated value.
+        @type: function
+        @param: function handle for callback function
+        @type: str
+        @param: the signal name (button or wheel) to poll for value change
+        @type: int
+        @param: the rate at which to poll for a value change (in a separate
+                thread)
+        @rtype: str
+        @return: callback_id retuned if the callback was registered, and an
+                 empty string if the requested signal_name does not exist in the
+                 Navigator
+        """
+        if signal_name in self.list_signal_names():
+            callback_id = uuid.uuid4()
+            self._callback_items[callback_id] = intera_dataflow.Signal()
+            def signal_spinner():
+                old_state = self.get_signal_value(signal_name)
+                r = rospy.Rate(poll_rate)
+                while not rospy.is_shutdown():
+                  new_state = self.get_signal_value(signal_name)
+                  if new_state != old_state:
+                      self._callback_items[callback_id](new_state)
+                  old_state = new_state
+                  r.sleep()
+            self._callback_items[callback_id].connect(callback_function)
+            t = threading.Thread(target=signal_spinner)
+            t.daemon = True
+            t.start()
+            self._threads[callback_id] = t
+            self._callback_functions[callback_id] = callback_function
+            return callback_id
+        else:
+            return str()
+
+    def deregister_callback(self, callback_id):
+        """
+        Deregisters a callback based on the supplied callback_id.
+        @type: str
+        @param: the callback_id string to deregister
+        @rtype: bool
+        @return: returns bool True if the callback was successfully
+                 deregistered, and False otherwise.
+        """
+        if callback_id in self._threads.keys():
+            self._callback_items[callback_id].disconnect(
+                              self._callback_functions[callback_id])
+            return True
+        else:
+            return False

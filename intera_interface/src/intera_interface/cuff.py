@@ -96,3 +96,40 @@ class Cuff(object):
         @return:  a variable representing cuff button state: (True: pressed, False: unpressed)
         """
         return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "cuff"])))
+
+    def register_callback(self, callback_function, signal_name, poll_rate=10):
+        """
+        Registers a supplied callback to a change in state of supplied
+        signal_name's value. Spawns a thread that will call the callback with
+        the updated value.
+
+        @type: function
+        @param: function handle for callback function
+        @type: str
+        @param: the name of the signal to poll for value change
+        @type: int
+        @param: the rate at which to poll for a value change (in a separate
+                thread)
+
+        @rtype: str
+        @return: callback_id retuned if the callback was registered, and an
+                 empty string if the requested signal_name does not exist in the
+                 Navigator
+        """
+        return self._cuff_io.register_callback(
+                                 callback_function=callback_function,
+                                 signal_name=signal_name,
+                                 poll_rate=poll_rate)
+
+    def deregister_callback(self, callback_id):
+        """
+        Deregisters a callback based on the supplied callback_id.
+
+        @type: str
+        @param: the callback_id string to deregister
+
+        @rtype: bool
+        @return: returns bool True if the callback was successfully
+                 deregistered, and False otherwise.
+        """
+        return self._cuff_io.deregister_callback(callback_id)
