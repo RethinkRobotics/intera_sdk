@@ -38,7 +38,7 @@ from intera_interface import CHECK_VERSION
 
 
 def main():
-    """RSDK Joint Recorder Example
+    """SDK Joint Recorder Example
 
     Record timestamped joint and gripper positions to a file for
     later play back.
@@ -73,7 +73,7 @@ Related examples:
     args = parser.parse_args(rospy.myargv()[1:])
 
     print("Initializing node... ")
-    rospy.init_node("rsdk_joint_recorder")
+    rospy.init_node("sdk_joint_recorder")
     print("Getting robot state... ")
     rs = intera_interface.RobotEnable(CHECK_VERSION)
     print("Enabling robot... ")

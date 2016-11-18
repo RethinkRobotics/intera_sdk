@@ -84,9 +84,8 @@ class Trajectory(object):
         #gripper interface - for gripper command playback
         try:
             self.gripper = intera_interface.Gripper(limb)
-            self.has_gripper = True
         except:
-            self.has_gripper = False
+            self.gripper = None
             rospy.loginfo("Did not detect a connected electric gripper.")
             
         #flag to signify the arm trajectories have begun executing
@@ -95,7 +94,7 @@ class Trajectory(object):
         self._lock = threading.RLock()
 
         # Verify Grippers Have No Errors and are Calibrated
-        if self.has_gripper:
+        if self.gripper:
             if self.gripper.has_error():
                 self.gripper.reboot()
             if not self.gripper.is_calibrated():
@@ -125,7 +124,7 @@ class Trajectory(object):
         while(now_from_start < end_time + (1.0 / self._gripper_rate) and
               not rospy.is_shutdown()):
             idx = bisect(pnt_times, now_from_start) - 1
-            if self.has_gripper:
+            if self.gripper:
                 self.gripper.set_position(grip_cmd[idx].positions[0])
             rate.sleep()
             now_from_start = rospy.get_time() - start_time
@@ -169,7 +168,7 @@ class Trajectory(object):
         point.time_from_start = rospy.Duration(time)
         if side == self.limb:
             self.goal.trajectory.points.append(point)
-        elif self.has_gripper and side == self.gripper_name:
+        elif self.gripper and side == self.gripper_name:
             self.grip.trajectory.points.append(point)
 
     def parse_file(self, filename):
@@ -227,7 +226,7 @@ class Trajectory(object):
             #add a point for this set of commands with recorded time
             cur_cmd = [cmd[jnt] for jnt in self.goal.trajectory.joint_names]
             self._add_point(cur_cmd, self.limb, values[0] + start_offset)
-            if self.has_gripper:
+            if self.gripper:
                 cur_cmd = [cmd[self.gripper_name]]
                 self._add_point(cur_cmd, self.gripper_name, values[0] + start_offset)
 
@@ -259,7 +258,7 @@ class Trajectory(object):
         # Syncronize playback by waiting for the trajectories to start
         while not rospy.is_shutdown() and not self._get_trajectory_flag():
             rospy.sleep(0.05)
-        if self.has_gripper:
+        if self.gripper:
             self._execute_gripper_commands()
 
     def stop(self):
@@ -299,7 +298,7 @@ class Trajectory(object):
 
 
 def main():
-    """RSDK Joint Trajectory Example: File Playback
+    """SDK Joint Trajectory Example: File Playback
 
     Plays back joint positions honoring timestamps recorded
     via the joint_recorder example.
@@ -317,16 +316,28 @@ def main():
 Related examples:
   joint_recorder.py; joint_position_file_playback.py.
     """
+    rp = intera_interface.RobotParams()
+    valid_limbs = rp.get_limb_names()
+    if not valid_limbs:
+        rp.log_message(("Cannot detect any limb parameters on this robot. "
+          "Exiting."), "ERROR")
+        return
+
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__,
                                      epilog=epilog)
     parser.add_argument(
+        '-l', '--limb', choices=valid_limbs, default=valid_limbs[0],
+         help='send joint trajectory to which limb'
+    )
+
+    parser.add_argument(
         '-f', '--file', metavar='PATH', required=True,
         help='path to input file'
     )
     parser.add_argument(
-        '-l', '--loops', type=int, default=1,
+        '-n', '--number_loops', type=int, default=1,
         help='number of playback loops. 0=infinite.'
     )
     # remove ROS args and filename (sys.arv[0]) for argparse
@@ -340,17 +351,17 @@ Related examples:
     rs.enable()
     print("Running. Ctrl-c to quit")
 
-    traj = Trajectory()
+    traj = Trajectory(args.limb)
     traj.parse_file(path.expanduser(args.file))
     #for safe interrupt handling
     rospy.on_shutdown(traj.stop)
     result = True
     loop_cnt = 1
-    loopstr = str(args.loops)
-    if args.loops == 0:
-        args.loops = float('inf')
+    loopstr = str(args.number_loops)
+    if args.number_loops == 0:
+        args.number_loops = float('inf')
         loopstr = "forever"
-    while (result == True and loop_cnt <= args.loops
+    while (result == True and loop_cnt <= args.number_loops
            and not rospy.is_shutdown()):
         print("Playback loop %d of %s" % (loop_cnt, loopstr,))
         traj.start()
