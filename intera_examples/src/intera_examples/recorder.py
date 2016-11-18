@@ -47,14 +47,13 @@ class JointRecorder(object):
         self._limb_right = intera_interface.Limb(side)
         try:
             self._gripper = intera_interface.Gripper(side)
-        except:
-            self.has_gripper = False
-            rospy.logerr("Could not initalize the gripper.")
-        else:
-            self.has_gripper = True
+            rospy.loginfo("Electric gripper detected.")
+        except Exception as e:
+            self._gripper = None
+            rospy.loginfo("No electric gripper detected.")
 
         # Verify Gripper Have No Errors and are Calibrated
-        if self.has_gripper:
+        if self._gripper:
             if self._gripper.has_error():
                 self._gripper.reboot()                
             if not self._gripper.is_calibrated():
@@ -91,12 +90,12 @@ class JointRecorder(object):
             joints_right = self._limb_right.joint_names()
             with open(self._filename, 'w') as f:
                 f.write('time,')
-                temp_str = '' if self.has_gripper else '\n'
+                temp_str = '' if self._gripper else '\n'
                 f.write(','.join([j for j in joints_right]) + ',' + temp_str)
-                if self.has_gripper:
+                if self._gripper:
                     f.write(self.gripper_name+'\n')
                 while not self.done():
-                    if self.has_gripper:
+                    if self._gripper:
                         if self._cuff.upper_button():
                             self._gripper.open()
                         elif self._cuff.lower_button():
@@ -105,6 +104,6 @@ class JointRecorder(object):
                                     for j in joints_right]
                     f.write("%f," % (self._time_stamp(),))
                     f.write(','.join([str(x) for x in angles_right]) + ',' + temp_str)
-                    if self.has_gripper:
+                    if self._gripper:
                         f.write(str(self._gripper.get_position()) + '\n')
                     self._rate.sleep()

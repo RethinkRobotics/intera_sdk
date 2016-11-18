@@ -42,7 +42,7 @@ class Gripper(object):
     MAX_VELOCITY = 3.0
     MIN_VELOCITY = 0.15
 
-    def __init__(self, side="right"):
+    def __init__(self, side="right", calibrate=True):
         """
         @type: str
         @param: robot gripper name
@@ -57,6 +57,11 @@ class Gripper(object):
             )
 
         self.gripper_io = IODeviceInterface("end_effector", self.name)
+        if self.has_error():
+            self.reboot()
+            calibrate = True
+        if calibrate and self.is_calibrated():
+            self.calibrate()
 
     def _config_callback(self, msg):
         """
