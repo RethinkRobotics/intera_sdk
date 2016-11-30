@@ -10,17 +10,17 @@ action servers and control of the Intera Robot from Rethink Robotics.
 Installation
 ------------
 | Please follow the Getting Started wiki page for instructions on installation of the Intera SDK:
-| http://sdk.rethinkrobotics.com/wiki/Workstation_Setup
+| http://sdk.rethinkrobotics.com/intera/Workstation_Setup
 
 Code & Tickets
 --------------
 
 +-----------------+----------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/wiki                            |
+| Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
 +-----------------+----------------------------------------------------------------+
 | Issues          | https://github.com/RethinkRobotics/intera_sdk/issues           |
 +-----------------+----------------------------------------------------------------+
-| Contributions   | http://sdk.rethinkrobotics.com/wiki/Contributions              |
+| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
 +-----------------+----------------------------------------------------------------+
 
 Intera Repository Overview
@@ -56,4 +56,4 @@ Other Intera Repositories
 Latest Release Information
 --------------------------
 
-http://sdk.rethinkrobotics.com/wiki/Release-Changes
+http://sdk.rethinkrobotics.com/intera/Release-Changes

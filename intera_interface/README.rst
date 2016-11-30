@@ -8,11 +8,11 @@ Code & Tickets
 --------------
 
 +-----------------+----------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/wiki                            |
+| Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
 +-----------------+----------------------------------------------------------------+
 | Issues          | https://github.com/RethinkRobotics/intera_interface/issues     |
 +-----------------+----------------------------------------------------------------+
-| Contributions   | http://sdk.rethinkrobotics.com/wiki/Contributions              |
+| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
 +-----------------+----------------------------------------------------------------+
 
 intera_interface Repository Overview
@@ -61,4 +61,4 @@ Other Intera Repositories
 Latest Release Information
 --------------------------
 
-http://sdk.rethinkrobotics.com/wiki/Release-Changes
+http://sdk.rethinkrobotics.com/intera/Release-Changes

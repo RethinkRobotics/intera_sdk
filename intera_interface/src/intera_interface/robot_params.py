@@ -35,7 +35,7 @@ class RobotParams(object):
     """
 
     def __init__(self):
-        self._sdk_networking_url = "http://sdk.rethinkrobotics.com/wiki/Networking"
+        self._sdk_networking_url = "http://sdk.rethinkrobotics.com/intera/Networking"
         self._ros_networking_url = "http://wiki.ros.org/ROS/NetworkSetup"
         self._color_dict = {"INFO":'37',"WARN":'33',"ERROR":'31'}
         self._color_prefix = "\033[1;{0}m"
