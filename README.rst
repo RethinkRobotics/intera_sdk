@@ -18,6 +18,8 @@ Code & Tickets
 +-----------------+----------------------------------------------------------------+
 | Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
 +-----------------+----------------------------------------------------------------+
+| Python API Docs | http://rethinkrobotics.github.io/intera_sdk/                   |
++-----------------+----------------------------------------------------------------+
 | Issues          | https://github.com/RethinkRobotics/intera_sdk/issues           |
 +-----------------+----------------------------------------------------------------+
 | Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
