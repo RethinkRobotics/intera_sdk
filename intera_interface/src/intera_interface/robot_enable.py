@@ -109,6 +109,9 @@ class RobotEnable(object):
     def state(self):
         """
         Returns the last known robot state.
+
+        @rtype: intera_core_msgs/AssemblyState
+        @return: Returns the last received AssemblyState message
         """
         return self._state
 
@@ -192,6 +195,9 @@ http://sdk.rethinkrobotics.com/intera/SDK_Shell
         Currently uses the variables in intera_interface.settings and
         can be overridden for all default examples by setting CHECK_VERSION
         to False.
+
+        @rtype: bool
+        @return: Returns True if SDK version is compatible with robot Version, False otherwise
         """
         param_name = "/manifest/robot_software/version/HLR_VERSION_STRING"
         sdk_version = settings.SDK_VERSION

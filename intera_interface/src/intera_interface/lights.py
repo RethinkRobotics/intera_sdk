@@ -45,7 +45,7 @@ class Lights(object):
         """
         Returns a list of strings describing all available lights
 
-        @rtype: list
+        @rtype: list [str]
         @return: a list of string representing light names
                  Each light name of the following format:
                  '<assembly>_<color>_light'
@@ -61,8 +61,11 @@ class Lights(object):
                      '<assembly>_<color>_light'
         @type on: bool
         @param on: value to set the light (on=True, off=False)
+
+        @rtype: bool
+        @return: True if the light state is set, False otherwise
         """
-        self._lights_io.set_signal_value(name, on)
+        return self._lights_io.set_signal_value(name, on)
 
     def get_light_state(self, name):
         """
