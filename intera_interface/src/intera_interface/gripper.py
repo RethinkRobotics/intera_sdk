@@ -44,8 +44,12 @@ class Gripper(object):
 
     def __init__(self, side="right", calibrate=True):
         """
-        @type: str
-        @param: robot gripper name
+        Constructor.
+
+        @type side: str
+        @param side: robot gripper name
+        @type calibrate: bool
+        @param calibrate: Attempts to calibrate the gripper when initializing class (defaults True)
         """
         self.devices = None
         self.name = '_'.join([side, 'gripper'])
@@ -77,6 +81,9 @@ class Gripper(object):
 
         Basic call to the gripper reboot command. Waits for gripper to return
         ready state but does not clear errors that could occur during boot.
+
+        @rtype: bool
+        @return: True if successfully Rebooted, False otherwise
         """
         return self.gripper_io.set_signal_value("reboot", True)
 
@@ -84,6 +91,9 @@ class Gripper(object):
         """
         Set the gripper to stop executing command at the current
         position, apply holding force.
+
+        @rtype: bool
+        @return: True if successfully Stopped, False otherwise
         """
         return self.gripper_io.set_signal_value("go", False)
 
@@ -91,6 +101,9 @@ class Gripper(object):
         """
         Set the gripper to start executing command at the current
         position, apply holding force.
+
+        @rtype: bool
+        @return: True if successfully Started, False otherwise
         """
         return self.gripper_io.set_signal_value("go", True)
 
@@ -99,6 +112,9 @@ class Gripper(object):
         Set the gripper position to open by providing opening position.
         @type: float
         @param: the postion of gripper in meters
+
+        @rtype: bool
+        @return: True if successfully set Position, False otherwise
         """
         return self.gripper_io.set_signal_value("position_m", position)
 
@@ -107,6 +123,9 @@ class Gripper(object):
         Set the gripper position to close by providing closing position.
         @type: float
         @param: the postion of gripper in meters
+
+        @rtype: bool
+        @return: True if successfully set Position, False otherwise
         """
         return self.gripper_io.set_signal_value("position_m", position)
 
@@ -114,7 +133,9 @@ class Gripper(object):
         """
         Returns a bool describing whether the gripper is in an error state.
         (True: Error detected, False: No errors)
+
         @rtype: bool
+        @return: True if in error state, False otherwise
         """
         return self.gripper_io.get_signal_value("has_error")
 
@@ -123,7 +144,9 @@ class Gripper(object):
         Returns bool describing if the gripper ready, i.e. is
         calibrated, not busy (as in resetting or rebooting), and
         not moving.
+
         @rtype: bool
+        @return: True if in ready state, False otherwise
         """
         return (self.is_calibrated() and not self.has_error()
           and not self.is_moving())
@@ -131,21 +154,27 @@ class Gripper(object):
     def is_moving(self):
         """
         Returns bool describing if the gripper is moving.
+
         @rtype: bool
+        @return: True if in moving state, False otherwise
         """
         return self.gripper_io.get_signal_value("is_moving")
 
     def is_gripping(self):
         """
         Returns bool describing if the gripper is gripping.
+
         @rtype: bool
+        @return: True if in gripping state, False otherwise
         """
         return self.gripper_io.get_signal_value("is_gripping")
 
     def is_calibrated(self):
         """
         Returns bool describing if the gripper is calibrated.
+
         @rtype: bool
+        @return: True if successfully calibrated, False otherwise
         """
         return self.gripper_io.get_signal_value("is_calibrated")
 
@@ -153,13 +182,18 @@ class Gripper(object):
         """
         Calibrate the gripper in order to set maximum and
         minimum travel distance.
+
+        @rtype: bool
+        @return: True if successfully calibrating, False otherwise
         """
         return self.gripper_io.set_signal_value("calibrate", True)
 
     def get_position(self):
         """
         Returns float describing the gripper position in meters.
+
         @rtype: float
+        @return: Current Position value in Meters (m)
         """
         return self.gripper_io.get_signal_value("position_response_m")
 
@@ -168,6 +202,9 @@ class Gripper(object):
         Set the position of gripper.
         @type: float
         @param: the postion of gripper in meters
+
+        @rtype: bool
+        @return: True if successfully set value, False otherwise
         """
         return self.gripper_io.set_signal_value("position_m", position)
 
@@ -176,13 +213,18 @@ class Gripper(object):
         Set the velocity at which the gripper position movement will execute.
         @type: float
         @param: the velocity of gripper in meters per second
+
+        @rtype: float
+        @return: Current Velocity value in Meters / second (m/s)
         """
         return self.gripper_io.set_signal_value("speed_mps", speed)
 
     def get_force(self):
         """
         Returns the force sensed by the gripper in estimated Newtons.
+
         @rtype: float
+        @return: Current Force value in Newton-Meters (N-m)
         """
         return self.gripper_io.get_signal_value("force_response_n")
 
@@ -196,6 +238,9 @@ class Gripper(object):
 
         @type: float
         @param: the holding force of gripper in newton
+
+        @rtype: bool
+        @return: True if successfully set value, False otherwise
         """
         return self.gripper_io.set_signal_value("holding_force_n", holding_force)
 
@@ -204,6 +249,9 @@ class Gripper(object):
         Set the weight of the object in kilograms.
         @type: float
         @param: the object weight in newton
+
+        @rtype: bool
+        @return: True if successfully set value, False otherwise
         """
         return self.gripper_io.set_signal_value("object_kg", object_weight)
 
@@ -214,5 +262,8 @@ class Gripper(object):
 
         @type: float
         @param: the dead zone of gripper in meters
+
+        @rtype: bool
+        @return: True if successfully set value, False otherwise
         """
         return self.gripper_io.set_signal_value("dead_zone_m", dead_zone)

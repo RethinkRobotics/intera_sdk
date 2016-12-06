@@ -64,8 +64,8 @@ class HeadDisplay(object):
         @type image_path: str
         @param image_path: the relative or absolute file path to the image file
 
-        @type image_delay: float
-        @param image_delay: time in seconds to wait before publishing image
+        @rtype: sensor_msgs/Image or None
+        @param: Returns sensor_msgs/Image if image convertable and None otherwise
         """
         if not os.access(image_path, os.R_OK):
             rospy.logerr("Cannot read file at '{0}'".format(image_path))
@@ -80,10 +80,10 @@ class HeadDisplay(object):
         Displays image(s) to robot's head
 
         @type image_path: list
-        @param path: the relative or absolute file path to the image file(s)
+        @param image_path: the relative or absolute file path to the image file(s)
 
         @type display_in_loop: bool
-        @param display_in_loop: loop to go through all image file or not
+        @param display_in_loop: Set True to loop through all image files infinitely
 
         @type display_rate: float
         @param display_rate: the rate to publish image into head

@@ -71,8 +71,8 @@ class Navigator(object):
     def get_wheel_state(self, wheel_name):
         """
         Current state of the wheel providing wheel name
-        @type: str
-        @param: the wheel name
+        @type wheel_name: str
+        @param wheel_name: the wheel name
 
         @rtype: uint
         @return: an integer representing how far the wheel has turned
@@ -82,8 +82,8 @@ class Navigator(object):
     def get_button_state(self, button_name):
         """
         Current button state by providing button name
-        @type: str
-        @param: the button name
+        @type button_name: str
+        @param button_name: the button name
 
         @rtype: uint
         @return: an integer representing button values
@@ -96,11 +96,11 @@ class Navigator(object):
         """
         Returns strings corresponding to the button state.
 
-        @type: int
-        @param: the value to lookup
+        @type button_value: int
+        @param button_value: the value to lookup
 
-        @type: str
-        @param: 'INVALID_VALUE' if out of range, or if valid:
+        @rtype: str
+        @return: 'INVALID_VALUE' if out of range, or if valid:
                  {0:'OFF', 1:'CLICK', 2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
         """
         if button_value in self._button_lookup:
@@ -114,12 +114,12 @@ class Navigator(object):
         signal_name's value. Spawns a thread that will call the callback with
         the updated value.
 
-        @type: function
-        @param: function handle for callback function
-        @type: str
-        @param: the name of the signal to poll for value change
-        @type: int
-        @param: the rate at which to poll for a value change (in a separate
+        @type callback_function: function
+        @param callback_function: function handle for callback function
+        @type signal_name: str
+        @param signal_name: the name of the signal to poll for value change
+        @type poll_rate: int
+        @param poll_rate: the rate at which to poll for a value change (in a separate
                 thread)
 
         @rtype: str
@@ -136,8 +136,8 @@ class Navigator(object):
         """
         Deregisters a callback based on the supplied callback_id.
 
-        @type: str
-        @param: the callback_id string to deregister
+        @type callback_id: str
+        @param callback_id: the callback_id string to deregister
 
         @rtype: bool
         @return: returns bool True if the callback was successfully

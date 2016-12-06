@@ -43,7 +43,7 @@ class RobotParams(object):
 
     def get_camera_names(self):
         """ Return the names of the camera.
-        @rtype: [str]
+        @rtype: list [str]
         @return: ordered list of camera names
         """
         return self.get_camera_details().keys()
@@ -52,7 +52,7 @@ class RobotParams(object):
         """
         Return the details of the cameras.
 
-        @rtype: [str]
+        @rtype: list [str]
         @return: ordered list of camera details
         """
         camera_dict = dict()
@@ -70,7 +70,7 @@ class RobotParams(object):
         """
         Return the names of the robot's articulated limbs from ROS parameter.
 
-        @rtype: [str]
+        @rtype: list [str]
         @return: ordered list of articulated limbs names
                  (e.g. right, left). on networked robot
         """
@@ -81,7 +81,7 @@ class RobotParams(object):
         """
         Return the names of the robot's assemblies from ROS parameter.
 
-        @rtype: [str]
+        @rtype: list [str]
         @return: ordered list of assembly names
                  (e.g. right, left, torso, head). on networked robot
         """
@@ -103,7 +103,7 @@ class RobotParams(object):
         @type  limb_name: str
         @param limb_name: name of the limb for which to retrieve joint names
 
-        @rtype: [str]
+        @rtype: list [str]
         @return: ordered list of joint names from proximal to distal
                  (i.e. shoulder to wrist). joint names for limb
         """
