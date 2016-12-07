@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2016, Rethink Robotics
+# Copyright (c) 2016, Rethink Robotics
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -25,4 +25,4 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from .gripper_action import GripperActionServer
+from .io_interface import IODeviceInterface

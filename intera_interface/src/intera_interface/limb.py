@@ -26,6 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 import collections
+import warnings
 
 from copy import deepcopy
 
@@ -43,26 +44,56 @@ import intera_dataflow
 from intera_core_msgs.msg import (
     JointCommand,
     EndpointState,
+    CollisionDetectionState,
 )
-from intera_interface import settings
+import settings
+from robot_params import RobotParams
 
 
 class Limb(object):
     """
-    Interface class for a limb on the Baxter robot.
+    Interface class for a limb on Intera robots.
     """
 
     # Containers
     Point = collections.namedtuple('Point', ['x', 'y', 'z'])
     Quaternion = collections.namedtuple('Quaternion', ['x', 'y', 'z', 'w'])
 
-    def __init__(self, limb):
+    def __init__(self, limb="right", synchronous_pub=False):
         """
         Constructor.
 
         @type limb: str
         @param limb: limb to interface
+
+        @type synchronous_pub: bool
+        @param synchronous_pub: designates the JointCommand Publisher
+            as Synchronous if True and Asynchronous if False.
+
+            Synchronous Publishing means that all joint_commands publishing to
+            the robot's joints will block until the message has been serialized
+            into a buffer and that buffer has been written to the transport
+            of every current Subscriber. This yields predicable and consistent
+            timing of messages being delivered from this Publisher. However,
+            when using this mode, it is possible for a blocking Subscriber to
+            prevent the joint_command functions from exiting. Unless you need exact
+            JointCommand timing, default to Asynchronous Publishing (False).
+
+            For more information about Synchronous Publishing see:
+            http://wiki.ros.org/rospy/Overview/Publishers%20and%20Subscribers#queue_size:_publish.28.29_behavior_and_queuing
         """
+        params = RobotParams()
+        limb_names = params.get_limb_names()
+        if limb not in limb_names:
+            rospy.logerr("Cannot detect limb {0} on this robot."
+                         " Valid limbs are {1}. Exiting Limb.init().".format(
+                                                            limb, limb_names))
+            return
+        joint_names = params.get_joint_names(limb)
+        if not joint_names:
+            rospy.logerr("Cannot detect joint names for limb {0} on this "
+                         "robot. Exiting Limb.init().".format(limb))
+            return
         self.name = limb
         self._joint_angle = dict()
         self._joint_velocity = dict()
@@ -70,13 +101,8 @@ class Limb(object):
         self._cartesian_pose = dict()
         self._cartesian_velocity = dict()
         self._cartesian_effort = dict()
-
-        self._joint_names = {
-            'left': ['left_s0', 'left_s1', 'left_e0', 'left_e1',
-                     'left_w0', 'left_w1', 'left_w2'],
-            'right': ['right_s0', 'right_s1', 'right_e0', 'right_e1',
-                      'right_w0', 'right_w1', 'right_w2']
-            }
+        self._joint_names = { limb: joint_names }
+        self._collision_state = False
 
         ns = '/robot/limb/' + limb + '/'
 
@@ -88,11 +114,14 @@ class Limb(object):
             latch=True,
             queue_size=10)
 
-        self._pub_joint_cmd = rospy.Publisher(
-            ns + 'joint_command',
-            JointCommand,
-            tcp_nodelay=True,
-            queue_size=1)
+        queue_size = None if synchronous_pub else 1
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            self._pub_joint_cmd = rospy.Publisher(
+                ns + 'joint_command',
+                JointCommand,
+                tcp_nodelay=True,
+                queue_size=queue_size)
 
         self._pub_joint_cmd_timeout = rospy.Publisher(
             ns + 'joint_command_timeout',
@@ -107,6 +136,13 @@ class Limb(object):
             queue_size=1,
             tcp_nodelay=True)
 
+        _collision_state_sub = rospy.Subscriber(
+            ns + 'collision_detection_state',
+            CollisionDetectionState,
+            self._on_collision_state,
+            queue_size=1,
+            tcp_nodelay=True)
+
         joint_state_topic = 'robot/joint_states'
         _joint_state_sub = rospy.Subscriber(
             joint_state_topic,
@@ -118,7 +154,7 @@ class Limb(object):
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
         intera_dataflow.wait_for(lambda: len(self._joint_angle.keys()) > 0,
-                                 timeout_msg=err_msg)
+                                 timeout_msg=err_msg, timeout=5.0)
         err_msg = ("%s limb init failed to get current endpoint_state "
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
         intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
@@ -173,6 +209,19 @@ class Limb(object):
                 msg.wrench.torque.z,
             ),
         }
+
+    def _on_collision_state(self, msg):
+        if self._collision_state != msg.collision_state:
+            self._collision_state = msg.collision_state
+
+    def has_collided(self):
+        """
+        Return True if the specified limb has experienced a collision.
+
+        @rtype: bool
+        @return: True if the arm is in collision, False otherwise.
+        """
+        return self._collision_state
 
     def joint_names(self):
         """
@@ -313,7 +362,7 @@ class Limb(object):
         self.set_command_timeout(timeout)
         self.set_joint_positions(self.joint_angles())
 
-    def set_joint_position_speed(self, speed):
+    def set_joint_position_speed(self, speed=0.3):
         """
         Set ratio of max joint speed to use during joint position moves.
 
@@ -329,7 +378,37 @@ class Limb(object):
         """
         self._pub_speed_ratio.publish(Float64(speed))
 
-    def set_joint_positions(self, positions, raw=False):
+    def set_joint_trajectory(self, names, positions, velocities, accelerations):
+        """
+        Commands the joints of this limb to the specified positions using
+        the commanded velocities and accelerations to extrapolate between
+        commanded positions (prior to the next position being received).
+
+        B{IMPORTANT:} Joint Trajectory control mode allows for commanding
+        joint positions, without modification, directly to the JCBs
+        (Joint Controller Boards). While this results in more unaffected
+        motions, Joint Trajectory control mode bypasses the safety system
+        modifications (e.g. collision avoidance).
+        Please use with caution.
+
+        @type names: list [str]
+        @param names: joint_names list of strings
+        @type positions: list [float]
+        @param positions: list of positions in radians
+        @type velocities: list [float]
+        @param velocities: list of velocities in radians/second
+        @type accelerations: list [float]
+        @param accelerations: list of accelerations in radians/seconds^2
+        """
+        self._command_msg.names = names
+        self._command_msg.position = positions
+        self._command_msg.velocity = velocities
+        self._command_msg.acceleration = accelerations
+        self._command_msg.mode = JointCommand.TRAJECTORY_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
+        self._pub_joint_cmd.publish(self._command_msg)
+
+    def set_joint_positions(self, positions):
         """
         Commands the joints of this limb to the specified positions.
 
@@ -346,11 +425,9 @@ class Limb(object):
         @param raw: advanced, direct position control mode
         """
         self._command_msg.names = positions.keys()
-        self._command_msg.command = positions.values()
-        if raw:
-            self._command_msg.mode = JointCommand.RAW_POSITION_MODE
-        else:
-            self._command_msg.mode = JointCommand.POSITION_MODE
+        self._command_msg.position = positions.values()
+        self._command_msg.mode = JointCommand.POSITION_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def set_joint_velocities(self, velocities):
@@ -366,8 +443,9 @@ class Limb(object):
         @param velocities: joint_name:velocity command
         """
         self._command_msg.names = velocities.keys()
-        self._command_msg.command = velocities.values()
+        self._command_msg.velocity = velocities.values()
         self._command_msg.mode = JointCommand.VELOCITY_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
     def set_joint_torques(self, torques):
@@ -383,23 +461,29 @@ class Limb(object):
         @param torques: joint_name:torque command
         """
         self._command_msg.names = torques.keys()
-        self._command_msg.command = torques.values()
+        self._command_msg.effort = torques.values()
         self._command_msg.mode = JointCommand.TORQUE_MODE
+        self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
 
-    def move_to_neutral(self, timeout=15.0):
+    def move_to_neutral(self, timeout=15.0, speed=0.3):
         """
-        Command the joints to the center of their joint ranges
-
-        Neutral is defined as::
-          ['*_s0', '*_s1', '*_e0', '*_e1', '*_w0', '*_w1', '*_w2']
-          [0.0, -0.55, 0.0, 0.75, 0.0, 1.26, 0.0]
+        Command the Limb joints to a predefined set of "neutral" joint angles.
+        From rosparam named_poses/<limb>/poses/neutral.
 
         @type timeout: float
         @param timeout: seconds to wait for move to finish [15]
+        @type speed: float
+        @param speed: ratio of maximum joint speed for execution
+                      default= 0.3; range= [0.0-1.0]
         """
-        angles = dict(zip(self.joint_names(),
-                          [0.0, -0.55, 0.0, 0.75, 0.0, 1.26, 0.0]))
+        try:
+            neutral_pose = rospy.get_param("named_poses/{0}/poses/neutral".format(self.name))
+        except KeyError:
+            rospy.logerr(("Get neutral pose failed, arm: \"{0}\".").format(self.name))
+            return
+        angles = dict(zip(self.joint_names(), neutral_pose))
+        self.set_joint_position_speed(speed)
         return self.move_to_joint_positions(angles, timeout)
 
     def move_to_joint_positions(self, positions, timeout=15.0,
@@ -423,12 +507,6 @@ class Limb(object):
         """
         cmd = self.joint_angles()
 
-        def filtered_cmd():
-            # First Order Filter - 0.2 Hz Cutoff
-            for joint in positions.keys():
-                cmd[joint] = 0.012488 * positions[joint] + 0.98751 * cmd[joint]
-            return cmd
-
         def genf(joint, angle):
             def joint_diff():
                 return abs(angle - self._joint_angle[joint])
@@ -436,15 +514,21 @@ class Limb(object):
 
         diffs = [genf(j, a) for j, a in positions.items() if
                  j in self._joint_angle]
-
-        self.set_joint_positions(filtered_cmd())
+        fail_msg = "{0} limb failed to reach commanded joint positions.".format(
+                                                      self.name.capitalize())
+        def test_collision():
+            if self.has_collided():
+                rospy.logerr(' '.join(["Collision detected.", fail_msg]))
+                return True
+            return False
+        self.set_joint_positions(positions)
         intera_dataflow.wait_for(
-            test=lambda: callable(test) and test() == True or \
+            test=lambda: test_collision() or \
+                         (callable(test) and test() == True) or \
                          (all(diff() < threshold for diff in diffs)),
             timeout=timeout,
-            timeout_msg=("%s limb failed to reach commanded joint positions" %
-                         (self.name.capitalize(),)),
+            timeout_msg=fail_msg,
             rate=100,
             raise_on_error=False,
-            body=lambda: self.set_joint_positions(filtered_cmd())
+            body=lambda: self.set_joint_positions(positions)
             )

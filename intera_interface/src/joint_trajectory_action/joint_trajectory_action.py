@@ -26,7 +26,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 """
-Baxter RSDK Joint Trajectory Action Server
+Intera RSDK Joint Trajectory Action Server
 """
 import bisect
 from copy import deepcopy
@@ -35,6 +35,7 @@ import operator
 import numpy as np
 
 import bezier
+import minjerk
 
 import rospy
 
@@ -59,7 +60,7 @@ import intera_interface
 
 class JointTrajectoryActionServer(object):
     def __init__(self, limb, reconfig_server, rate=100.0,
-                 mode='position_w_id'):
+                 mode='position_w_id', interpolation='minjerk'):
         self._dyn = reconfig_server
         self._ns = 'robot/limb/' + limb
         self._fjt_ns = self._ns + '/follow_joint_trajectory'
@@ -69,11 +70,11 @@ class JointTrajectoryActionServer(object):
             execute_cb=self._on_trajectory_action,
             auto_start=False)
         self._action_name = rospy.get_name()
-        self._limb = intera_interface.Limb(limb)
+        self._limb = intera_interface.Limb(limb, synchronous_pub=True)
         self._enable = intera_interface.RobotEnable()
         self._name = limb
-        self._cuff = intera_interface.DigitalIO('%s_lower_cuff' % (limb,))
-        self._cuff.state_changed.connect(self._cuff_cb)
+        self._interpolation = interpolation
+        self._cuff = intera_interface.Cuff(limb=limb)
         # Verify joint control mode
         self._mode = mode
         if (self._mode != 'position' and self._mode != 'position_w_id'
@@ -85,7 +86,6 @@ class JointTrajectoryActionServer(object):
             return
         self._server.start()
         self._alive = True
-        self._cuff_state = False
         # Action Feedback/Result
         self._fdbk = FollowJointTrajectoryFeedback()
         self._result = FollowJointTrajectoryResult()
@@ -115,21 +115,12 @@ class JointTrajectoryActionServer(object):
              queue_size=10)
         self._pub_rate.publish(self._control_rate)
 
-        self._pub_ff_cmd = rospy.Publisher(
-            self._ns + '/inverse_dynamics_command',
-            JointTrajectoryPoint,
-            tcp_nodelay=True,
-            queue_size=1)
-
     def robot_is_enabled(self):
         return self._enable.state().enabled
 
     def clean_shutdown(self):
         self._alive = False
         self._limb.exit_control_mode()
-
-    def _cuff_cb(self, value):
-        self._cuff_state = value
 
     def _get_trajectory_parameters(self, joint_names, goal):
         # For each input trajectory, if path, goal, or goal_time tolerances
@@ -208,86 +199,65 @@ class JointTrajectoryActionServer(object):
         self._fdbk.error.time_from_start = rospy.Duration.from_sec(cur_time)
         self._server.publish_feedback(self._fdbk)
 
-    def _reorder_joints_ff_cmd(self, joint_names, point):
-	joint_name_order = self._limb.joint_names()
-	pnt = JointTrajectoryPoint()
-	pnt.time_from_start = point.time_from_start
-	pos_cmd = dict(zip(joint_names, point.positions))
-	for jnt_name in joint_name_order:
-	    pnt.positions.append(pos_cmd[jnt_name])
-        if point.velocities:
-	    vel_cmd = dict(zip(joint_names, point.velocities))
-	    for jnt_name in joint_name_order:
-	        pnt.velocities.append(vel_cmd[jnt_name])
-        if point.accelerations:
-	    accel_cmd = dict(zip(joint_names, point.accelerations))
-	    for jnt_name in joint_name_order:
-	        pnt.accelerations.append(accel_cmd[jnt_name])
-        return pnt
-
     def _command_stop(self, joint_names, joint_angles, start_time, dimensions_dict):
-        if self._mode == 'velocity':
+        if (self._cuff.cuff_button() or self._limb.has_collided() or
+              not self.robot_is_enabled() or not self._alive):
+            self._limb.exit_control_mode()
+        elif self._mode == 'velocity':
             velocities = [0.0] * len(joint_names)
             cmd = dict(zip(joint_names, velocities))
-            while (not self._server.is_new_goal_available() and self._alive
-                   and self.robot_is_enabled()):
-                self._limb.set_joint_velocities(cmd)
-                if self._cuff_state:
-                    self._limb.exit_control_mode()
-                    break
-                rospy.sleep(1.0 / self._control_rate)
+            self._limb.set_joint_velocities(cmd)
         elif self._mode == 'position' or self._mode == 'position_w_id':
-            raw_pos_mode = (self._mode == 'position_w_id')
-            if raw_pos_mode:
-                pnt = JointTrajectoryPoint()
-                pnt.positions = self._get_current_position(joint_names)
-                if dimensions_dict['velocities']:
-                    pnt.velocities = [0.0] * len(joint_names)
-                if dimensions_dict['accelerations']:
-                    pnt.accelerations = [0.0] * len(joint_names)
-            while (not self._server.is_new_goal_available() and self._alive
-                   and self.robot_is_enabled()):
-                self._limb.set_joint_positions(joint_angles, raw=raw_pos_mode)
+            pnt = JointTrajectoryPoint()
+            pnt.positions = self._get_current_position(joint_names)
+            if self._mode == 'position' and self._alive:
+                self._limb.set_joint_positions(dict(zip(joint_names, pnt.positions)))
+            if self._mode == 'position_w_id' and self._alive:
                 # zero inverse dynamics feedforward command
-                if self._mode == 'position_w_id':
-                    pnt.time_from_start = rospy.Duration(rospy.get_time() - start_time)
-                    ff_pnt = self._reorder_joints_ff_cmd(joint_names, pnt)
-                    self._pub_ff_cmd.publish(ff_pnt)
-                if self._cuff_state:
-                    self._limb.exit_control_mode()
-                    break
-                rospy.sleep(1.0 / self._control_rate)
+                pnt.velocities = [0.0] * len(joint_names)
+                pnt.accelerations = [0.0] * len(joint_names)
+                self._limb.set_joint_trajectory(joint_names,
+                                        pnt.positions,
+                                        pnt.velocities,
+                                        pnt.accelerations)
 
     def _command_joints(self, joint_names, point, start_time, dimensions_dict):
-        if self._server.is_preempt_requested() or not self.robot_is_enabled():
-            rospy.loginfo("%s: Trajectory Preempted" % (self._action_name,))
-            self._server.set_preempted()
-            self._command_stop(joint_names, self._limb.joint_angles(), start_time, dimensions_dict)
-            return False
+        if (self._limb.has_collided() or not self.robot_is_enabled()
+             or not self._alive or self._cuff.cuff_button()):
+           rospy.logerr("{0}: Robot arm in Error state. Stopping execution.".format(
+                            self._action_name))
+           self._limb.exit_control_mode()
+           self._result.error_code = self._result.PATH_TOLERANCE_VIOLATED
+           self._server.set_aborted(self._result)
+           return False
+        elif self._server.is_preempt_requested():
+           rospy.logwarn("{0}: Trajectory execution Preempted. Stopping execution.".format(
+                            self._action_name))
+           self._limb.exit_control_mode()
+           self._server.set_preempted()
+           return False
         velocities = []
         deltas = self._get_current_error(joint_names, point.positions)
         for delta in deltas:
             if ((math.fabs(delta[1]) >= self._path_thresh[delta[0]]
-                and self._path_thresh[delta[0]] >= 0.0)) or not self.robot_is_enabled():
+                  and self._path_thresh[delta[0]] >= 0.0)):
                 rospy.logerr("%s: Exceeded Error Threshold on %s: %s" %
                              (self._action_name, delta[0], str(delta[1]),))
                 self._result.error_code = self._result.PATH_TOLERANCE_VIOLATED
                 self._server.set_aborted(self._result)
-                self._command_stop(joint_names, self._limb.joint_angles(), start_time, dimensions_dict)
+                self._limb.exit_control_mode()
                 return False
             if self._mode == 'velocity':
                 velocities.append(self._pid[delta[0]].compute_output(delta[1]))
-        if ((self._mode == 'position' or self._mode == 'position_w_id')
-              and self._alive):
-            cmd = dict(zip(joint_names, point.positions))
-            raw_pos_mode = (self._mode == 'position_w_id')
-            self._limb.set_joint_positions(cmd, raw=raw_pos_mode)
-            if raw_pos_mode:
-                ff_pnt = self._reorder_joints_ff_cmd(joint_names, point)
-                self._pub_ff_cmd.publish(ff_pnt)
-        elif self._alive:
-            cmd = dict(zip(joint_names, velocities))
-            self._limb.set_joint_velocities(cmd)
+        if self._mode == 'velocity':
+            self._limb.set_joint_velocities(dict(zip(joint_names, velocities)))
+        if self._mode == 'position':
+            self._limb.set_joint_positions(dict(zip(joint_names, point.positions)))
+        if self._mode == 'position_w_id':
+            self._limb.set_joint_trajectory(joint_names,
+                                            point.positions,
+                                            point.velocities,
+                                            point.accelerations)
         return True
 
     def _get_bezier_point(self, b_matrix, idx, t, cmd_time, dimensions_dict):
@@ -332,6 +302,47 @@ class JointTrajectoryActionServer(object):
             b_matrix[jnt, :, :, :] = bezier.bezier_coefficients(traj_array, d_pts)
         return b_matrix
 
+    def _get_minjerk_point(self, m_matrix, idx, t, cmd_time, dimensions_dict):
+        pnt = JointTrajectoryPoint()
+        pnt.time_from_start = rospy.Duration(cmd_time)
+        num_joints = m_matrix.shape[0]
+        pnt.positions = [0.0] * num_joints
+        if dimensions_dict['velocities']:
+            pnt.velocities = [0.0] * num_joints
+        if dimensions_dict['accelerations']:
+            pnt.accelerations = [0.0] * num_joints
+        for jnt in range(num_joints):
+            m_point = minjerk.minjerk_point(m_matrix[jnt, :, :, :], idx, t)
+            # Positions at specified time
+            pnt.positions[jnt] = m_point[0]
+            # Velocities at specified time
+            if dimensions_dict['velocities']:
+                pnt.velocities[jnt] = m_point[1]
+            # Accelerations at specified time
+            if dimensions_dict['accelerations']:
+                pnt.accelerations[jnt] = m_point[-1]
+        return pnt
+
+    def _compute_minjerk_coeff(self, joint_names, trajectory_points, point_duration, dimensions_dict):
+        # Compute Full Minimum Jerk Curve
+        num_joints = len(joint_names)
+        num_traj_pts = len(trajectory_points)
+        num_traj_dim = sum(dimensions_dict.values())
+        num_m_values = len(['a0', 'a1', 'a2', 'a3', 'a4', 'a5', 'tm'])
+        m_matrix = np.zeros(shape=(num_joints, num_traj_dim, num_traj_pts-1, num_m_values))
+        for jnt in xrange(num_joints):
+            traj_array = np.zeros(shape=(len(trajectory_points), num_traj_dim))
+            for idx, point in enumerate(trajectory_points):
+                current_point = list()
+                current_point.append(point.positions[jnt])
+                if dimensions_dict['velocities']:
+                    current_point.append(point.velocities[jnt])
+                if dimensions_dict['accelerations']:
+                    current_point.append(point.accelerations[jnt])
+                traj_array[idx, :] = current_point
+            m_matrix[jnt, :, :, :] = minjerk.minjerk_coefficients(traj_array, point_duration)
+        return m_matrix
+
     def _determine_dimensions(self, trajectory_points):
         # Determine dimensions supplied
         position_flag = True
@@ -357,23 +368,18 @@ class JointTrajectoryActionServer(object):
         rospy.loginfo("%s: Executing requested joint trajectory" %
                       (self._action_name,))
         rospy.logdebug("Trajectory Points: {0}".format(trajectory_points))
+        for jnt_name, jnt_value in self._get_current_error(
+                joint_names, trajectory_points[0].positions):
+            if abs(self._path_thresh[jnt_name]) < abs(jnt_value):
+                rospy.logerr(("{0}: Initial Trajectory point violates "
+                             "threshold on joint {1} with delta {2} radians. "
+                             "Aborting trajectory execution.").format(
+                             self._action_name, jnt_name, jnt_value))
+                self._server.set_aborted()
+                return
+
         control_rate = rospy.Rate(self._control_rate)
-
         dimensions_dict = self._determine_dimensions(trajectory_points)
-
-        if num_points == 1:
-            # Add current position as trajectory point
-            first_trajectory_point = JointTrajectoryPoint()
-            first_trajectory_point.positions = self._get_current_position(joint_names)
-            # To preserve desired velocities and accelerations, copy them to the first
-            # trajectory point if the trajectory is only 1 point.
-            if dimensions_dict['velocities']:
-                first_trajectory_point.velocities = deepcopy(trajectory_points[0].velocities)
-            if dimensions_dict['accelerations']:
-                first_trajectory_point.accelerations = deepcopy(trajectory_points[0].accelerations)
-            first_trajectory_point.time_from_start = rospy.Duration(0)
-            trajectory_points.insert(0, first_trajectory_point)
-            num_points = len(trajectory_points)
 
         # Force Velocites/Accelerations to zero at the final timestep
         # if they exist in the trajectory
@@ -388,9 +394,18 @@ class JointTrajectoryActionServer(object):
         # Compute Full Bezier Curve Coefficients for all 7 joints
         pnt_times = [pnt.time_from_start.to_sec() for pnt in trajectory_points]
         try:
-            b_matrix = self._compute_bezier_coeff(joint_names,
-                                                  trajectory_points,
-                                                  dimensions_dict)
+            if self._interpolation == 'minjerk':
+                # Compute Full MinJerk Curve Coefficients for all 7 joints
+                point_duration = [pnt_times[i+1] - pnt_times[i] for i in range(len(pnt_times)-1)]
+                m_matrix = self._compute_minjerk_coeff(joint_names,
+                                                       trajectory_points,
+                                                       point_duration,
+                                                       dimensions_dict)
+            else:
+                # Compute Full Bezier Curve Coefficients for all 7 joints
+                b_matrix = self._compute_bezier_coeff(joint_names,
+                                                      trajectory_points,
+                                                      dimensions_dict)
         except Exception as ex:
             rospy.logerr(("{0}: Failed to compute a Bezier trajectory for {1}"
                          " arm with error \"{2}: {3}\"").format(
@@ -414,7 +429,6 @@ class JointTrajectoryActionServer(object):
         end_time = trajectory_points[-1].time_from_start.to_sec()
         while (now_from_start < end_time and not rospy.is_shutdown() and
                self.robot_is_enabled()):
-            #Acquire Mutex
             now = rospy.get_time()
             now_from_start = now - start_time
             idx = bisect.bisect(pnt_times, now_from_start)
@@ -429,17 +443,22 @@ class JointTrajectoryActionServer(object):
                 cmd_time = 0
                 t = 0
 
-	    point = self._get_bezier_point(b_matrix, idx,
-                                           t, cmd_time,
-				           dimensions_dict)
-
+            if self._interpolation == 'minjerk':
+                point = self._get_minjerk_point(m_matrix, idx,
+                                                t, cmd_time,
+                                                dimensions_dict)
+            else:
+                point = self._get_bezier_point(b_matrix, idx,
+                                               t, cmd_time,
+                                               dimensions_dict)
             # Command Joint Position, Velocity, Acceleration
             command_executed = self._command_joints(joint_names, point, start_time, dimensions_dict)
-            self._update_feedback(deepcopy(point), joint_names, now_from_start)
-            # Release the Mutex
+            self._update_feedback(point, joint_names, now_from_start)
             if not command_executed:
                 return
+            # Sleep to make sure the publish is at a consistent time
             control_rate.sleep()
+
         # Keep trying to meet goal until goal_time constraint expired
         last = trajectory_points[-1]
         last_time = trajectory_points[-1].time_from_start.to_sec()

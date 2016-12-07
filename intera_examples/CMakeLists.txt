@@ -5,7 +5,6 @@ find_package(catkin
   REQUIRED
   COMPONENTS
   rospy
-  xacro
   actionlib
   sensor_msgs
   control_msgs
@@ -19,13 +18,12 @@ find_package(catkin
 catkin_python_setup()
 
 generate_dynamic_reconfigure_options(
-  cfg/JointSpringsExample.cfg
+  cfg/SawyerJointSpringsExample.cfg
 )
 
 catkin_package(
   CATKIN_DEPENDS
   rospy
-  xacro
   actionlib
   sensor_msgs
   control_msgs

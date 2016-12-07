@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>intera_examples</name>
-  <version>5.0.0</version>
+  <version>5.0.4</version>
   <description>
     Example programs for Intera SDK usage.
   </description>
@@ -10,7 +10,7 @@
     Rethink Robotics Inc.
   </maintainer>
   <license>BSD</license>
-  <url type="website">http://sdk.rethinkrobotics.com</url>
+  <url type="website">http://sdk.rethinkrobotics.com/intera/</url>
   <url type="repository">
     https://github.com/RethinkRobotics/intera_sdk
   </url>
@@ -22,7 +22,6 @@
   <buildtool_depend>catkin</buildtool_depend>
 
   <build_depend>rospy</build_depend>
-  <build_depend>xacro</build_depend>
   <build_depend>actionlib</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>control_msgs</build_depend>
@@ -33,7 +32,6 @@
   <build_depend>intera_interface</build_depend>
 
   <run_depend>rospy</run_depend>
-  <run_depend>xacro</run_depend>
   <run_depend>actionlib</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>control_msgs</run_depend>
@@ -42,5 +40,6 @@
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>intera_core_msgs</run_depend>
   <run_depend>intera_interface</run_depend>
+  <run_depend>joystick_drivers</run_depend>
 
 </package>

@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
-# Copyright (c) 2013-2016, Rethink Robotics
+# Copyright (c) 2016, Rethink Robotics
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,75 +27,48 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import intera_interface
 import argparse
-
 import rospy
 
-import intera_interface.analog_io as AIO
-
-
-def test_interface(io_component='torso_fan'):
-    """Ramps an Analog component from 0 to 100, then back down to 0."""
-    rospy.loginfo("Ramping output of Analog IO component: %s", io_component)
-
-    b = AIO.AnalogIO(io_component)
-    rate = rospy.Rate(2)
-
-    # start: 0.0
-    print b.state()
-
-    # ramp up
-    for i in range(0, 101, 10):
-        b.set_output(i)
-        print i
-        rate.sleep()
-    # max: 100.0
-    print b.state()
-
-    # ramp down
-    for i in range(100, -1, -10):
-        b.set_output(i)
-        print i
-        rate.sleep()
-    # (fans off)
-    b.set_output(0)
-
-
 def main():
-    """RSDK Analog IO Example: Ramp
+    """RSDK Head Display Example:
 
-    Ramps the output of an AnalogIO component from 0 to 100,
-    and then back down again. Demonstrates the use of the
-    intera_interface.AnalogIO class.
+    Displays a given image file or multiple files on the robot's face.
 
-    Run this example and listen to the fan as output changes.
+    Pass the relative or absolute file path to an image file on your
+    computer, and the example will read and convert the image using
+    cv_bridge, sending it to the screen as a standard ROS Image Message.
     """
     epilog = """
-ROS Parameters:
-  ~component_id        - name of AnalogIO component to use
-
-Baxter AnalogIO
-    Note that 'AnalogIO' components are only those that use
-    the custom ROS Messages intera_core_msgs/AnalogIOState
-    and intera_core_msgs/AnalogOutputCommand.
-
-    AnalogIO component names can be found on the Wiki or by
-    echoing the names field of the analog_io_states topic:
-      $ rostopic echo -n 1 /robot/analog_io_states/names
+Notes:
+    Max screen resolution is 1024x600.
+    Images are always aligned to the top-left corner.
+    Image formats are those supported by OpenCv - LoadImage().
     """
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__,
                                      epilog=epilog)
-    parser.add_argument(
-        '-c', '--component', dest='component_id', default='torso_fan',
-        help='name of Analog IO component to use (default:= torso_fan)'
+    required = parser.add_argument_group('required arguments')
+    required.add_argument(
+        '-f', '--file', nargs='+',
+        help='Path to image file to send. Multiple files are separated by a space, eg.: a.png b.png'
     )
-    args = parser.parse_args(rospy.myargv()[1:])
+    parser.add_argument(
+        '-l', '--loop', action="store_true",
+        help='Display images in loop, add argument will display images in loop'
+    )
+    parser.add_argument(
+        '-r', '--rate', type=float, default=1.0,
+        help='Image display frequency for multiple and looped images.'
+    )
+    args = parser.parse_args()
 
-    rospy.init_node('rsdk_analog_io_rampup', anonymous=True)
-    io_component = rospy.get_param('~component_id', args.component_id)
-    test_interface(io_component)
+    rospy.init_node("head_display_example", anonymous=True)
+
+    head_display = intera_interface.HeadDisplay()
+    head_display.display_image(args.file, args.loop, args.rate)
 
 if __name__ == '__main__':
     main()

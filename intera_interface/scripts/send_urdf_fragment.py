@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python
 
 # Copyright (c) 2013-2016, Rethink Robotics
 # All rights reserved.
@@ -43,15 +43,15 @@ def xacro_parse(filename):
     xacro_jade.process_doc(doc, in_order=True)
     return doc.toprettyxml(indent='  ')
 
-def send_urdf(parent_link, root_joint, urdf_filename):
+def send_urdf(parent_link, root_joint, urdf_filename, duration):
     """
-    Send the URDF Fragment located at the specified path to
-    modify the electric gripper on Baxter.
+    Send the URDF Fragment located at the specified path.
 
     @param parent_link: parent link to attach the URDF fragment to
                         (usually <side>_hand)
     @param root_joint: root link of the URDF fragment (usually <side>_gripper_base)
     @param urdf_filename: path to the urdf XML file to load into xacro and send
+    @param duration: duration to repeat sending the URDF to ensure it is received
     """
     msg = URDFConfiguration()
     # The updating the time parameter tells
@@ -67,11 +67,12 @@ def send_urdf(parent_link, root_joint, urdf_filename):
     msg.urdf = xacro_parse(urdf_filename)
     pub = rospy.Publisher('/robot/urdf', URDFConfiguration, queue_size=10)
     rate = rospy.Rate(5) # 5hz
+    start = rospy.Time.now()
     while not rospy.is_shutdown():
-        # Only one publish is necessary, but here we
-        # will continue to publish until ctrl+c is invoked
         pub.publish(msg)
         rate.sleep()
+        if (rospy.Time.now() - msg.time) > rospy.Duration(duration):
+            break
 
 def main():
     """RSDK URDF Fragment Example:
@@ -88,13 +89,15 @@ def main():
         help='Path to URDF file to send'
     )
     required.add_argument(
-        '-l', '--link', required=False, default="left_hand",
+        '-l', '--link', required=False, default="right_hand",
         help='URDF Link already to attach fragment to (usually <left/right>_hand)'
     )
     required.add_argument(
-        '-j', '--joint', required=False, default="left_gripper_base",
+        '-j', '--joint', required=False, default="right_gripper_base",
         help='Root joint for fragment (usually <left/right>_gripper_base)'
     )
+    parser.add_argument("-d", "--duration", type=lambda t:abs(float(t)),
+            default=5.0, help="[in seconds] Duration to publish fragment")
     args = parser.parse_args(rospy.myargv()[1:])
 
     rospy.init_node('rsdk_configure_urdf', anonymous=True)
@@ -102,7 +105,7 @@ def main():
     if not os.access(args.file, os.R_OK):
         rospy.logerr("Cannot read file at '%s'" % (args.file,))
         return 1
-    send_urdf(args.link, args.joint, args.file)
+    send_urdf(args.link, args.joint, args.file, args.duration)
     return 0
 
 if __name__ == '__main__':

@@ -7,11 +7,11 @@ Code & Tickets
 --------------
 
 +-----------------+----------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/wiki                            |
+| Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
 +-----------------+----------------------------------------------------------------+
 | Issues          | https://github.com/RethinkRobotics/intera_sdk/issues           |
 +-----------------+----------------------------------------------------------------+
-| Contributions   | http://sdk.rethinkrobotics.com/wiki/Contributions              |
+| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
 +-----------------+----------------------------------------------------------------+
 
 intera_examples Repository Overview
@@ -22,13 +22,12 @@ intera_examples Repository Overview
      .
      |
      +-- scripts/                                  example program executables
-     |   +-- analog_io_rampup.py
-     |   +-- digital_io_blink.py
-     |   +-- gripper_action_client.py
+     |   +-- camera_display.py
+     |   +-- fk_service_client.py 
      |   +-- gripper_cuff_control.py
      |   +-- gripper_joystick.py
      |   +-- gripper_keyboard.py
-     |   +-- head_action_client.py
+     |   +-- head_display_image.py
      |   +-- head_wobbler.py
      |   +-- ik_service_client.py
      |   +-- joint_position_file_playback.py
@@ -41,12 +40,10 @@ intera_examples Repository Overview
      |   +-- joint_trajectory_file_playback.py
      |   +-- joint_velocity_puppet.py
      |   +-- joint_velocity_wobbler.py
+     |   +-- lights_blink.py
      |   +-- navigator_io.py
-     |   +-- send_urdf_fragment.py
-     |   +-- xdisplay_image.py
      |
      +-- launch/                                   example program launch scripts
-     |   +-- gripper_action_client.launch
      |   +-- gripper_joystick.launch
      |   +-- joint_position_joystick.launch
      |   +-- joint_trajectory_client.launch
@@ -61,7 +58,7 @@ intera_examples Repository Overview
      +-- cfg/                                      dynamic reconfigure example configs
 
 
-Other Baxter Repositories
+Other Intera SDK Repositories
 -------------------------
 
 +------------------+-----------------------------------------------------+
@@ -71,4 +68,4 @@ Other Baxter Repositories
 Latest Release Information
 --------------------------
 
-http://sdk.rethinkrobotics.com/wiki/Release-Changes
+http://sdk.rethinkrobotics.com/intera/Release-Changes

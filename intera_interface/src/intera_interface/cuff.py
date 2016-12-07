@@ -25,88 +25,77 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import threading
-import uuid
-
 import rospy
-
 import intera_dataflow
 from intera_io import IODeviceInterface
+from intera_core_msgs.msg import IODeviceConfiguration
+from robot_params import RobotParams
 
-class Navigator(object):
+
+class Cuff(object):
     """
-    Interface class for a Navigator on the Intera Research Robot.
-
-    Signals:
-        button_square_changed   - OFF/CLICK/LONG_PRESS/DOUBLE_CLICK
-        button_ok_changed
-        button_back_changed
-        button_show_changed
-        button_triangle_changed
-        button_circle_changed
-        wheel_changed           - Wheel value
-
+    Interface class for cuff on the Intera robots.
     """
 
-    def __init__(self):
+    def __init__(self, limb="right"):
         """
         Constructor.
 
+        @type limb: str
+        @param limb: limb side to interface
         """
-        self._navigator_io = IODeviceInterface("robot", "navigator")
-        self._button_lookup = {0:'OFF',        1:'CLICK',
-                               2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
+        params = RobotParams()
+        limb_names = params.get_limb_names()
+        if limb not in limb_names:
+            rospy.logerr("Cannot detect Cuff's limb {0} on this robot."
+                         " Valid limbs are {1}. Exiting Cuff.init().".format(
+                                                            limb, limb_names))
+            return
+        self.limb = limb
+        self.device = None
+        self.name = "cuff"
+        self.cuff_config_sub = rospy.Subscriber('/io/robot/cuff/config', IODeviceConfiguration, self._config_callback)
+        # Wait for the cuff status to be true
+        intera_dataflow.wait_for(
+            lambda: not self.device is None, timeout=5.0,
+            timeout_msg=("Failed find cuff on limb '{0}'.".format(limb))
+            )
+        self._cuff_io = IODeviceInterface("robot", self.name)
 
-    def list_all_items(self):
+    def _config_callback(self, msg):
         """
-        Returns a list of strings describing all available navigator items
-
-        @rtype: list
-        @return: a list of string representing navigator items
-                 Each item name of the following format:
-                 '<assembly>_button_<function>'
+        config topic callback
         """
-        return self._navigator_io.list_signal_names()
+        if msg.device != []:
+            if str(msg.device.name) == self.name:
+                self.device = msg.device
 
-    def get_wheel_state(self, wheel_name):
+    def lower_button(self):
         """
-        Current state of the wheel providing wheel name
-        @type wheel_name: str
-        @param wheel_name: the wheel name
+        Returns a boolean describing whether the lower button on cuff is pressed.
 
-        @rtype: uint
-        @return: an integer representing how far the wheel has turned
+        @rtype: bool
+        @return: a variable representing button state: (True: pressed, False: unpressed)
         """
-        return self._get_item_state(wheel_name)
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "button_lower"])))
 
-    def get_button_state(self, button_name):
+    def upper_button(self):
         """
-        Current button state by providing button name
-        @type button_name: str
-        @param button_name: the button name
-
-        @rtype: uint
-        @return: an integer representing button values
-                 Valid states:
-                 {0:'OFF', 1:'CLICK', 2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
+        Returns a boolean describing whether the upper button on cuff is pressed.
+        (True: pressed, False: unpressed)
+        @rtype: bool
+        @return:  a variable representing button state: (True: pressed, False: unpressed)
         """
-        return self._get_item_state(button_name)
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "button_upper"])))
 
-    def button_string_lookup(self, button_value):
+    def cuff_button(self):
         """
-        Returns strings corresponding to the button state.
-
-        @type button_value: int
-        @param button_value: the value to lookup
-
-        @rtype: str
-        @return: 'INVALID_VALUE' if out of range, or if valid:
-                 {0:'OFF', 1:'CLICK', 2:'LONG_PRESS', 3:'DOUBLE_CLICK'}
+        Returns a boolean describing whether the cuff button on cuff is pressed.
+        (True: pressed, False: unpressed)
+        @rtype: bool
+        @return:  a variable representing cuff button state: (True: pressed, False: unpressed)
         """
-        if button_value in self._button_lookup:
-            return self._button_lookup[button_value]
-        else:
-            return 'INVALID_VALUE'
+        return bool(self._cuff_io.get_signal_value('_'.join([self.limb, "cuff"])))
 
     def register_callback(self, callback_function, signal_name, poll_rate=10):
         """
@@ -127,7 +116,7 @@ class Navigator(object):
                  empty string if the requested signal_name does not exist in the
                  Navigator
         """
-        return self._navigator_io.register_callback(
+        return self._cuff_io.register_callback(
                                  callback_function=callback_function,
                                  signal_name=signal_name,
                                  poll_rate=poll_rate)
@@ -143,8 +132,4 @@ class Navigator(object):
         @return: returns bool True if the callback was successfully
                  deregistered, and False otherwise.
         """
-        return self._navigator_io.deregister_callback(callback_id)
-
-    def _get_item_state(self, item_name):
-        return self._navigator_io.get_signal_value(item_name)
-
+        return self._cuff_io.deregister_callback(callback_id)

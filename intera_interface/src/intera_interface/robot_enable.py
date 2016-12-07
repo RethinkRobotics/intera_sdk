@@ -43,7 +43,7 @@ import intera_dataflow
 from intera_core_msgs.msg import (
     AssemblyState,
 )
-from intera_interface import settings
+import settings
 
 
 class RobotEnable(object):
@@ -84,7 +84,7 @@ class RobotEnable(object):
 
         intera_dataflow.wait_for(
             lambda: not self._state is None,
-            timeout=2.0,
+            timeout=5.0,
             timeout_msg=("Failed to get robot state on %s" %
             (state_topic,)),
         )
@@ -94,12 +94,12 @@ class RobotEnable(object):
 
     def _toggle_enabled(self, status):
 
-        pub = rospy.Publisher('robot/set_super_enable', Bool, 
+        pub = rospy.Publisher('robot/set_super_enable', Bool,
                               queue_size=10)
 
         intera_dataflow.wait_for(
             test=lambda: self._state.enabled == status,
-            timeout=2.0 if status else 5.0,
+            timeout=5.0,
             timeout_msg=("Failed to %sable robot" %
                          ('en' if status else 'dis',)),
             body=lambda: pub.publish(status),
@@ -109,6 +109,9 @@ class RobotEnable(object):
     def state(self):
         """
         Returns the last known robot state.
+
+        @rtype: intera_core_msgs/AssemblyState
+        @return: Returns the last received AssemblyState message
         """
         return self._state
 
@@ -142,7 +145,7 @@ error persists. Check diagnostics or rethink.log for more info.
         error_env = """Failed to reset robot.
 Please verify that the ROS_IP or ROS_HOSTNAME environment variables are set
 and resolvable. For more information please visit:
-http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
+http://sdk.rethinkrobotics.com/intera/SDK_Shell
 """
         is_reset = lambda: (self._state.enabled == False and
                             self._state.stopped == False and
@@ -160,7 +163,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         try:
             intera_dataflow.wait_for(
                 test=is_reset,
-                timeout=3.0,
+                timeout=5.0,
                 timeout_msg=error_env,
                 body=pub.publish
             )
@@ -179,7 +182,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         pub = rospy.Publisher('robot/set_super_stop', Empty, queue_size=10)
         intera_dataflow.wait_for(
             test=lambda: self._state.stopped == True,
-            timeout=3.0,
+            timeout=5.0,
             timeout_msg="Failed to stop the robot",
             body=pub.publish,
         )
@@ -187,13 +190,16 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
     def version_check(self):
         """
         Verifies the version of the software running on the robot is
-        compatible with this local version of the Baxter RSDK.
+        compatible with this local version of the Intera SDK.
 
         Currently uses the variables in intera_interface.settings and
         can be overridden for all default examples by setting CHECK_VERSION
         to False.
+
+        @rtype: bool
+        @return: Returns True if SDK version is compatible with robot Version, False otherwise
         """
-        param_name = "rethink/software_version"
+        param_name = "/manifest/robot_software/version/HLR_VERSION_STRING"
         sdk_version = settings.SDK_VERSION
 
         # get local lock for rosparam threading bug
@@ -218,7 +224,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
                 errstr_version = """RobotEnable: Software Version Mismatch.
 Robot Software version (%s) does not match local SDK version (%s). Please
 Update your Robot Software. \
-See: http://sdk.rethinkrobotics.com/wiki/Software_Update"""
+See: http://sdk.rethinkrobotics.com/intera/Software_Update"""
                 rospy.logerr(errstr_version, robot_version, sdk_version)
                 return False
         return True

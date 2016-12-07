@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-# Copyright (c) 2013-2016, Rethink Robotics
+# Copyright (c) 2016, Rethink Robotics
 # All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -27,44 +25,46 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-from dynamic_reconfigure.parameter_generator_catkin import (
-    ParameterGenerator,
-    double_t,
-)
+class IOCommand(object):
+    '''
+    Container for a generic io command
+    '''
+    def __init__(self, op, args=None):
+        self.op = op
+        self.args = args if args else {}
 
-gen = ParameterGenerator()
+class SetCommand(IOCommand):
+    '''
+    Container for a port or signal set command
+    '''
+    def __init__(self, args=None):
+        super(SetCommand, self).__init__('set', args)
 
-gen.add(
-    'goal_time', double_t, 0,
-    "Amount of time (s) controller is permitted to be late achieving goal",
-    0.1, 0.0, 120.0,
-)
-gen.add(
-    'stopped_velocity_tolerance', double_t, 0,
-    "Maximum velocity (m/s) at end of trajectory to be considered stopped",
-    0.20, -1.0, 1.0,
-)
+    def _set(self, components, component_name,
+             data_type, dimensions, *component_value):
+        '''
+        add a set component command
+        '''
+        self.args.setdefault(components, {})
+        self.args[components][component_name] = {
+            'format' : {'type' : data_type},
+            'data'   : [val for val in component_value]
+        }
+        if dimensions > 1:
+            self.args[components][component_name]['format']['dimensions'] = [dimensions]
 
-joints = (
-    'left_s0', 'left_s1', 'left_e0', 'left_e1', 'left_w0', 'left_w1',
-    'left_w2', 'right_s0', 'right_s1', 'right_e0', 'right_e1', 'right_w0',
-    'right_w1', 'right_w2',
-    )
+    def set_signal(self, signal_name, data_type, *signal_value):
+        '''
+        add a set signal command
+        '''
+        dimensions = len(signal_value)
+        self._set('signals', signal_name, data_type, dimensions, *signal_value)
+        return self
 
-params = ('_goal', '_trajectory',)
-msg = (
-    " - maximum final error",
-    " - maximum error during trajectory execution",
-    )
-min = (-1.0, -1.0,)
-default = (-1.0, 0.35,)
-max = (1.0, 1.0,)
-
-for idx, param in enumerate(params):
-    for joint in joints:
-        gen.add(
-            joint + param, double_t, 0, joint + msg[idx],
-            default[idx], min[idx], max[idx]
-        )
-
-exit(gen.generate('intera_interface', '', 'PositionFFJointTrajectoryActionServer'))
+    def set_port(self, port_name, data_type, *port_value):
+        '''
+        add a set port command
+        '''
+        dimensions = len(port_value)
+        self._set('ports', port_name, data_type, dimensions, *port_value)
+        return self

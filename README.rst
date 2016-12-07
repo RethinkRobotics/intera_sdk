@@ -10,17 +10,19 @@ action servers and control of the Intera Robot from Rethink Robotics.
 Installation
 ------------
 | Please follow the Getting Started wiki page for instructions on installation of the Intera SDK:
-| http://sdk.rethinkrobotics.com/wiki/Workstation_Setup
+| http://sdk.rethinkrobotics.com/intera/Workstation_Setup
 
 Code & Tickets
 --------------
 
 +-----------------+----------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/wiki                            |
+| Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
++-----------------+----------------------------------------------------------------+
+| Python API Docs | http://rethinkrobotics.github.io/intera_sdk_docs/5.0.4         |
 +-----------------+----------------------------------------------------------------+
 | Issues          | https://github.com/RethinkRobotics/intera_sdk/issues           |
 +-----------------+----------------------------------------------------------------+
-| Contributions   | http://sdk.rethinkrobotics.com/wiki/Contributions              |
+| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
 +-----------------+----------------------------------------------------------------+
 
 Intera Repository Overview
@@ -32,12 +34,12 @@ Intera Repository Overview
      |
      +-- intera_sdk/          intera_sdk metapackage containing all intera sdk packages
      |
-     +-- intera_interface     Python API for communicating with Intera-enabled robots
+     +-- intera_interface     python API for communicating with Intera-enabled robots
      |   +-- cfg/
      |   +-- scripts/ 
      |   +-- src/
      |
-     +-- intera_examples       examples using the Python API for Intera-enable robots
+     +-- intera_examples      examples using the Python API for Intera-enabled robots
      |   +-- cfg/
      |   +-- launch/
      |   +-- share/images
@@ -56,4 +58,4 @@ Other Intera Repositories
 Latest Release Information
 --------------------------
 
-http://sdk.rethinkrobotics.com/wiki/Release-Changes
+http://sdk.rethinkrobotics.com/intera/Release-Changes
