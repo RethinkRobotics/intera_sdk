@@ -73,16 +73,14 @@ def map_joystick(joystick, side):
     @param joystick: an instance of a Joystick
     """
     limb = intera_interface.Limb(side)
+    gripper = None
     try:
         gripper = intera_interface.Gripper(side)
     except:
-        has_gripper = False
         rospy.loginfo("Could not detect a connected electric gripper.")
-    else:
-        has_gripper = True
 
     def set_g(action):
-        if has_gripper:    
+        if gripper is not None:
             if action == "close":
                 gripper.close()
             elif action == "open":
@@ -110,22 +108,33 @@ def map_joystick(joystick, side):
                 print("%s: %s" % (str(test[1][0]), doc))
 
     bindings_list = []
-    bindings = (
-        ((bdn, ['leftTrigger']), (set_g, ['close'], gripper), "right gripper close"),
-        ((bup, ['leftTrigger']), (set_g, ['open'], gripper), "right gripper open"),
-        ((jlo, ['leftStickHorz']), (set_j, [limb_cmd, side, joints, 0, 0.1]), 
-            lambda: "right inc " + joints[0]),
-        ((jhi, ['leftStickHorz']), (set_j, [limb_cmd, side, joints, 0, -0.1]), 
-            lambda: "right dec " + joints[0]),
-        ((jlo, ['leftStickVert']), (set_j, [limb_cmd, side, joints, 1, 0.1]), 
-            lambda: "right inc " + joints[1]),
-        ((jhi, ['leftStickVert']), (set_j, [limb_cmd, side, joints, 1, -0.1]), 
-            lambda: "right dec " + joints[1]),
-        ((bdn, ['leftBumper']), (rotate, [joints]), "right: cycle joint"),
-        ((bdn, ['btnLeft']), (set_g, ['calibrate'], gripper), "right calibrate"),
+    bindings = [
+        ((jlo, ['leftStickHorz']), (set_j, [limb_cmd, limb, joints, 0, 0.1]),
+            lambda: "Increase " + joints[0]),
+        ((jhi, ['leftStickHorz']), (set_j, [limb_cmd, limb, joints, 0, -0.1]),
+            lambda: "Decrease " + joints[0]),
+        ((jlo, ['leftStickVert']), (set_j, [limb_cmd, limb, joints, 1, 0.1]),
+            lambda: "Increase " + joints[1]),
+        ((jhi, ['leftStickVert']), (set_j, [limb_cmd, limb, joints, 1, -0.1]),
+            lambda: "Decrease " + joints[1]),
+        ((jlo, ['rightStickHorz']), (set_j, [limb_cmd, limb, joints, 2, 0.1]),
+            lambda: "Increase " + joints[2]),
+        ((jhi, ['rightStickHorz']), (set_j, [limb_cmd, limb, joints, 2, -0.1]),
+            lambda: "Decrease " + joints[2]),
+        ((jlo, ['rightStickVert']), (set_j, [limb_cmd, limb, joints, 3, 0.1]),
+            lambda: "Increase " + joints[3]),
+        ((jhi, ['rightStickVert']), (set_j, [limb_cmd, limb, joints, 3, -0.1]),
+            lambda: "Decrease " + joints[3]),
+        ((bdn, ['leftBumper']), (rotate, [joints]), side + ": cycle joint"),
         ((bdn, ['function1']), (print_help, [bindings_list]), "help"),
         ((bdn, ['function2']), (print_help, [bindings_list]), "help"),
-        )
+        ]
+    if gripper:
+        bindings.extend([
+            ((bdn, ['rightTrigger']), (set_g, ['close'], gripper), side + " gripper close"),
+            ((bup, ['rightTrigger']), (set_g, ['open'], gripper), side + " gripper open"),
+            ((bdn, ['btnLeft']), (set_g, ['calibrate'], gripper), "right calibrate")
+            ])
     bindings_list.append(bindings)
 
     rate = rospy.Rate(100)
@@ -133,15 +142,12 @@ def map_joystick(joystick, side):
     print("Press Ctrl-C to stop. ")
     while not rospy.is_shutdown():
         for (test, cmd, doc) in bindings:
-            if cmd[1] == 'close' or cmd[1] == 'open' or cmd[1] == 'calibrate':
-                cmd[0](cmd[1], cmd[2])
-            else:
-                if test[0](*test[1]):
-                    cmd[0](*cmd[1])
-            if callable(doc):
-                print(doc())
-            else:
-                print(doc)
+            if test[0](*test[1]):
+                cmd[0](*cmd[1])
+                if callable(doc):
+                    print(doc())
+                else:
+                    print(doc)
         if len(limb_cmd):
             limb.set_joint_positions(limb_cmd)
             limb_cmd.clear()
@@ -150,7 +156,7 @@ def map_joystick(joystick, side):
 
 
 def main():
-    """RSDK Joint Position Example: Joystick Control
+    """SDK Joint Position Example: Joystick Control
 
     Use a game controller to control the angular joint positions
     of Sawyer's arms.

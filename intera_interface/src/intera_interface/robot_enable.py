@@ -109,6 +109,9 @@ class RobotEnable(object):
     def state(self):
         """
         Returns the last known robot state.
+
+        @rtype: intera_core_msgs/AssemblyState
+        @return: Returns the last received AssemblyState message
         """
         return self._state
 
@@ -142,7 +145,7 @@ error persists. Check diagnostics or rethink.log for more info.
         error_env = """Failed to reset robot.
 Please verify that the ROS_IP or ROS_HOSTNAME environment variables are set
 and resolvable. For more information please visit:
-http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
+http://sdk.rethinkrobotics.com/intera/SDK_Shell
 """
         is_reset = lambda: (self._state.enabled == False and
                             self._state.stopped == False and
@@ -192,6 +195,9 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
         Currently uses the variables in intera_interface.settings and
         can be overridden for all default examples by setting CHECK_VERSION
         to False.
+
+        @rtype: bool
+        @return: Returns True if SDK version is compatible with robot Version, False otherwise
         """
         param_name = "/manifest/robot_software/version/HLR_VERSION_STRING"
         sdk_version = settings.SDK_VERSION
@@ -218,7 +224,7 @@ http://sdk.rethinkrobotics.com/wiki/RSDK_Shell#Initialize
                 errstr_version = """RobotEnable: Software Version Mismatch.
 Robot Software version (%s) does not match local SDK version (%s). Please
 Update your Robot Software. \
-See: http://sdk.rethinkrobotics.com/wiki/Software_Update"""
+See: http://sdk.rethinkrobotics.com/intera/Software_Update"""
                 rospy.logerr(errstr_version, robot_version, sdk_version)
                 return False
         return True

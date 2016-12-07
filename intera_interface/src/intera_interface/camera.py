@@ -28,7 +28,7 @@
 
 import rospy
 from sensor_msgs.msg import Image
-from io_interface import IODeviceInterface
+from intera_io import IODeviceInterface
 from robot_params import RobotParams
 
 class Cameras(object):
@@ -37,6 +37,9 @@ class Cameras(object):
     """
 
     def __init__(self):
+        """
+        Constructor.
+        """
         camera_param_dict = RobotParams().get_camera_details()
         camera_list = camera_param_dict.keys()
         # check to make sure cameras is not an empty list

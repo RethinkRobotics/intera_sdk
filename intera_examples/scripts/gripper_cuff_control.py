@@ -33,10 +33,10 @@ import sys
 import rospy
 
 from intera_interface import (
-    DigitalIO,
     Gripper,
-    Navigator,
-    CHECK_VERSION,
+    Lights,
+    Cuff,
+    RobotParams,
 )
 
 
@@ -44,83 +44,79 @@ class GripperConnect(object):
     """
     Connects wrist button presses to gripper open/close commands.
 
-    Uses the DigitalIO Signal feature to make callbacks to connected
+    Uses the Navigator callback feature to make callbacks to connected
     action functions when the button values change.
     """
 
     def __init__(self, arm, lights=True):
         """
         @type arm: str
-        @param arm: arm of gripper to control {left, right}
+        @param arm: arm of gripper to control
         @type lights: bool
         @param lights: if lights should activate on cuff grasp
         """
         self._arm = arm
         # inputs
-        self._close_io = DigitalIO('%s_upper_button' % (arm,))  # 'dash' btn
-        self._open_io = DigitalIO('%s_lower_button' % (arm,))   # 'circle' btn
-        self._light_io = DigitalIO('%s_lower_cuff' % (arm,))    # cuff squeeze
-        # outputs
-        self._gripper = Gripper('%s' % (arm,), CHECK_VERSION)
-        self._nav = Navigator('%s' % (arm,))
-
+        self._cuff = Cuff(limb=arm)
         # connect callback fns to signals
-        if self._gripper.type() != 'custom':
-            if not (self._gripper.calibrated() or
+        self._lights = None
+        if lights:
+            self._lights = Lights()
+            self._cuff.register_callback(self._light_action,
+                                         '{0}_cuff'.format(arm))
+        try:
+            self._gripper = Gripper(arm)
+            if not (self._gripper.is_calibrated() or
                     self._gripper.calibrate() == True):
-                rospy.logwarn("%s (%s) calibration failed.",
-                              self._gripper.name.capitalize(),
-                              self._gripper.type())
-        else:
-            msg = (("%s (%s) not capable of gripper commands."
-                   " Running cuff-light connection only.") %
-                   (self._gripper.name.capitalize(), self._gripper.type()))
+                rospy.logerr("({0}_gripper) calibration failed.".format(
+                               self._gripper.name))
+                raise
+            self._cuff.register_callback(self._close_action,
+                                         '{0}_button_upper'.format(arm))
+            self._cuff.register_callback(self._open_action,
+                                         '{0}_button_lower'.format(arm))
+            rospy.loginfo("{0} Cuff Control initialized...".format(
+                          self._gripper.name))
+        except:
+            self._gripper = None
+            msg = ("{0} Gripper is not connected to the robot."
+                   " Running cuff-light connection only.").format(arm.capitalize())
             rospy.logwarn(msg)
 
-        self._gripper.on_type_changed.connect(self._check_calibration)
-        self._open_io.state_changed.connect(self._open_action)
-        self._close_io.state_changed.connect(self._close_action)
-
-        if lights:
-            self._light_io.state_changed.connect(self._light_action)
-
-        rospy.loginfo("%s Cuff Control initialized...",
-                      self._gripper.name.capitalize())
 
     def _open_action(self, value):
-        if value and self._is_grippable():
+        if value and self._gripper.is_ready():
             rospy.logdebug("gripper open triggered")
             self._gripper.open()
+            if self._lights:
+                self._set_lights('red', False)
+                self._set_lights('green', True)
 
     def _close_action(self, value):
-        if value and self._is_grippable():
+        if value and self._gripper.is_ready():
             rospy.logdebug("gripper close triggered")
             self._gripper.close()
+            if self._lights:
+                self._set_lights('green', False)
+                self._set_lights('red', True)
 
     def _light_action(self, value):
         if value:
             rospy.logdebug("cuff grasp triggered")
         else:
             rospy.logdebug("cuff release triggered")
-        self._nav.inner_led = value
-        self._nav.outer_led = value
+        if self._lights:
+            self._set_lights('red', False)
+            self._set_lights('green', False)
+            self._set_lights('blue', value)
 
-    def _check_calibration(self, value):
-        if self._gripper.calibrated():
-            return True
-        elif value == 'electric':
-            rospy.loginfo("calibrating %s...",
-                          self._gripper.name.capitalize())
-            return (self._gripper.calibrate() == True)
-        else:
-            return False
-
-    def _is_grippable(self):
-        return (self._gripper.calibrated() and self._gripper.ready())
-
+    def _set_lights(self, color, value):
+        self._lights.set_light_state('head_{0}_light'.format(color), on=bool(value))
+        self._lights.set_light_state('{0}_hand_{1}_light'.format(self._arm, color),
+                                                                 on=bool(value))
 
 def main():
-    """RSDK Gripper Button Control Example
+    """SDK Gripper Button Control Example
 
     Connects cuff buttons to gripper open/close commands:
         'Circle' Button    - open gripper
@@ -131,11 +127,19 @@ def main():
     to be able to easily control the grippers by hand while
     using the robot. Can be run in parallel with other code.
     """
+    rp = RobotParams()
+    valid_limbs = rp.get_limb_names()
+    if not valid_limbs:
+        rp.log_message(("Cannot detect any limb parameters on this robot. "
+                        "Exiting."), "ERROR")
+        return
+    if len(valid_limbs) > 1:
+        valid_limbs.append("all_limbs")
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__)
-    parser.add_argument('-g', '--gripper', dest='gripper', default='both',
-                        choices=['both', 'left', 'right'],
+    parser.add_argument('-g', '--gripper', dest='gripper', default=valid_limbs[0],
+                        choices=[valid_limbs],
                         help='gripper limb to control (default: both)')
     parser.add_argument('-n', '--no-lights', dest='lights',
                         action='store_false',
@@ -146,13 +150,13 @@ def main():
                         help='print debug statements')
     args = parser.parse_args(rospy.myargv()[1:])
 
-    rospy.init_node('rsdk_gripper_cuff_control_%s' % (args.gripper,),
+    rospy.init_node('sdk_gripper_cuff_control_{0}'.format(args.gripper),
                     log_level=args.verbosity)
 
-    arms = (args.gripper,) if args.gripper != 'both' else ('left', 'right')
+    arms = (args.gripper,) if args.gripper != 'all_limbs' else valid_limbs[:-1]
     grip_ctrls = [GripperConnect(arm, args.lights) for arm in arms]
 
-    print("Press cuff buttons to control grippers. Spinning...")
+    print("Press cuff buttons for gripper control. Spinning...")
     rospy.spin()
     print("Gripper Button Control Finished.")
     return 0

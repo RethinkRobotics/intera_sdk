@@ -70,7 +70,7 @@ class Waypoints(object):
 
         Navigator 'OK/Wheel' button callback
         """
-        if value != 'OFF':
+        if value:
             print("Waypoint Recorded")
             self._waypoints.append(self._limb.joint_angles())
 
@@ -81,7 +81,7 @@ class Waypoints(object):
         Navigator 'Rethink' button callback
         """
         # On navigator Rethink button press, stop recording
-        if value != 'OFF':
+        if value:
             print("Recording Stopped")
             self._is_recording = False
 
