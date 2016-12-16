@@ -122,7 +122,9 @@ def ik_service_client(limb = "right", use_advanced_options = False):
         rospy.loginfo("------------------")
         rospy.loginfo("Response Message:\n%s", resp)
     else:
-        rospy.loginfo("INVALID POSE - No Valid Joint Solution Found.")
+        rospy.logerr("INVALID POSE - No Valid Joint Solution Found.")
+        rospy.logerr("Result Error %d", resp.result_type[0])
+        return False
 
     return True
 
@@ -145,12 +147,12 @@ def main():
     if ik_service_client():
         rospy.loginfo("Simple IK call passed!")
     else:
-        rospy.logerror("Simple IK call FAILED")
+        rospy.logerr("Simple IK call FAILED")
 
     if ik_service_client(use_advanced_options=True):
         rospy.loginfo("Advanced IK call passed!")
     else:
-        rospy.logerror("Advanced IK call FAILED")
+        rospy.logerr("Advanced IK call FAILED")
 
 
 if __name__ == '__main__':

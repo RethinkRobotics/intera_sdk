@@ -73,7 +73,8 @@ def fk_service_client(limb = "right"):
         rospy.loginfo("------------------")
         rospy.loginfo("Response Message:\n%s", resp)
     else:
-        rospy.loginfo("INVALID JOINTS - No Cartesian Solution Found.")
+        rospy.logerr("INVALID JOINTS - No Cartesian Solution Found.")
+        return False
 
     return True
 
@@ -95,7 +96,7 @@ def main():
     if fk_service_client():
         rospy.loginfo("Simple FK call passed!")
     else:
-        rospy.logerror("Simple FK call FAILED")
+        rospy.logerr("Simple FK call FAILED")
 
 
 if __name__ == '__main__':
