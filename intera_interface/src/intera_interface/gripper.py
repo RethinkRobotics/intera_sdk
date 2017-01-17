@@ -64,7 +64,7 @@ class Gripper(object):
         if self.has_error():
             self.reboot()
             calibrate = True
-        if calibrate and self.is_calibrated():
+        if calibrate and not self.is_calibrated():
             self.calibrate()
 
     def _config_callback(self, msg):
