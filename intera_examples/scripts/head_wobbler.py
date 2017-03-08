@@ -49,9 +49,6 @@ class Wobbler(object):
         print("\nExiting example...")
         if self._done:
             self.set_neutral()
-        if not self._init_state and self._rs.state().enabled:
-            print("Disabling robot...")
-            self._rs.disable()
 
     def set_neutral(self):
         """

@@ -74,9 +74,6 @@ class Wobbler(object):
         #return to normal
         self._reset_control_modes()
         self.set_neutral()
-        if not self._init_state:
-            print("Disabling robot...")
-            self._rs.disable()
         return True
 
     def wobble(self):

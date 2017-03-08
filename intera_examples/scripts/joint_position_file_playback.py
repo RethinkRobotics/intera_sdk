@@ -163,9 +163,7 @@ Related examples:
 
     def clean_shutdown():
         print("\nExiting example...")
-        if not init_state:
-            print("Disabling robot...")
-            rs.disable()
+
     rospy.on_shutdown(clean_shutdown)
 
     print("Enabling robot... ")

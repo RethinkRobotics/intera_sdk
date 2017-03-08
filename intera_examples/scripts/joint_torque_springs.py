@@ -117,7 +117,7 @@ class JointSprings(object):
 
         # for safety purposes, set the control rate command timeout.
         # if the specified number of command cycles are missed, the robot
-        # will timeout and disable
+        # will timeout and return to Position Control Mode
         self._limb.set_command_timeout((1.0 / self._rate) * self._missed_cmds)
 
         # loop at specified rate commanding new joint torques
@@ -135,9 +135,6 @@ class JointSprings(object):
         """
         print("\nExiting example...")
         self._limb.exit_control_mode()
-        if not self._init_state and self._rs.state().enabled:
-            print("Disabling robot...")
-            self._rs.disable()
 
 
 def main():
