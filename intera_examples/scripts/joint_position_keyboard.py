@@ -29,7 +29,7 @@ from intera_interface import CHECK_VERSION
 
 def map_keyboard(side):
     limb = intera_interface.Limb(side)
-    
+
     try:
         gripper = intera_interface.Gripper(side)
     except:
@@ -136,9 +136,7 @@ See help inside the example with the '?' key for key bindings.
 
     def clean_shutdown():
         print("\nExiting example.")
-        if not init_state:
-            print("Disabling robot...")
-            rs.disable()
+
     rospy.on_shutdown(clean_shutdown)
 
     rospy.loginfo("Enabling robot...")

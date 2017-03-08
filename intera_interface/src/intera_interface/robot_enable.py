@@ -122,6 +122,9 @@ class RobotEnable(object):
         Reset all joints.  Trigger JRCP hardware to reset all faults.  Disable
         the robot.
         """
+        error_not_stopped = """\
+Robot is not in a Error State. Cannot perform Reset.
+"""
         error_estop = """\
 E-Stop is ASSERTED. Disengage E-Stop and then reset the robot.
 """
@@ -134,15 +137,20 @@ Please verify that the ROS_IP or ROS_HOSTNAME environment variables are set
 and resolvable. For more information please visit:
 http://sdk.rethinkrobotics.com/intera/SDK_Shell
 """
-        is_reset = lambda: (self._state.enabled == False and
-                            self._state.stopped == False and
+
+
+        is_reset = lambda: (self._state.stopped == False and
                             self._state.error == False and
                             self._state.estop_button == 0 and
                             self._state.estop_source == 0)
         pub = rospy.Publisher('robot/set_super_reset', Empty, queue_size=10)
 
+        if (not self._state.stopped):
+            rospy.logfatal(error_not_stopped)
+            raise IOError(errno.EREMOTEIO, "Failed to Reset due to lack of Error State.")
+
         if (self._state.stopped and
-            self._state.estop_button == AssemblyState.ESTOP_BUTTON_PRESSED):
+              self._state.estop_button == AssemblyState.ESTOP_BUTTON_PRESSED):
             rospy.logfatal(error_estop)
             raise IOError(errno.EREMOTEIO, "Failed to Reset: E-Stop Engaged")
 

@@ -39,12 +39,10 @@ def map_joystick(joystick, limb):
     except ValueError:
         rospy.logerr("Could not detect a gripper attached to the robot.")
         return
-    
+
     def clean_shutdown():
         print("\nExiting example...")
-        if not init_state:
-            print("Disabling robot...")
-            rs.disable()
+
     rospy.on_shutdown(clean_shutdown)
 
     # decrease position dead_zone
