@@ -1,3 +1,12 @@
+5.1.0 (2017-3-27)
+---------------------------------
+- Moved to Apache 2.0 license
+- Added Contribution Guidelines
+- Fix error logging in IK and FK scripts
+- Adds default SDK head image to the repo for users to display
+- Ensures "reset" command is available only after an estop or robot error
+- Fixed issue with logic in gripper initialization and calibration
+
 5.0.4 (2016-12-06)
 ---------------------------------
 - Intera SDK is compatible with the Sawyer SDK Robot
