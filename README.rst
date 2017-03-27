@@ -15,15 +15,15 @@ Installation
 Code & Tickets
 --------------
 
-+-----------------+----------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
-+-----------------+----------------------------------------------------------------+
-| Python API Docs | http://rethinkrobotics.github.io/intera_sdk_docs/5.0.4         |
-+-----------------+----------------------------------------------------------------+
-| Issues          | https://github.com/RethinkRobotics/intera_sdk/issues           |
-+-----------------+----------------------------------------------------------------+
-| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
-+-----------------+----------------------------------------------------------------+
++-----------------+----------------------------------------------------------------------------+
+| Documentation   | http://sdk.rethinkrobotics.com/intera/                                     |
++-----------------+----------------------------------------------------------------------------+
+| Python API Docs | http://rethinkrobotics.github.io/intera_sdk_docs/5.0.4                     |
++-----------------+----------------------------------------------------------------------------+
+| Issues          | https://github.com/RethinkRobotics/intera_sdk/issues                       |
++-----------------+----------------------------------------------------------------------------+
+| Contributions   | https://github.com/RethinkRobotics/intera_sdk/blob/master/CONTRIBUTING.md  |
++-----------------+----------------------------------------------------------------------------+
 
 Intera Repository Overview
 --------------------------

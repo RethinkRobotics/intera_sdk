@@ -130,9 +130,6 @@ class Waypoints(object):
 
     def clean_shutdown(self):
         print("\nExiting example...")
-        if not self._init_state:
-            print("Disabling robot...")
-            self._rs.disable()
         return True
 
 

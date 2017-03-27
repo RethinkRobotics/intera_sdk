@@ -36,9 +36,6 @@ def map_keyboard(limb):
         rospy.logerr("Could not detect a gripper attached to the robot.")
         return
     def clean_shutdown():
-        if not init_state:
-            print("Disabling robot...")
-            rs.disable()
         print("Exiting example.")
     rospy.on_shutdown(clean_shutdown)
     def offset_position(offset):
