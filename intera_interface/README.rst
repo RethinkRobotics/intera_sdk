@@ -39,7 +39,7 @@ intera_interface Repository Overview
      |       +-- settings.py
      |   +-- intera_control/                   generic control utilities
      |   +-- intera_dataflow/                  timing/program flow utilities
-     |   +-- joint_trajectory_action/          joint trajectory action implementation
+     |   +-- intera_joint_trajectory_action/   joint trajectory action implementation
      |
      +-- scripts/                              utility executable scripts
      |   +-- calibrate_arm.py                  arm calibration action client
