@@ -26,7 +26,7 @@ import rospy
 from dynamic_reconfigure.server import Server
 import intera_interface
 
-from joint_trajectory_action.joint_trajectory_action import (
+from intera_joint_trajectory_action.joint_trajectory_action import (
     JointTrajectoryActionServer,
 )
 from trajectory_msgs.msg import (
