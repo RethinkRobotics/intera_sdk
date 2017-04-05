@@ -1,0 +1,31 @@
+<package>
+  <name>motion_interface</name>
+  <version>5.1.0</version>
+  <description>
+    Python scripts for calling the motion controller
+  </description>
+
+  <maintainer email="rsdk.support@rethinkrobotics.com">
+    Rethink Robotics Inc.
+  </maintainer>
+  <license>Apache 2.0</license>
+  <url type="website">http://sdk.rethinkrobotics.com/intera/</url>
+  <url type="repository">
+    https://github.com/RethinkRobotics/intera_sdk
+  </url>
+  <url type="bugtracker">
+    https://github.com/RethinkRobotics/intera_sdk/issues
+  </url>
+  <author>Rethink Robotics Inc.</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>motion_msgs</build_depend>
+  <build_depend>message_runtime</build_depend>
+  <build_depend>rospy</build_depend>
+
+  <run_depend>motion_msgs</run_depend>
+  <run_depend>message_runtime</run_depend>
+  <run_depend>rospy</run_depend>
+
+</package>
