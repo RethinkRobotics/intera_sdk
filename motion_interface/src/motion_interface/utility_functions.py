@@ -61,76 +61,6 @@ def ensure_path_to_file_exists(raw_file_path):
     return file_name
 
 
-def import_all_waypoint_sequences(directory_name, joint_name_check=None,
-                                  sort_files=True, make_periodic=False):
-    if not os.path.isdir(directory_name):
-        rospy.logerr('Failed to import waypoint sequences: %s',
-                     directory_name + ' is not a directory!')
-        return None
-    path_names = []
-    for root, dirs, files in os.walk(directory_name, topdown=False):
-        for name in files:
-            path_names.append(os.path.join(root, name))
-    if sort_files:
-        path_names.sort()
-    waypoint_sequence_list = []
-    for name in path_names:
-        wpt_seq = import_waypoint_sequence(name, make_periodic=make_periodic)
-        if wpt_seq is not None:
-            waypoint_sequence_list.append(wpt_seq)
-    return waypoint_sequence_list
-
-
-def import_waypoint_sequence(file_name, joint_name_check=None,
-                             make_periodic=False):
-    """
-    Import a waypoint sequence from a csv file
-    @param file_name: absolute path to a csv file
-    @param joint_name_check: a list of joint names to check against the file
-                             (skip check if joint_name_check is None)
-    """
-    with open(file_name, 'rb') as csvfile:
-        csvreader = csv.reader(csvfile)
-        joint_names = None
-        waypoint_sequence = []
-        count = 0
-        for row in csvreader:
-            if joint_names is None:  # True only on the first call
-                joint_names = deepcopy(row)
-                if joint_name_check is not None:
-                    if not joint_names == joint_name_check:
-                        rospy.logerr("Trajectory has invalid joint names!")
-                        return None
-            else:  # all rows except for the first
-                waypoint = []
-                for data in row:
-                    waypoint.append(float(data))
-                waypoint_sequence.append(waypoint)
-                count += 1
-    if count == 0:
-        name = os.path.basename(file_name)
-        rospy.logerr('csv file: ' + name + ' contains no data!')
-        return None
-    if make_periodic:  # add the first waypoint to the end
-        waypoint_sequence.append(waypoint_sequence[0])
-    return waypoint_sequence
-
-
-def write_waypoint_sequence(file_name, wpt_seq, joint_names):
-    """
-    @param file_name: file name to write waypoint sequence to
-    @param joint_names: joint names for first line of the file
-    """
-    file_name = ensure_path_to_file_exists(file_name)
-    waypoint_data = []
-    waypoint_data.append(joint_names)
-    for wpt in wpt_seq:
-        waypoint_data.append(wpt)
-    with open(file_name, "wb") as f:
-        writer = csv.writer(f)
-        writer.writerows(waypoint_data)
-
-
 # TODO: This should eventually use the SDK IK interface
 def cartesian_pose_to_joint_angles(pose, joint_seed,
                                    end_point='right_hand',
@@ -273,37 +203,6 @@ def is_valid_check_list_for_none(list):
             rospy.logwarn("This list contains at least one None value!")
             return False
     return True
-
-
-# This file is from intera_sdk/intera_interface/src/intera_dataflow/wai_for.py
-def wait_for(test, timeout=1.0, raise_on_error=True, rate=100,
-             timeout_msg="timeout expired", body=None):
-    """
-    Waits until some condition evaluates to true.
-    @param test: zero param function to be evaluated
-    @param timeout: max amount of time to wait. negative/inf for indefinitely
-    @param raise_on_error: raise or just return False
-    @param rate: the rate at which to check
-    @param timout_msg: message to supply to the timeout exception
-    @param body: optional function to execute while waiting
-    """
-    end_time = rospy.get_time() + timeout
-    rate = rospy.Rate(rate)
-    notimeout = (timeout < 0.0) or timeout == float("inf")
-    while not test():
-        if rospy.is_shutdown():
-            if raise_on_error:
-                raise OSError(errno.ESHUTDOWN, "ROS Shutdown")
-            return False
-        elif (not notimeout) and (rospy.get_time() >= end_time):
-            if raise_on_error:
-                raise OSError(errno.ETIMEDOUT, timeout_msg)
-            return False
-        if callable(body):
-            body()
-        rate.sleep()
-    return True
-
 
 def clamp_float_warn(low, val, upp, name):
     """

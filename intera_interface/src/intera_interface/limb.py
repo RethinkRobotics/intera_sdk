@@ -31,6 +31,7 @@ import intera_dataflow
 from intera_core_msgs.msg import (
     JointCommand,
     EndpointState,
+    EndpointStates,
     CollisionDetectionState,
 )
 import settings
@@ -88,8 +89,9 @@ class Limb(object):
         self._cartesian_pose = dict()
         self._cartesian_velocity = dict()
         self._cartesian_effort = dict()
-        self._joint_names = { limb: joint_names }
+        self._joint_names = joint_names
         self._collision_state = False
+        self._tip_states = None
 
         ns = '/robot/limb/' + limb + '/'
 
@@ -123,6 +125,13 @@ class Limb(object):
             queue_size=1,
             tcp_nodelay=True)
 
+        _tip_states_sub = rospy.Subscriber(
+            ns + 'tip_states',
+            EndpointStates,
+            self._on_tip_states,
+            queue_size=1,
+            tcp_nodelay=True)
+
         _collision_state_sub = rospy.Subscriber(
             ns + 'collision_detection_state',
             CollisionDetectionState,
@@ -146,10 +155,14 @@ class Limb(object):
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
         intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
                                  timeout_msg=err_msg)
+        err_msg = ("%s limb init failed to get current tip_states "
+                   "from %s") % (self.name.capitalize(), ns + 'tip_states')
+        intera_dataflow.wait_for(lambda: self._tip_states is not None,
+                                 timeout_msg=err_msg)
 
     def _on_joint_states(self, msg):
         for idx, name in enumerate(msg.name):
-            if name in self._joint_names[self.name]:
+            if name in self._joint_names:
                 self._joint_angle[name] = msg.position[idx]
                 self._joint_velocity[name] = msg.velocity[idx]
                 self._joint_effort[name] = msg.effort[idx]
@@ -197,6 +210,9 @@ class Limb(object):
             ),
         }
 
+    def _on_tip_states(self, msg):
+        self._tip_states = deepcopy(msg)
+
     def _on_collision_state(self, msg):
         if self._collision_state != msg.collision_state:
             self._collision_state = msg.collision_state
@@ -218,7 +234,7 @@ class Limb(object):
         @return: ordered list of joint names from proximal to distal
         (i.e. shoulder to wrist).
         """
-        return self._joint_names[self.name]
+        return self._joint_names
 
     def joint_angle(self, joint):
         """
@@ -239,6 +255,18 @@ class Limb(object):
         @return: unordered dict of joint name Keys to angle (rad) Values
         """
         return deepcopy(self._joint_angle)
+
+    def joint_ordered_angles(self):
+        """
+        Return all joint angles.
+
+        @rtype: [double]
+        @return: joint angles (rad) orded by joint_names
+        """
+        joint_angles = [0]*len(self._joint_names)
+        for i in range(0,len(self._joint_names)):
+            joint_angles[i] = self._joint_angle[self._joint_names[i]]
+        return joint_angles
 
     def joint_velocity(self, joint):
         """
@@ -327,6 +355,28 @@ class Limb(object):
                       L{Limb.Point}
         """
         return deepcopy(self._cartesian_effort)
+
+    def _tip_index(self, tipName):
+        if tipName is None:
+            indx = 0
+        else:
+            try:
+                indx = self._tip_states.names.index(tipName)
+            except ValueError:
+                return None
+        return indx
+
+    def tip_state(self, tipName):
+        """
+        Return Cartesian endpoint state for a given tip name
+
+        @rtype: EndpointState message
+        @return: pose, velocity, effort
+        """
+        indx = _tip_indx(tipName)
+        if indx is None:
+            return None
+        return deepcopy(self._tip_states.states[indx])
 
     def set_command_timeout(self, timeout):
         """

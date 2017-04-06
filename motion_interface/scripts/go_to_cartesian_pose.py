@@ -19,13 +19,13 @@ import argparse
 from motion_interface import (
     MotionTrajectory,
     MotionWaypoint,
-    MotionWaypointOptions,
-    RobotInterface
+    MotionWaypointOptions
 )
 from motion_msgs.msg import TrajectoryOptions
 from geometry_msgs.msg import PoseStamped
 import PyKDL
 from tf_conversions import posemath
+from intera_interface import Limb
 
 def main():
     """
@@ -90,7 +90,7 @@ def main():
 
     try:
         rospy.init_node('go_to_cartesian_pose_py')
-        robot = RobotInterface()
+        limb = Limb()
 
         traj_options = TrajectoryOptions()
         traj_options.interpolation_type = TrajectoryOptions.CARTESIAN
@@ -103,9 +103,9 @@ def main():
                                          max_joint_speed_ratio=1.0)
         waypoint = MotionWaypoint(options = wpt_opts.to_msg())
 
-        joint_state = robot.get_joint_state()
+        joint_names = limb.joint_names()
 
-        if args.joint_angles and len(args.joint_angles) != len(joint_state.name):
+        if args.joint_angles and len(args.joint_angles) != len(joint_names):
             rospy.logerr('len(joint_angles) does not match len(joint_names!)')
             return None
 
@@ -113,12 +113,12 @@ def main():
             and args.relative_pose is None):
             if args.joint_angles:
                 # does Forward Kinematics
-                waypoint.set_joint_angles(args.joint_angles, args.tip_name, joint_state.name)
+                waypoint.set_joint_angles(args.joint_angles, args.tip_name, joint_names)
             else:
                 rospy.loginfo("No Cartesian pose or joint angles given. Using default")
                 waypoint.set_joint_angles(joint_angles=None, active_endpoint=args.tip_name)
         else:
-            endpoint_state = robot.get_endpoint_state(args.tip_name)
+            endpoint_state = limb.get_tip_state(args.tip_name)
             if endpoint_state is None:
                 rospy.logerr('Endpoint state not found with tip name %s', args.tip_name)
                 return None

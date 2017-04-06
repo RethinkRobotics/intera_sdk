@@ -23,10 +23,10 @@ from motion_interface import (
     MotionTrajectory,
     MotionWaypoint,
     MotionWaypointOptions,
-    InteractionOptions,
-    RobotInterface
+    InteractionOptions
 )
 from motion_msgs.msg import TrajectoryOptions
+from intera_interface import Limb
 
 def int2bool(var):
     """
@@ -147,23 +147,25 @@ def main():
 
     try:
         rospy.init_node('go_to_joint_angles_in_contact_py')
-        robot = RobotInterface()
+        limb = Limb()
         traj = MotionTrajectory()
 
         wpt_opts = MotionWaypointOptions(max_joint_speed_ratio=args.speed_ratio,
                                         max_joint_accel=args.accel_ratio)
         waypoint = MotionWaypoint(options = wpt_opts.to_msg())
 
-        joint_state = robot.get_joint_state()
-        waypoint.set_angles_from_joint_state(joint_state)
+        joint_names = limb.joint_names()
+        joint_angles = limb.joint_ordered_angles()
+        waypoint.set_joint_angles(joint_angles = joint_angles,
+                                  joint_names = joint_names)
         traj.append_waypoint(waypoint.to_msg())
 
-        if len(args.joint_angles) != len(joint_state.name):
+        if len(args.joint_angles) != len(joint_names):
             rospy.logerr('len(joint_angles) does not match len(joint_names!)')
             return None
 
         waypoint.set_joint_angles(joint_angles = args.joint_angles,
-            joint_names = joint_state.name)
+            joint_names = joint_names)
         traj.append_waypoint(waypoint.to_msg())
 
         # set the interaction control options in the current configuration

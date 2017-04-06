@@ -20,10 +20,7 @@ import numpy as np
 import argparse
 from copy import deepcopy
 from geometry_msgs.msg import Pose
-from motion_interface import (
-    InteractionOptions,
-    RobotInterface
-)
+from motion_interface import InteractionOptions
 
 def int2bool(var):
     """

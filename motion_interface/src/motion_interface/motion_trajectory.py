@@ -42,7 +42,6 @@ from motion_interface.utility_functions import (
     cartesian_pose_to_joint_angles,
     joint_angles_to_cartesian_pose,
     is_valid_check_list_for_none,
-    import_waypoint_sequence,
     in_collision
 )
 from copy import deepcopy
