@@ -62,19 +62,16 @@ def main():
                                          max_joint_accel=args.accel_ratio)
         waypoint = MotionWaypoint(options = wpt_opts.to_msg())
 
-        joint_names = limb.joint_names()
         joint_angles = limb.joint_ordered_angles()
 
-        waypoint.set_joint_angles(joint_angles = joint_angles,
-                                  joint_names = joint_names)
+        waypoint.set_joint_angles(joint_angles = joint_angles)
         traj.append_waypoint(waypoint.to_msg())
 
-        if len(args.joint_angles) != len(joint_names):
-            rospy.logerr('len(joint_angles) does not match len(joint_names!)')
+        if len(args.joint_angles) != len(joint_angles):
+            rospy.logerr('The number of joint_angles must be %d', len(joint_angles))
             return None
 
-        waypoint.set_joint_angles(joint_angles = args.joint_angles,
-            joint_names = joint_names)
+        waypoint.set_joint_angles(joint_angles = args.joint_angles)
         traj.append_waypoint(waypoint.to_msg())
 
         result = traj.send_trajectory()

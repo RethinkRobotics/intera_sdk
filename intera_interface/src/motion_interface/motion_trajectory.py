@@ -37,18 +37,21 @@ from motion_interface.motion_controller_action_client import (
 )
 from motion_interface.motion_waypoint import MotionWaypoint
 from motion_interface.motion_waypoint_options import MotionWaypointOptions
-from motion_interface.utility_functions import (
-    ensure_path_to_file_exists,
-    cartesian_pose_to_joint_angles,
-    joint_angles_to_cartesian_pose,
-    is_valid_check_list_for_none,
-    in_collision
-)
+from motion_interface.utility_functions import ensure_path_to_file_exists
 from copy import deepcopy
 from rospy_message_converter import message_converter
 
 
 class MotionTrajectory(object):
+
+    @staticmethod
+    def get_default_joint_names():
+        """
+        @return: a names for sawyer's primary joints
+        """
+        return ['right_j0', 'right_j1', 'right_j2', 'right_j3',
+                'right_j4', 'right_j5', 'right_j6']
+
 
     def __init__(self, label = None,
                  joint_names = None,
@@ -95,7 +98,7 @@ class MotionTrajectory(object):
 
     def set_joint_names(self, joint_names = None):
         if joint_names is None:
-            joint_names = MotionWaypoint.get_default_joint_names()
+            joint_names = self.get_default_joint_names()
         self._traj.joint_names = deepcopy(joint_names)
 
     def set_trajectory_options(self, trajectory_options = None):
@@ -131,9 +134,6 @@ class MotionTrajectory(object):
         else:
             rospy.logerr('Invalid waypoint - cannot append to trajectory!')
             return False
-
-        if in_collision(wpt.joint_positions):
-          rospy.logwarn('Waypoint is in self collision!')
 
         self._traj.waypoints.append(wpt)
 

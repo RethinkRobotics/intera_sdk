@@ -26,13 +26,11 @@ from motion_msgs.msg import (
 )
 from sensor_msgs.msg import JointState
 from copy import deepcopy
-from utility_functions import (
-    ensure_path_to_file_exists,
-    joint_angles_to_cartesian_pose
-)
+from utility_functions import ensure_path_to_file_exists
 from rospy_message_converter import message_converter
 import yaml
 from motion_interface.motion_waypoint_options import MotionWaypointOptions
+from intera_interface import Limb
 
 class MotionWaypoint(object):
     """
@@ -48,14 +46,6 @@ class MotionWaypoint(object):
         return [0.0, -0.9, 0.0, 1.8, 0.0, -0.9, 0.0]
 
     @staticmethod
-    def get_default_joint_names():
-        """
-        @return: a names for sawyer's primary joints
-        """
-        return ['right_j0', 'right_j1', 'right_j2', 'right_j3',
-                'right_j4', 'right_j5', 'right_j6']
-
-    @staticmethod
     def get_default_active_endpoint():
         """
         @return: the active endpoint corresponding to the tip of sawyer's arm
@@ -65,7 +55,6 @@ class MotionWaypoint(object):
 
     def __init__(self, joint_angles = [],
                  active_endpoint = None,
-                 joint_names = None,
                  options = None):
         """
         Create a MotionWaypoint object.  All parameters are optional.
@@ -74,16 +63,15 @@ class MotionWaypoint(object):
             If set to None, then use the default joint angles.
         @param active_endpoint: the pose is computed using the active endpoint
             If set to None, then use default active endpoint
-        @param joint_names: joint name vector to use for computing the pose
-            If set to None, then use default joint names
         @param options: waypoint options.
             If set to None, then use default waypoint options
         @return: a intera Waypoint.msg object with default values
         """
         self._data = Waypoint()
 
-        self.set_joint_angles(joint_angles, joint_names, active_endpoint)
+        self.set_joint_angles(joint_angles, active_endpoint)
         self.set_waypoint_options(options)
+        self._limb = Limb()
 
     def set_from_message(self, wpt_msg):
         if isinstance(wpt_msg, Waypoint):
@@ -116,43 +104,34 @@ class MotionWaypoint(object):
         else:
             angles = joint_state.position
             names = joint_state.name
-            self.set_joint_angles(joint_angles = angles, joint_names = names)
+            self.set_joint_angles(joint_angles = angles)
 
     def get_joint_angles(self):
         return deepcopy(self._data.joint_positions)
 
     def set_joint_angles(self, joint_angles = [],
-                             active_endpoint = None,
-                             joint_names = None):
+                             active_endpoint = None):
         """
         All parameters are optional. If ommitted or set to None, use default.
         @param joint_angles: the joint angles to store in the waypoint.
             If set to empty, then create an empty waypoint.
         @param active_endpoint: the pose is computed using the active endpoint
-        @param joint_names: joint name vector to use for computing the pose
+
         """
         if joint_angles is None:
             joint_angles = MotionWaypoint.get_default_joint_angles()
         if active_endpoint is None:
             active_endpoint = MotionWaypoint.get_default_active_endpoint()
-        if joint_names is None:
-            joint_names = MotionWaypoint.get_default_joint_names()
 
+        pose = PoseStamped()
         if not joint_angles:   # empty joint angles, so...
-            self._data.pose = PoseStamped()   # empty pose as well
+            self._data.pose = pose   # empty pose as well
         else:   # Solve forward kinematics to get the pose
-            if len(joint_angles) != len(joint_names):
-                rospy.loginfo('angles: ' + str(joint_angles))
-                rospy.loginfo('names: ' + str(joint_names))
-                rospy.logerr('len(joint_angles) != len(joint_names)')
-                return
-            pose = joint_angles_to_cartesian_pose(
+            pose.pose = self._limb.joint_angles_to_cartesian_pose(
                 joint_angles = joint_angles,
-                end_point = active_endpoint,
-                joint_names = joint_names)
+                end_point = active_endpoint)
             if pose is None:
                 rospy.logerr('Failed to compute end effector pose!')
-                pose = PoseStamped()
             self._data.pose = pose
 
         self._data.joint_positions = deepcopy(joint_angles)
@@ -206,7 +185,6 @@ class MotionWaypoint(object):
     def to_csv_file(self, file_name):
         file_name = ensure_path_to_file_exists(file_name)
         waypoint_data = []
-        waypoint_data.append(self._joint_names)
         for wpt in self._trajectory.waypoints:
             waypoint_data.append(wpt.joint_positions)
         with open(file_name, "wb") as f:
