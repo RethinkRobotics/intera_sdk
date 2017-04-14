@@ -86,7 +86,7 @@ def main():
     parser.add_argument(
         "--rotational_accel", type=float, default=1.57,
         help="The max rotational acceleration of the endpoint (rad/s/s)")
-    args = parser.parse_args()
+    args = parser.parse_args(rospy.myargv()[1:])
 
     try:
         rospy.init_node('go_to_cartesian_pose_py')

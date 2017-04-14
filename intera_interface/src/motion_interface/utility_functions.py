@@ -16,25 +16,7 @@
 
 
 import os
-import math
-import errno
-from intera_core_msgs.srv import (
-    SolvePositionFK,
-    SolvePositionFKRequest,
-    SolvePositionIK,
-    SolvePositionIKRequest,
-)
 import rospy
-from geometry_msgs.msg import (
-    PoseStamped,
-    Pose,
-    Point,
-    Quaternion,
-)
-import csv
-from std_msgs.msg import Header
-from sensor_msgs.msg import JointState
-from copy import deepcopy
 
 def get_formatted_decimal_string(i, n):
     """
@@ -43,7 +25,7 @@ def get_formatted_decimal_string(i, n):
     @return: str(i) with correct number of padding zeros
     """
     n_digits = len(str(n))
-    format_string = '{:0>' + str(n_digits) + 'd}'
+    format_string = '{{:0>{}}}'.format(n_digits)
     return format_string.format(i)
 
 
@@ -60,11 +42,10 @@ def ensure_path_to_file_exists(raw_file_path):
         os.makedirs(file_dir)
     return file_name
 
-def is_valid_check_list_for_none(list):
-    for data in list:
-        if not data:
-            rospy.logwarn("This list contains at least one None value!")
-            return False
+def is_valid_check_list_for_none(list_data):
+    if None in list_data:
+        rospy.logwarn("This list contains at least one None value!")
+        return False
     return True
 
 def clamp_float_warn(low, val, upp, name):

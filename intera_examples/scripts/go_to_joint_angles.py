@@ -51,7 +51,7 @@ def main():
     parser.add_argument(
         "-a",  "--accel_ratio", type=float, default=0.5,
         help="A value between 0.001 (slow) and 1.0 (maximum joint accel)")
-    args = parser.parse_args()
+    args = parser.parse_args(rospy.myargv()[1:])
 
     try:
         rospy.init_node('go_to_joint_angles_py')

@@ -127,9 +127,10 @@ class MotionWaypoint(object):
         if not joint_angles:   # empty joint angles, so...
             self._data.pose = pose   # empty pose as well
         else:   # Solve forward kinematics to get the pose
+            joints = dict(zip(self._limb.joint_names(), joint_angles))
             pose.pose = self._limb.joint_angles_to_cartesian_pose(
-                joint_angles = joint_angles,
-                end_point = active_endpoint)
+                    joint_angles=joints,
+                    end_point=active_endpoint)
             if pose is None:
                 rospy.logerr('Failed to compute end effector pose!')
             self._data.pose = pose

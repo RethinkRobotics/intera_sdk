@@ -280,12 +280,10 @@ class Limb(object):
         Return all joint angles.
 
         @rtype: [double]
-        @return: joint angles (rad) orded by joint_names
+        @return: joint angles (rad) orded by joint_names from proximal to distal
+        (i.e. shoulder to wrist).
         """
-        joint_angles = [0]*len(self._joint_names)
-        for i in range(0,len(self._joint_names)):
-            joint_angles[i] = self._joint_angle[self._joint_names[i]]
-        return joint_angles
+        return [self._joint_angle[name] for name in self._joint_names]
 
     def joint_velocity(self, joint):
         """
@@ -375,27 +373,17 @@ class Limb(object):
         """
         return deepcopy(self._cartesian_effort)
 
-    def _tip_index(self, tipName):
-        if tipName is None:
-            indx = 0
-        else:
-            try:
-                indx = self._tip_states.names.index(tipName)
-            except ValueError:
-                return None
-        return indx
-
-    def tip_state(self, tipName):
+    def tip_state(self, tip_name):
         """
         Return Cartesian endpoint state for a given tip name
 
         @rtype: EndpointState message
         @return: pose, velocity, effort
         """
-        indx = _tip_indx(tipName)
-        if indx is None:
+        try:
+            return deepcopy(self._tip_states.states[self._tip_states.names.index(tip_name)])
+        except ValueError:
             return None
-        return deepcopy(self._tip_states.states[indx])
 
     def set_command_timeout(self, timeout):
         """
@@ -591,7 +579,7 @@ class Limb(object):
 
     def ik_request(self, pose,
                    end_point='right_hand', joint_seed=None,
-                   nullspace_goal=None, nullspace_joint_names=None, nullspace_gain=0.4):
+                   nullspace_goal=None, nullspace_gain=0.4):
         """
         Inverse Kinematics request sent to IK Service
 
@@ -599,17 +587,19 @@ class Limb(object):
         @param pose: Cartesian pose of the end point
         @type end_point: string
         @param end_point: name of the end point (should be in URDF)
-        @type joint_seed: [double]
+        @type joint_seed: dict({str:float})
         @param joint_seed: the joint angles for the initial IK guess (optional)
-        @type nullspace_goal: [double]
-        @param nullspace_goal: the desired joints to bias the solver (optional)
-        @type nullspace_joint_names: [string]
-        @param nullspace_joint_names: joint names for the nullspace_goal (optional)
+        @type nullspace_goal: dict({str:float})
+        @param nullspace_goal: desired joints, or subset of joints, to bias the solver (optional)
         @type nullspace_gain: double
         @param nullspace_gain: gain used to bias toward the nullspace goal [0.0, 1.0] (optional)
         @rtype: dict({str:float})
         @return: valid joint positions if exists.  False if no solution is found.
         """
+        if not isinstance(pose, Pose):
+            rospy.logerr('pose is not of type geometry_msgs.msgs.Pose')
+            return False
+
         # Add desired pose for inverse kinematics
         ikreq = SolvePositionIKRequest()
         hdr = Header(stamp=rospy.Time.now(), frame_id='base')
@@ -620,8 +610,8 @@ class Limb(object):
         if joint_seed is not None:
             ikreq.seed_mode = ikreq.SEED_USER
             seed = JointState()
-            seed.name = self._joint_names
-            seed.position = joint_seed
+            seed.name = joint_seed.keys()
+            seed.position = joint_seed.values()
             ikreq.seed_angles.append(seed)
 
         # Once the primary IK task is solved, the solver will then try to bias the
@@ -632,11 +622,8 @@ class Limb(object):
           ikreq.use_nullspace_goal.append(True)
           # The nullspace goal can either be the full set or subset of joint angles
           goal = JointState()
-          goal.position = joint_seed
-          if nullspace_joint_names is None:
-              goal.name = self._joint_names
-          else:
-              goal.name = nullspace_joint_names
+          goal.names = nullspace_goal.keys()
+          goal.position = nullspace_goal.values()
           ikreq.nullspace_goal.append(goal)
           # The gain used to bias toward the nullspace goal. Must be [0.0, 1.0]
           # If empty, the default gain of 0.4 will be used
@@ -663,11 +650,11 @@ class Limb(object):
         return limb_joints
 
     def fk_request(self, joint_angles,
-                        end_point='right_hand'):
+                   end_point='right_hand'):
         """
         Forward Kinematics request sent to FK Service
 
-        @type joint_angles: [double]
+        @type joint_angles: dict({str:float})
         @param joint_angles: the arm's joint positions
         @type end_point: string
         @param end_point: name of the end point (should be in URDF)
@@ -676,8 +663,8 @@ class Limb(object):
         fkreq = SolvePositionFKRequest()
         # Add desired pose for forward kinematics
         joints = JointState()
-        joints.name = self._joint_names
-        joints.position = joint_angles
+        joints.name = joint_angles.keys()
+        joints.position = joint_angles.values()
         fkreq.configuration.append(joints)
         # Request forward kinematics from base to end_point
         fkreq.tip_names.append(end_point)
@@ -693,7 +680,7 @@ class Limb(object):
         """
         Convert joint angles to a Cartesian Pose. Calls FK service
 
-        @type joint_angles: [double]
+        @type joint_angles: dict({str:float})
         @param joint_angles: the arm's joint positions
         @type end_point: string
         @param end_point: name of the end point (should be in URDF)
@@ -710,13 +697,13 @@ class Limb(object):
             return None
         return resp.pose_stamp[0].pose
 
-    def in_collision(self, joint_angles,
-                     end_point='right_hand'):
+    def fk_request_in_collision(self, joint_angles,
+                                end_point='right_hand'):
         """
         Checks if the arm will be in collision with these joint angles.
         Calls FK service
 
-        @type joint_angles: [double]
+        @type joint_angles: dict({str:float})
         @param joint_angles: the arm's joint positions
         @type end_point: string
         @param end_point: name of the end point (should be in URDF)

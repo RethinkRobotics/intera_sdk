@@ -14,7 +14,7 @@
 
 import rospy
 from intera_core_msgs.msg import InteractionControlCommand
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import Pose, Point, Quaternion
 from copy import deepcopy
 from utility_functions import (
     ensure_path_to_file_exists,
@@ -37,6 +37,16 @@ class InteractionOptions(object):
     impedance_mode = InteractionControlCommand.IMPEDANCE_MODE
     impedance_limit_mode = InteractionControlCommand.IMPEDANCE_WITH_FORCE_LIMIT_MODE
     force_limit_mode = InteractionControlCommand.FORCE_WITH_MOTION_LIMIT_MODE
+
+    # default parameters
+    default_K_impedance_lateral = 1300  # N/m
+    default_K_impedance_rotation = 30   # Nm/rad
+    default_K_nullspace = 4.0  # Nm/rad
+    default_endpoint_name = 'right_hand'
+    default_max_impedance = True
+    default_in_endpoint_frame = False
+    default_force_command = 0.0
+    default_interaction_mode = impedance_mode
 
     def __init__(self, header = None,
                  interaction_control_active = None,
@@ -90,13 +100,13 @@ class InteractionOptions(object):
         --> [float]:  copy all elements. Checks length.
         """
         if K_impedance is None:
-            self._data.K_impedance = [1300.0, 1300.0, 1300.0, 30.0, 30.0, 30.0]
-        elif len(K_impedance) < self.n_dim_cart:
-            rospy.logerr('The number of elements must be 6!')
+            self._data.K_impedance = [[self.default_K_impedance_lateral]*3,
+                                      [self.default_K_impedance_rotation]*3]
         elif len(K_impedance) == self.n_dim_cart:
             self._data.K_impedance = deepcopy(K_impedance)
         else:
-            rospy.logerr('Invalid input to K_impedance!')
+            rospy.logerr('The number of K Impedance elements must be %d',
+                         self.n_dim_cart)
 
     def set_max_impedance(self, max_impedance = None):
         """
@@ -106,17 +116,14 @@ class InteractionOptions(object):
         --> [bool]:  copy all elements. Checks length.
         """
         if max_impedance is None:
-            self._data.max_impedance =  [True, True, True, True, True, True]
-        elif isinstance(max_impedance[0], bool) and len(max_impedance) == 1:
-            self._data.max_impedance = []
-            for i in range(0, self.n_dim_cart):
-                self._data.max_impedance.append(max_impedance[0])
-        elif len(max_impedance) < self.n_dim_cart and len(max_impedance) > 1:
-            rospy.logerr('The number of elements must be 6 or 1!')
+            self._data.max_impedance =  [self.default_max_impedance]*self.n_dim_cart
+        elif len(max_impedance) == 1:
+            self._data.K_nullspace = [K_nullspace[0]]*self.n_dim_cart
         elif len(max_impedance) == self.n_dim_cart:
             self._data.max_impedance = deepcopy(max_impedance)
         else:
-            rospy.logerr('Invalid input to max_impedance!')
+            rospy.logerr('The number of max_impedance must be 1 or %d',
+                         self.n_dim_cart)
 
     def set_K_nullspace(self, K_nullspace = None):
         """
@@ -126,17 +133,14 @@ class InteractionOptions(object):
         --> [float]:  copy all elements. Checks length.
         """
         if K_nullspace is None:
-            self._data.K_nullspace = [4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0]
-        elif isinstance(K_nullspace[0], float) and len(K_nullspace) == 1:
-            self._data.K_nullspace = []
-            for i in range(0, self.n_dim_joint):
-                self._data.K_nullspace.append(K_nullspace[0])
-        elif len(K_nullspace) < self.n_dim_joint and len(K_nullspace) > 1:
-            rospy.logerr('The number of elements must be n_joint_dim or 1!')
+            self._data.K_nullspace = [self.default_K_nullspace]*self.n_dim_joint
+        elif len(K_nullspace) == 1:
+            self._data.K_nullspace = [K_nullspace[0]]*self.n_dim_joint
         elif len(K_nullspace) == self.n_dim_joint:
             self._data.K_nullspace = deepcopy(K_nullspace)
         else:
-            rospy.logerr('Invalid input to K_nullspace!')
+            rospy.logerr('The number of K_nullspace must be 1 or %d',
+                         self.n_dim_joint)
 
     def set_force_command(self, force_cmd = None):
         """
@@ -145,31 +149,27 @@ class InteractionOptions(object):
         --> [float]:  copy all elements. Checks length.
         """
         if force_cmd is None:
-            self._data.force_command =  [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        elif len(force_cmd) < self.n_dim_cart:
-            rospy.logerr('The number of elements must be 6!')
+            self._data.force_command =  [self.default_force_command]*self.n_dim_cart
         elif len(force_cmd) == self.n_dim_cart:
             self._data.force_command = deepcopy(force_cmd)
         else:
-            rospy.logerr('Invalid input to force_command!')
+            rospy.logerr('The number of force_command elements must be %d',
+                         self.n_dim_cart)
 
     def set_interaction_frame(self, interaction_frame = None):
         """
         @param interaction_frame:
         --> None:  populate with vector of default values
-        --> otherwise, copy all the elements
+        --> Pose: copy all the elements
         """
         if interaction_frame is None:
-            self._data.interaction_frame = Pose()
-            self._data.interaction_frame.position.x = 0.0;
-            self._data.interaction_frame.position.y = 0.0;
-            self._data.interaction_frame.position.z = 0.0;
-            self._data.interaction_frame.orientation.w = 1.0;
-            self._data.interaction_frame.orientation.x = 0.0;
-            self._data.interaction_frame.orientation.y = 0.0;
-            self._data.interaction_frame.orientation.z = 0.0;
-        else:
+            self._data.interaction_frame = Pose(
+                position=Point(x=0.0,y=0.0,z=0.0),
+                orientation=Quaternion(x=0.0,y=0.0,z=0.0,w=1.0))
+        elif isinstance(interaction_frame, Pose):
             self._data.interaction_frame = interaction_frame
+        else:
+            rospy.logerr('interaction_frame is not of type geometry_msgs.Pose')
 
     def set_endpoint_name(self, endpoint_name = None):
         """
@@ -178,47 +178,46 @@ class InteractionOptions(object):
         --> string: copy element.
         """
         if endpoint_name is None:
-            self.set_endpoint_name('right_hand') # default value
+            self.set_endpoint_name(self.default_endpoint_name)
         else:
             self._data.endpoint_name = endpoint_name
 
-    def set_in_endpoint_frame(self, in_endframe = None):
+    def set_in_endpoint_frame(self, in_endpoint_frame = None):
         """
         @param in_endpoint_frame
         --> None:  set it to a default frame (False, i.e., base frame)
         --> bool:  copy element
         """
-        if in_endframe is None:
-            self.set_in_endpoint_frame(False) # default value
+        if in_endpoint_frame is None:
+            self.set_in_endpoint_frame(self.default_in_endpoint_frame)
         else:
-            self._data.in_endpoint_frame = in_endframe
+            self._data.in_endpoint_frame = in_endpoint_frame
 
     def set_interaction_control_mode(self, interaction_mode = None):
         """
         @param interaction control mode:
         --> None:  set impedance mode by default
-        --> mode:  set each direction by the input mode (1: impedance, 2: force, 3: impedance with force limit, 4: force with motion limit)
+        --> mode:  set each direction by the input mode
+            (1: impedance, 2: force, 3: impedance with force limit, 4: force with motion limit)
         --> [mode]:  copy all elements. Checks length.
         """
         if interaction_mode is None:
-            self._data.interaction_control_mode = [self.impedance_mode, self.impedance_mode, self.impedance_mode, self.impedance_mode, self.impedance_mode, self.impedance_mode]
-        elif isinstance(interaction_mode[0], int) and interaction_mode[0] <= self.force_limit_mode and interaction_mode[0] >= self.impedance_mode and len(interaction_mode) == 1:
-            self._data.interaction_control_mode = []
-            for i in range(0, self.n_dim_cart):
-                self._data.interaction_control_mode.append(interaction_mode[0])
-        elif len(interaction_mode) < self.n_dim_cart and len(interaction_mode) > 1:
-            rospy.logerr('The number of elements must be 6 or 1!')
-        elif len(interaction_mode) == self.n_dim_cart:
-            flag_invalid = False
-            for i in range(0, self.n_dim_cart):
-                if interaction_mode[i] < self.impedance_mode or interaction_mode[i] > self.force_limit_mode:
-                    flag_invalid = True
-            if flag_invalid == True:
-               rospy.logerr('Invalid input to interaction_control_mode!')
-            else:
-                self._data.interaction_control_mode = deepcopy(interaction_mode)
+            self._data.interaction_control_mode = [self.default_interaction_mode]*self.n_dim_cart
         else:
-            rospy.logerr('Invalid input to interaction_control_mode!')
+            # first check for valid modes
+            for i in range(len(interaction_mode)):
+                if (interaction_mode[i] < self.impedance_mode
+                    or interaction_mode[i] > self.force_limit_mode):
+                    rospy.logerr('Interaction mode option %d is invalid', interaction_mode[i])
+                    return
+
+            if len(interaction_mode) == 1:
+                self._data.interaction_control_mode = [interaction_mode[0]]*self.n_dim_cart
+            elif len(interaction_mode) == self.n_dim_cart:
+                self._data.interaction_control_mode = deepcopy(interaction_mode)
+            else:
+                rospy.logerr('The number of interaction_control_mode elements must be 1 or %d',
+                             self.n_dim_cart)
 
     def to_msg(self):
         return deepcopy(self._data)

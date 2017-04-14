@@ -125,7 +125,7 @@ def main():
         "-r",  "--rate", type=int, default=10,
         help="A desired publish rate for updating interaction control commands (10Hz by default) -- 0 if we want to publish it only once")
 
-    args = parser.parse_args()
+    args = parser.parse_args(rospy.myargv()[1:])
 
     try:
         rospy.init_node('set_interaction_options_py')

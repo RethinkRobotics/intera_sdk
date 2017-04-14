@@ -142,7 +142,7 @@ def main():
         nargs='+', default=[4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
         help="A list of desired nullspace stiffnesses, one for each of the 7 joints (a single value can be provided to apply the same value to all the directions) -- units are in (Nm/rad)")
 
-    args = parser.parse_args()
+    args = parser.parse_args(rospy.myargv()[1:])
 
 
     try:

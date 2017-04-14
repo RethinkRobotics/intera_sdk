@@ -92,9 +92,7 @@ class MotionTrajectory(object):
             rospy.logerr('Cannot set trajectory data. Invalid type.')
 
     def set_label(self, label=None):
-        if label is None:
-            label = 'default'
-        self._traj.label = label
+        self._traj.label = 'default' if label is None else label
 
     def set_joint_names(self, joint_names = None):
         if joint_names is None:
@@ -142,11 +140,9 @@ class MotionTrajectory(object):
         @return: a list of lists, with the following format:
         [joint_names,waypoint_0,waypoint_1,...waypoint_N]
         """
-        data = []
+        data = list()
         data.append(self._traj.joint_names)
-        for wpt in self._traj.waypoints:
-            data.append(deepcopy(wpt.joint_positions))
-        return data
+        return data.extend([deepcopy(wpt.joint_positions) for wpt in self._traj.waypoints])
 
     def to_msg(self):
         return deepcopy(self._traj)
