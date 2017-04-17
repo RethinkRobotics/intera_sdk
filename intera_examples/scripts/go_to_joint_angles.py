@@ -16,7 +16,7 @@
 
 import rospy
 import argparse
-from motion_interface import (
+from intera_motion_interface import (
     MotionTrajectory,
     MotionWaypoint,
     MotionWaypointOptions
@@ -27,7 +27,7 @@ def main():
     """
     Move the robot arm to the specified configuration.
     Call using:
-    $ rosrun motion_interface go_to_joint_angles.py  [arguments: see below]
+    $ rosrun intera_examples go_to_joint_angles.py  [arguments: see below]
 
     -q 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     --> Go to joint pose: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 using default settings

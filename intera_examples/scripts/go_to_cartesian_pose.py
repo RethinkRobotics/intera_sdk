@@ -16,7 +16,7 @@
 
 import rospy
 import argparse
-from motion_interface import (
+from intera_motion_interface import (
     MotionTrajectory,
     MotionWaypoint,
     MotionWaypointOptions
@@ -31,7 +31,7 @@ def main():
     """
     Move the robot arm to the specified configuration.
     Call using:
-    $ rosrun motion_interface go_to_cartesian_pose.py  [arguments: see below]
+    $ rosrun intera_examples go_to_cartesian_pose.py  [arguments: see below]
 
     -p 0.4 -0.3 0.18 -o 0.0 1.0 0.0 0.0 -t right_hand
     --> Go to position: x=0.4, y=-0.3, z=0.18 meters

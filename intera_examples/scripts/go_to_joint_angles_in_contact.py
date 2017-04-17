@@ -19,7 +19,7 @@ import numpy as np
 import argparse
 from copy import deepcopy
 from geometry_msgs.msg import Pose
-from motion_interface import (
+from intera_motion_interface import (
     MotionTrajectory,
     MotionWaypoint,
     MotionWaypointOptions,
@@ -47,7 +47,7 @@ def main():
     Move the robot arm to the specified configuration
     with the desired interaction control options.
     Call using:
-    $ rosrun motion_interface go_to_joint_angles_in_contact.py  [arguments: see below]
+    $ rosrun intera_examples go_to_joint_angles_in_contact.py  [arguments: see below]
 
     -q 0.0 0.0 0.0 0.0 0.0 0.0 0.0
     --> Go to joint pose: 0.0 0.0 0.0 0.0 0.0 0.0 0.0 using default settings

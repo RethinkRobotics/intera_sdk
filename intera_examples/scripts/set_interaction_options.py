@@ -20,7 +20,7 @@ import numpy as np
 import argparse
 from copy import deepcopy
 from geometry_msgs.msg import Pose
-from motion_interface import InteractionOptions
+from intera_motion_interface import InteractionOptions
 
 def int2bool(var):
     """
@@ -50,7 +50,7 @@ def main():
     is still running.
 
     Call using:
-    $ rosrun motion_interface set_interaction_options.py  [arguments: see below]
+    $ rosrun intera_examples set_interaction_options.py  [arguments: see below]
 
     -s 1
     --> Set interaction active to True (0 for False) in the current configuration
