@@ -30,7 +30,6 @@ class InteractionOptions(object):
     """
 
     n_dim_cart = 6 # number of dimensions in Cartesian space
-    n_dim_joint = 7
 
     # constants for interaction control modes
     force_mode = InteractionControlCommand.FORCE_MODE
@@ -39,6 +38,7 @@ class InteractionOptions(object):
     force_limit_mode = InteractionControlCommand.FORCE_WITH_MOTION_LIMIT_MODE
 
     # default parameters
+    default_n_dim_joint = 7
     default_K_impedance_lateral = 1300  # N/m
     default_K_impedance_rotation = 30   # Nm/rad
     default_K_nullspace = 4.0  # Nm/rad
@@ -52,6 +52,7 @@ class InteractionOptions(object):
                  interaction_control_active = None,
                  K_impedance = None,
                  max_impedance = None,
+                 n_joints = None,
                  K_nullspace = None,
                  force_command= None,
                  interaction_frame = None,
@@ -65,6 +66,7 @@ class InteractionOptions(object):
         self._data = InteractionControlCommand()
         self.set_header(header)
         self.set_interaction_control_active(interaction_control_active)
+        self.set_number_joints(n_joints),
         self.set_K_impedance(K_impedance)
         self.set_max_impedance(max_impedance)
         self.set_K_nullspace(K_nullspace)
@@ -100,8 +102,8 @@ class InteractionOptions(object):
         --> [float]:  copy all elements. Checks length.
         """
         if K_impedance is None:
-            self._data.K_impedance = [[self.default_K_impedance_lateral]*3,
-                                      [self.default_K_impedance_rotation]*3]
+            self._data.K_impedance = [self.default_K_impedance_lateral]*3 \
+                                     + [self.default_K_impedance_rotation]*3
         elif len(K_impedance) == self.n_dim_cart:
             self._data.K_impedance = deepcopy(K_impedance)
         else:
@@ -125,6 +127,17 @@ class InteractionOptions(object):
             rospy.logerr('The number of max_impedance must be 1 or %d',
                          self.n_dim_cart)
 
+    def set_number_joints(self, n_joints = None):
+        """
+        @param n_joints (number of arm joints):
+        --> None:  use default number
+        --> [int]: use provided number
+        """
+        if n_joints is None:
+            self._n_dim_joint = self.default_n_dim_joint
+        else:
+            self._n_dim_joint = n_joints
+
     def set_K_nullspace(self, K_nullspace = None):
         """
         @param K_nullspace (nullspace stiffness gains):
@@ -133,14 +146,14 @@ class InteractionOptions(object):
         --> [float]:  copy all elements. Checks length.
         """
         if K_nullspace is None:
-            self._data.K_nullspace = [self.default_K_nullspace]*self.n_dim_joint
+            self._data.K_nullspace = [self.default_K_nullspace]*self._n_dim_joint
         elif len(K_nullspace) == 1:
-            self._data.K_nullspace = [K_nullspace[0]]*self.n_dim_joint
-        elif len(K_nullspace) == self.n_dim_joint:
+            self._data.K_nullspace = [K_nullspace[0]]*self._n_dim_joint
+        elif len(K_nullspace) == self._n_dim_joint:
             self._data.K_nullspace = deepcopy(K_nullspace)
         else:
             rospy.logerr('The number of K_nullspace must be 1 or %d',
-                         self.n_dim_joint)
+                         self._n_dim_joint)
 
     def set_force_command(self, force_cmd = None):
         """
@@ -169,7 +182,7 @@ class InteractionOptions(object):
         elif isinstance(interaction_frame, Pose):
             self._data.interaction_frame = interaction_frame
         else:
-            rospy.logerr('interaction_frame is not of type geometry_msgs.Pose')
+            rospy.logerr('interaction_frame must be of type geometry_msgs.Pose')
 
     def set_endpoint_name(self, endpoint_name = None):
         """
@@ -178,7 +191,7 @@ class InteractionOptions(object):
         --> string: copy element.
         """
         if endpoint_name is None:
-            self.set_endpoint_name(self.default_endpoint_name)
+            self._data.endpoint_name = self.default_endpoint_name
         else:
             self._data.endpoint_name = endpoint_name
 
@@ -189,7 +202,7 @@ class InteractionOptions(object):
         --> bool:  copy element
         """
         if in_endpoint_frame is None:
-            self.set_in_endpoint_frame(self.default_in_endpoint_frame)
+            self._data.in_endpoint_frame = self.default_in_endpoint_frame
         else:
             self._data.in_endpoint_frame = in_endpoint_frame
 

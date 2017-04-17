@@ -31,6 +31,14 @@ class MotionWaypointOptions(object):
     It's primary purpose is to facilitate message creation and input checking.
     """
 
+    # default parameters
+    default_speed_ratio = 0.7
+    default_joint_tolerance = 0.05  # rad
+    default_max_linear_speed = 0.6  # m/s
+    default_max_linear_accel = 0.6  # m/s/s
+    default_max_rot_speed = 1.57  # rad/s
+    default_max_rot_accel = 1.57  # rad/s/s
+
     @staticmethod
     def get_accel_preset(accel_name):
         if accel_name == 'slow':
@@ -83,7 +91,7 @@ class MotionWaypointOptions(object):
 
     def set_max_joint_speed_ratio(self, speed_ratio = None):
         if speed_ratio is None:
-            speed_ratio = 0.7; # default value
+            speed_ratio = self.default_speed_ratio
         speed_ratio = clamp_float_warn(0.05, speed_ratio, 1.0, 'speed_ratio')
         if speed_ratio is None:
             return
@@ -98,14 +106,12 @@ class MotionWaypointOptions(object):
         --> [float]:  copy all elements of joint_tolerances. Checks length.
         """
         if tol is None:
-            self.set_joint_tolerances(0.05)
+            self.set_joint_tolerances(self.default_joint_tolerance)
         elif not tol:
             self._data.tol = []
         elif isinstance(tol, float):
             tol = clamp_float_warn(1e-6, tol, float('inf'), 'joint tolerance')
-            self._data.joint_tolerances = []
-            for i in range(0, self._n_dim):
-                self._data.joint_tolerances.append(tol)
+            self._data.joint_tolerances = [tol] * self._n_dim
         elif len(tol) == self._n_dim:
             self._data.joint_tolerances = deepcopy(joint_tolerances)
         else:
@@ -113,25 +119,25 @@ class MotionWaypointOptions(object):
 
     def set_max_linear_speed(self, speed = None):
         if speed is None:
-            speed = 0.6; # default value
+            speed = self.default_max_linear_speed
         tol = clamp_float_warn(0.001, speed, float('inf'), 'max linear speed')
         self._data.max_linear_speed = speed
 
     def set_max_linear_accel(self, accel = None):
         if accel is None:
-            accel = 0.6; # default value
+            accel = self.default_max_linear_accel
         tol = clamp_float_warn(0.001, accel, float('inf'), 'max linear accel')
         self._data.max_linear_accel = accel
 
     def set_max_rotational_speed(self, speed = None):
         if speed is None:
-            speed = 1.57; # default value
+            speed = self.default_max_rot_speed
         tol = clamp_float_warn(0.001, speed, float('inf'), 'max rotational speed')
         self._data.max_rotational_speed = speed
 
     def set_max_rotational_accel(self, accel = None):
         if accel is None:
-            accel = 1.57; # default value
+            accel = self.default_max_rot_accel
         tol = clamp_float_warn(0.001, accel, float('inf'), 'max rotational accel')
         self._data.max_rotational_accel = accel
 
@@ -174,14 +180,11 @@ class MotionWaypointOptions(object):
         """
         a = len(self._data.joint_tolerances)
         b = len(self._data.max_joint_accel)
-        if a == 0 or b == 0:
+        if a == 0 or b == 0 or a == b:
             return True
         else:
-            if a == b:
-                return True
-            else:
-                rospy.logerr('Inconsistent array length in WaypointOptions!')
-                return False
+            rospy.logerr('Inconsistent array length in WaypointOptions!')
+            return False
 
     def to_msg(self):
         return deepcopy(self._data)

@@ -40,18 +40,10 @@ from motion_waypoint_options import MotionWaypointOptions
 from utility_functions import ensure_path_to_file_exists
 from copy import deepcopy
 from rospy_message_converter import message_converter
+from intera_interface import Limb
 
 
 class MotionTrajectory(object):
-
-    @staticmethod
-    def get_default_joint_names():
-        """
-        @return: a names for sawyer's primary joints
-        """
-        return ['right_j0', 'right_j1', 'right_j2', 'right_j3',
-                'right_j4', 'right_j5', 'right_j6']
-
 
     def __init__(self, label = None,
                  joint_names = None,
@@ -69,6 +61,7 @@ class MotionTrajectory(object):
         # Used for sending the trajectory to the motion controller
         self._client = MotionControllerActionClient()
         self._traj = Trajectory()
+        self._limb = Limb()
 
         self.set_label(label)
         self.set_joint_names(joint_names)
@@ -96,7 +89,7 @@ class MotionTrajectory(object):
 
     def set_joint_names(self, joint_names = None):
         if joint_names is None:
-            joint_names = self.get_default_joint_names()
+            joint_names = self._limb.joint_names()
         self._traj.joint_names = deepcopy(joint_names)
 
     def set_trajectory_options(self, trajectory_options = None):
