@@ -69,9 +69,9 @@ class MotionWaypoint(object):
         """
         self._data = Waypoint()
 
+        self._limb = Limb()
         self.set_joint_angles(joint_angles, active_endpoint)
         self.set_waypoint_options(options)
-        self._limb = Limb()
 
     def set_from_message(self, wpt_msg):
         if isinstance(wpt_msg, Waypoint):
