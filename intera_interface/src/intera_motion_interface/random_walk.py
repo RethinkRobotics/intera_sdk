@@ -26,8 +26,9 @@ class RandomWalk(object):
 
     def __init__(self):
         """
-        Constructor - creates an empty random walk object. Be sure to set the
-        lower and upper limits, as well as the past point before calling.
+        Constructor - creates an empty random walk object.
+        Be sure to set the lower limits, upper limits, and past point before
+        calling getNextPoint().
         """
 
         self._lower_limit = None

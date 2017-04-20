@@ -48,13 +48,6 @@ def main():
         and avoid the upper and lower joint limits by a boundary of
         0.2*(upper joint limit - lower joint limit).
 
-    --trajArch CONSTRAINED_CLAMPED_CUBIC
-    --> Override the default trajectory architecture when generating the
-        KinematicTrajectory object in the motion controller. This feature
-        is included for testing new trajectory generation algorithms. In this
-        case, we override the default (set in motion_controller.cpp) and used
-        the CONSTRAINED_CLAMPED_CUBIC architecture instead.
-
     -o ~/Desktop/fileName.bag
     --> Save the trajectory message to a bag file
 
@@ -78,12 +71,6 @@ def main():
         "-t", "--trajType", type=str, default='JOINT',
         choices=['JOINT', 'CARTESIAN'],
         help="trajectory interpolation type")
-    parser.add_argument(
-        "--trajArch", type=str, default='',
-        choices=['', 'DEFAULT', 'CONSTRAINED_COMPOSITE_CUBIC',
-                 'CONSTRAINED_BOUNDARY_CUBIC', 'CONSTRAINED_CLAMPED_CUBIC',
-                 'CLAMPED_CUBIC', 'CLAMPED_BOUNDARY_CUBIC'],
-        help="trajectory architecture")
     parser.add_argument(
         "-s",  "--speed_ratio", type=float, default=0.5,
         help="A value between 0.0 (slow) and 1.0 (fast)")
@@ -116,7 +103,6 @@ def main():
 
         # Set the trajectory options
         traj_opts = TrajectoryOptions()
-        traj_opts.trajectory_architecture_type = args.trajArch
         traj_opts.interpolation_type = args.trajType
         traj = MotionTrajectory(trajectory_options = traj_opts)
 
@@ -143,8 +129,6 @@ def main():
             joint_angles = walk.get_next_point()
             waypoint.set_joint_angles(joint_angles = joint_angles)
             traj.append_waypoint(waypoint.to_msg())
-
-        print traj.to_msg()
 
         if args.output_file is not None:
             if args.output_file_type == "csv":

@@ -58,6 +58,11 @@ def main():
     -q -0.2 0.1 0.1 0.2 -0.3 0.2 0.4 -s 0.9 -a 0.1
     --> Go to pose [...] witha speed ratio of 0.9 and an accel ratio of 0.1
 
+    --trajType CARTESIAN
+    --> Use a Cartesian interpolated endpoint path to reach the goal
+
+    === Interaction Mode options ===
+
     -st 1
     --> Set the interaction controller state (1 for True, 0 for False) in the current configuration
 
