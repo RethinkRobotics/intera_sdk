@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 import rospy
 import argparse
 from intera_motion_interface import (
@@ -28,6 +29,9 @@ from intera_interface import (
     Limb,
     JointLimits
 )
+
+if (sys.version_info < (3, 0)):
+  input = raw_input
 
 def main():
     """
@@ -102,8 +106,13 @@ def main():
 
     try:
         rospy.init_node('send_random_joint_trajectory_py')
+
         rospy.logwarn('Make sure the surrounding area around the robot is '
                       'collision free prior to sending random trajectories.')
+        k = input("Press 'Enter' when the robot is clear to continue...")
+        if k:
+            rospy.logerr("Please press only the 'Enter' key to begin execution. Exiting...")
+            sys.exit(1)
 
         # Set the trajectory options
         traj_opts = TrajectoryOptions()
