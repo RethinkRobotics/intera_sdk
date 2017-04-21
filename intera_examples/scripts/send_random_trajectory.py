@@ -15,7 +15,6 @@
 # limitations under the License.
 
 import rospy
-import motion_msgs.msg
 import argparse
 from intera_motion_interface import (
     MotionTrajectory,
@@ -34,6 +33,9 @@ def main():
     """
     Send a random-walk trajectory, starting from the current pose of the robot.
     Can be used to send both joint and cartesian trajectories.
+
+    WARNING: Make sure the surrounding area around the robot is collision free
+             prior to sending random trajectories.
 
     Call using:
     $ rosrun intera_examples send_random_trajectory.py  [arguments: see below]
@@ -100,6 +102,8 @@ def main():
 
     try:
         rospy.init_node('send_random_joint_trajectory_py')
+        rospy.logwarn('Make sure the surrounding area around the robot is '
+                      'collision free prior to sending random trajectories.')
 
         # Set the trajectory options
         traj_opts = TrajectoryOptions()
