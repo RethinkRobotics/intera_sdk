@@ -110,13 +110,15 @@ class MotionWaypoint(object):
         return deepcopy(self._data.joint_positions)
 
     def set_joint_angles(self, joint_angles = [],
-                             active_endpoint = None):
+                         active_endpoint = None,
+                         perform_fk = False):
         """
         All parameters are optional. If ommitted or set to None, use default.
         @param joint_angles: the joint angles to store in the waypoint.
             If set to empty, then create an empty waypoint.
         @param active_endpoint: the pose is computed using the active endpoint
-
+        @param perform_fk: boolean to determine if FK should be performed with
+            the input joint angles
         """
         if joint_angles is None:
             joint_angles = MotionWaypoint.get_default_joint_angles()
@@ -124,7 +126,8 @@ class MotionWaypoint(object):
             active_endpoint = MotionWaypoint.get_default_active_endpoint()
 
         pose = PoseStamped()
-        if not joint_angles:   # empty joint angles, so...
+        # If joint angles don't exist or we don't want to computer FK:
+        if not perform_fk or not joint_angles:
             self._data.pose = pose   # empty pose as well
         else:   # Solve forward kinematics to get the pose
             joints = dict(zip(self._limb.joint_names(), joint_angles))
