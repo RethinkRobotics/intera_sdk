@@ -74,6 +74,7 @@ class MotionTrajectory(object):
         if not self._traj.waypoints:
             rospy.logerr("Trajectory is empty! Cannot send.")
             return None
+        self._check_options()
         self._client.send_trajectory(self.to_msg())
         result = self._client.wait_for_result()
         return result
@@ -170,3 +171,30 @@ class MotionTrajectory(object):
         with open(file_name, "wb") as f:
             writer = csv.writer(f)
             writer.writerows(waypoint_data)
+
+    def _check_options(self):
+        """
+        Check to make sure the defined waypoints have the necessary parameters
+        given the provided options and correct the waypoints when possible.
+        """
+        if (self._traj.trajectory_options.interpolation_type ==
+            TrajectoryOptions.CARTESIAN):
+            self._check_cartesian_options()
+
+    def _check_cartesian_options(self):
+        """
+        Checks the waypoints to make sure that cartesian endpoints are defined
+        and attempts to calculate them if possible
+        """
+        for index, wpt in enumerate(self._traj.waypoints):
+            pose = wpt.pose.pose
+            position = [pose.position.x, pose.position.y, pose.position.z]
+            orientation = [pose.orientation.w, pose.orientation.x,
+                           pose.orientation.y, pose.orientation.z]
+            # If the endpoint pose has not been set
+            if not sum(position) or not sum(orientation):
+                new_wpt = MotionWaypoint(options = wpt.options)
+                new_wpt.set_joint_angles(joint_angles = wpt.joint_positions,
+                                         active_endpoint = wpt.active_endpoint,
+                                         perform_fk = True)
+                self._traj.waypoints[index] = new_wpt.to_msg()
