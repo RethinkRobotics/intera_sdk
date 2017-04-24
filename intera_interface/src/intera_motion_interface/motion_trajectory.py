@@ -186,8 +186,7 @@ class MotionTrajectory(object):
         Checks the waypoints to make sure that cartesian endpoints are defined
         and attempts to calculate them if possible
         """
-        for index in range(len(self._traj.waypoints)):
-            wpt = self._traj.waypoints[index]
+        for index, wpt in enumerate(self._traj.waypoints):
             pose = wpt.pose.pose
             position = [pose.position.x, pose.position.y, pose.position.z]
             orientation = [pose.orientation.w, pose.orientation.x,
