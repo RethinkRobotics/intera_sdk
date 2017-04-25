@@ -60,7 +60,8 @@ class MotionWaypointOptions(object):
                  max_rotational_speed = None,
                  max_rotational_accel= None,
                  max_joint_accel = None,
-                 label = "default"):
+                 label = "default",
+                 corner_distance = 0.0):
         """
         Create a motion waypoint options object. All parameters are
         optional. If ommitted or set to None, then use default value.
@@ -88,6 +89,7 @@ class MotionWaypointOptions(object):
         self.set_max_rotational_accel(max_rotational_accel)
         self.set_max_joint_accel(max_joint_accel)
         self.set_label(label)
+        self.set_corner_distance(corner_distance)
 
     def set_max_joint_speed_ratio(self, speed_ratio = None):
         if speed_ratio is None:
@@ -173,6 +175,14 @@ class MotionWaypointOptions(object):
             self._data.label = deepcopy(label)
         else:
             rospy.logerr('Input must be a string!')
+
+    def set_corner_distance(self, corner_distance = None):
+        if corner_distance is None:
+            corner_distance = 0.0;
+        corner_distance = clamp_float_warn(0.0, corner_distance, 0.5, 'corner_distance')
+        if corner_distance is None:
+            return
+        self._data.corner_distance = corner_distance
 
     def check_array_consistency(self):
         """

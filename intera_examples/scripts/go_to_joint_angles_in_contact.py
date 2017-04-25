@@ -144,7 +144,7 @@ def main():
         help="A list of desired force commands, one for each of the 6 directions -- in force control mode this is the vector of desired forces/torques to be regulated in (N) and (Nm), in impedance with force limit mode this vector specifies the magnitude of forces/torques (N and Nm) that the command will not exceed")
     parser.add_argument(
         "-kn", "--K_nullspace", type=float,
-        nargs='+', default=[4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
+        nargs='+', default=[5.0, 10.0, 5.0, 10.0, 5.0, 10.0, 5.0],
         help="A list of desired nullspace stiffnesses, one for each of the 7 joints (a single value can be provided to apply the same value to all the directions) -- units are in (Nm/rad)")
 
     args = parser.parse_args(rospy.myargv()[1:])
