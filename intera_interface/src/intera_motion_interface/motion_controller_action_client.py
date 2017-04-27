@@ -61,3 +61,10 @@ class MotionControllerActionClient(object):
         """
         self._client.wait_for_result()
         return self._client.get_result()
+
+    def get_state(self):
+        """
+        Get the state information of current goal.
+        @return: the goal's state
+        """
+        return self._client.get_state()
