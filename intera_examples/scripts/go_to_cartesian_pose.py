@@ -72,7 +72,7 @@ def main():
         nargs='+', default=[],
         help="A list of joint angles, one for each of the 7 joints, J0...J6")
     parser.add_argument(
-        "-t",  "--tip_name",
+        "-t",  "--tip_name", default='right_hand',
         help="The tip name used by the Cartesian pose")
     parser.add_argument(
         "--linear_speed", type=float, default=0.6,
@@ -118,7 +118,7 @@ def main():
                 rospy.loginfo("No Cartesian pose or joint angles given. Using default")
                 waypoint.set_joint_angles(joint_angles=None, active_endpoint=args.tip_name)
         else:
-            endpoint_state = limb.get_tip_state(args.tip_name)
+            endpoint_state = limb.tip_state(args.tip_name)
             if endpoint_state is None:
                 rospy.logerr('Endpoint state not found with tip name %s', args.tip_name)
                 return None
