@@ -70,14 +70,19 @@ class MotionTrajectory(object):
     def stop_trajectory(self):
         self._client.stop_trajectory()
 
-    def send_trajectory(self):
+    def send_trajectory(self, wait_for_result=True):
         if not self._traj.waypoints:
             rospy.logerr("Trajectory is empty! Cannot send.")
             return None
         self._check_options()
         self._client.send_trajectory(self.to_msg())
-        result = self._client.wait_for_result()
-        return result
+        return self._client.wait_for_result() if wait_for_result else None
+
+    def get_state(self):
+        return self._client.get_state()
+
+    def wait_for_result(self):
+        return self._client.wait_for_result()
 
     def set_data(self, traj_msg):
         if isinstance(traj_msg, Trajectory):
