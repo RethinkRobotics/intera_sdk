@@ -20,7 +20,7 @@ import yaml
 import rospy
 import rosbag
 import actionlib
-from motion_msgs.msg import (
+from intera_motion_msgs.msg import (
     Trajectory,
     TrajectoryOptions,
     Waypoint

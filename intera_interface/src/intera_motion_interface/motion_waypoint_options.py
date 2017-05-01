@@ -16,7 +16,7 @@
 
 
 import rospy
-from motion_msgs.msg import WaypointOptions
+from intera_motion_msgs.msg import WaypointOptions
 from copy import deepcopy
 from utility_functions import (
     ensure_path_to_file_exists,

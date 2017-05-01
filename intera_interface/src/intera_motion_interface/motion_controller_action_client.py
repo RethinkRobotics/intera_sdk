@@ -17,7 +17,7 @@
 
 import rospy
 import actionlib
-import motion_msgs.msg
+import intera_motion_msgs.msg
 
 
 class MotionControllerActionClient(object):
@@ -30,7 +30,7 @@ class MotionControllerActionClient(object):
         self._waypointSequenceId = 0
         self._client = actionlib.SimpleActionClient(
             '/motion/motion_command',
-            motion_msgs.msg.MotionCommandAction)
+            intera_motion_msgs.msg.MotionCommandAction)
         if not self._client.wait_for_server(rospy.Duration(10.0)):
             rospy.logerr("Timed out waiting for Motion Controller"
                          " Server to connect. Check your ROS networking"
@@ -38,8 +38,8 @@ class MotionControllerActionClient(object):
             rospy.signal_shutdown("Timed out waiting for Action Server")
 
     def stop_trajectory(self):
-        goal = motion_msgs.msg.MotionCommandGoal()
-        goal.command = motion_msgs.msg.MotionCommandGoal.MOTION_STOP
+        goal = intera_motion_msgs.msg.MotionCommandGoal()
+        goal.command = intera_motion_msgs.msg.MotionCommandGoal.MOTION_STOP
         self._client.send_goal(goal)
         rospy.loginfo('Stopping trajectory')
 
@@ -49,8 +49,8 @@ class MotionControllerActionClient(object):
             MOTION_START command and then sent to the motion controller.
         @return: (void) immediately after sending
         """
-        goal = motion_msgs.msg.MotionCommandGoal()
-        goal.command = motion_msgs.msg.MotionCommandGoal.MOTION_START
+        goal = intera_motion_msgs.msg.MotionCommandGoal()
+        goal.command = intera_motion_msgs.msg.MotionCommandGoal.MOTION_START
         goal.trajectory = trajectory
         self._client.send_goal(goal)
 

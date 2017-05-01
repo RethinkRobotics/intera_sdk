@@ -23,7 +23,7 @@ from intera_motion_interface import (
     MotionWaypointOptions,
     RandomWalk
 )
-from motion_msgs.msg import TrajectoryOptions
+from intera_motion_msgs.msg import TrajectoryOptions
 from intera_core_msgs.msg import JointLimits
 from intera_interface import (
     Limb,
@@ -107,12 +107,13 @@ def main():
     try:
         rospy.init_node('send_random_joint_trajectory_py')
 
-        rospy.logwarn('Make sure the surrounding area around the robot is '
-                      'collision free prior to sending random trajectories.')
-        k = input("Press 'Enter' when the robot is clear to continue...")
-        if k:
-            rospy.logerr("Please press only the 'Enter' key to begin execution. Exiting...")
-            sys.exit(1)
+        if not args.do_not_send:
+            rospy.logwarn('Make sure the surrounding area around the robot is '
+                          'collision free prior to sending random trajectories.')
+            k = input("Press 'Enter' when the robot is clear to continue...")
+            if k:
+                rospy.logerr("Please press only the 'Enter' key to begin execution. Exiting...")
+                sys.exit(1)
 
         # Set the trajectory options
         traj_opts = TrajectoryOptions()
@@ -159,12 +160,14 @@ def main():
 
         if not args.do_not_send:
             result = traj.send_trajectory()
-            if result is not None and result.result:
-                rospy.loginfo('Motion controller %s',
-                              'successfully finished the trajectory!')
+
+            if result is None:
+                rospy.logerr('Trajectory FAILED to send')
+            elif result.result:
+                rospy.loginfo('Motion controller successfully finished the trajectory!')
             else:
-                rospy.loginfo('Motion controller %s',
-                              'failed to complete the trajectory!')
+                rospy.logerr('Motion controller failed to complete the trajectory with error %s',
+                             result.errorId)
     except rospy.ROSInterruptException:
         rospy.logerr('Keyboard interrupt detected from the user. %s',
                      'Exiting before trajectory completion.')

@@ -20,7 +20,7 @@ from geometry_msgs.msg import (
     PoseStamped,
     Pose
 )
-from motion_msgs.msg import (
+from intera_motion_msgs.msg import (
     Waypoint,
     WaypointOptions
 )

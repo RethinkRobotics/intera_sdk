@@ -21,7 +21,7 @@ from intera_motion_interface import (
     MotionWaypoint,
     MotionWaypointOptions
 )
-from motion_msgs.msg import TrajectoryOptions
+from intera_motion_msgs.msg import TrajectoryOptions
 from geometry_msgs.msg import PoseStamped
 import PyKDL
 from tf_conversions import posemath

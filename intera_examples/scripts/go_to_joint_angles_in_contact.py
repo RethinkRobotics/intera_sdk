@@ -25,7 +25,7 @@ from intera_motion_interface import (
     MotionWaypointOptions,
     InteractionOptions
 )
-from motion_msgs.msg import TrajectoryOptions
+from intera_motion_msgs.msg import TrajectoryOptions
 from intera_interface import Limb
 
 def int2bool(var):
