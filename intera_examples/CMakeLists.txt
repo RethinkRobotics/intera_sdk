@@ -12,6 +12,7 @@ find_package(catkin
   cv_bridge
   dynamic_reconfigure
   intera_core_msgs
+  intera_motion_msgs
   intera_interface
 )
 
@@ -31,6 +32,7 @@ catkin_package(
   cv_bridge
   dynamic_reconfigure
   intera_core_msgs
+  intera_motion_msgs
   intera_interface
 )
 
