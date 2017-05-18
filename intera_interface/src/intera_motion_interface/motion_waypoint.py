@@ -71,10 +71,8 @@ class MotionWaypoint(object):
         @return: a intera Waypoint.msg object with default values
         """
         self._data = Waypoint()
+        self._limb = limb or Limb()
 
-        self._limb = limb
-        if self._limb is None:
-            self._limb = Limb()
         self.set_joint_angles(joint_angles, active_endpoint)
         self.set_waypoint_options(options)
 

@@ -64,9 +64,7 @@ class MotionTrajectory(object):
         # Used for sending the trajectory to the motion controller
         self._client = MotionControllerActionClient()
         self._traj = Trajectory()
-        self._limb = limb
-        if self._limb is None:
-            self._limb = Limb()
+        self._limb = limb or Limb()
 
         self.set_label(label)
         self.set_joint_names(joint_names)
