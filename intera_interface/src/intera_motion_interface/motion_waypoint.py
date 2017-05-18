@@ -55,7 +55,8 @@ class MotionWaypoint(object):
 
     def __init__(self, joint_angles = [],
                  active_endpoint = None,
-                 options = None):
+                 options = None,
+                 limb = None):
         """
         Create a MotionWaypoint object.  All parameters are optional.
         @param joint_angles: the joint angles to store in the waypoint.
@@ -65,11 +66,13 @@ class MotionWaypoint(object):
             If set to None, then use default active endpoint
         @param options: waypoint options.
             If set to None, then use default waypoint options
+        @param limb: limb interface object.
+            If set to None, then create a new object
         @return: a intera Waypoint.msg object with default values
         """
         self._data = Waypoint()
+        self._limb = limb or Limb()
 
-        self._limb = Limb()
         self.set_joint_angles(joint_angles, active_endpoint)
         self.set_waypoint_options(options)
 

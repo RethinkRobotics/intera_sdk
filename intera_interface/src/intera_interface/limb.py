@@ -173,11 +173,11 @@ class Limb(object):
         err_msg = ("%s limb init failed to get current endpoint_state "
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
         intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
-                                 timeout_msg=err_msg)
+                                 timeout_msg=err_msg, timeout=5.0)
         err_msg = ("%s limb init failed to get current tip_states "
                    "from %s") % (self.name.capitalize(), ns + 'tip_states')
         intera_dataflow.wait_for(lambda: self._tip_states is not None,
-                                 timeout_msg=err_msg)
+                                 timeout_msg=err_msg, timeout=5.0)
 
     def _on_joint_states(self, msg):
         for idx, name in enumerate(msg.name):

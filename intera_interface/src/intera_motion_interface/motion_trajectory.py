@@ -47,7 +47,8 @@ class MotionTrajectory(object):
 
     def __init__(self, label = None,
                  joint_names = None,
-                 trajectory_options = None):
+                 trajectory_options = None,
+                 limb = None):
         """
         Creates a new motion trajectory object.
         @param label: string
@@ -56,12 +57,14 @@ class MotionTrajectory(object):
             if joint_names is None: use default names
         @param trajectory_options: options for the trajectory
             if trajectory_options is None: use default options
+        @param limb: limb interface object.
+            If set to None, then create a new object
         """
 
         # Used for sending the trajectory to the motion controller
         self._client = MotionControllerActionClient()
         self._traj = Trajectory()
-        self._limb = Limb()
+        self._limb = limb or Limb()
 
         self.set_label(label)
         self.set_joint_names(joint_names)
