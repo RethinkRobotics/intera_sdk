@@ -62,6 +62,8 @@ class InteractionOptions(object):
         """
         Create a interaction options object. All parameters are
         optional. If ommitted or set to None, then use default value.
+
+        See setter functions for more specific details.
         """
         self._data = InteractionControlCommand()
         self.set_header(header)
@@ -77,6 +79,11 @@ class InteractionOptions(object):
         self.set_interaction_control_mode(interaction_control_mode)
 
     def set_header(self, header = None):
+        """
+        @param header:
+          - None: set default header with current timestamp
+          - [header]: set message header
+        """
         if header is None:
             self._data.header.stamp = rospy.get_rostime()
             self._data.header.seq = 1
@@ -87,8 +94,8 @@ class InteractionOptions(object):
     def set_interaction_control_active(self, interaction_active = None):
         """
         @param interaction_control_active:
-        --> None:  set it to True by default
-        --> [bool]: copy the element.
+          - None:  set it to True by default
+          - [bool]: copy the element.
         """
         if interaction_active is None:
             self.set_interaction_control_active(True) # default value
@@ -98,8 +105,8 @@ class InteractionOptions(object):
     def set_K_impedance(self, K_impedance = None):
         """
         @param K_impedance (Cartesian stiffness):
-        --> None:  populate with vector of default values
-        --> [float]:  copy all elements. Checks length.
+          - None:  populate with vector of default values
+          - [float]:  copy all elements. Checks length.
         """
         if K_impedance is None:
             self._data.K_impedance = [self.default_K_impedance_lateral]*3 \
@@ -113,14 +120,14 @@ class InteractionOptions(object):
     def set_max_impedance(self, max_impedance = None):
         """
         @param max_impedance (impedance modulation state):
-        --> None:  populate with vector of default values (True)
-        --> bool:  set each dimension by the input boolean
-        --> [bool]:  copy all elements. Checks length.
+          - None:  populate with vector of default values (True)
+          - bool:  set each dimension by the input boolean
+          - [bool]:  copy all elements. Checks length.
         """
         if max_impedance is None:
             self._data.max_impedance =  [self.default_max_impedance]*self.n_dim_cart
         elif len(max_impedance) == 1:
-            self._data.K_nullspace = [K_nullspace[0]]*self.n_dim_cart
+            self._data.max_impedance = [max_impedance[0]]*self.n_dim_cart
         elif len(max_impedance) == self.n_dim_cart:
             self._data.max_impedance = deepcopy(max_impedance)
         else:
@@ -130,8 +137,8 @@ class InteractionOptions(object):
     def set_number_joints(self, n_joints = None):
         """
         @param n_joints (number of arm joints):
-        --> None:  use default number
-        --> [int]: use provided number
+          - None:  use default number
+          - [int]: use provided number
         """
         if n_joints is None:
             self._n_dim_joint = self.default_n_dim_joint
@@ -141,9 +148,9 @@ class InteractionOptions(object):
     def set_K_nullspace(self, K_nullspace = None):
         """
         @param K_nullspace (nullspace stiffness gains):
-        --> None:  populate with vector of default values
-        --> float:  set each dimension by the input float number
-        --> [float]:  copy all elements. Checks length.
+          - None:  populate with vector of default values
+          - float:  set each dimension by the input float number
+          - [float]:  copy all elements. Checks length.
         """
         if K_nullspace is None:
             self._data.K_nullspace = [self.default_K_nullspace]*self._n_dim_joint
@@ -158,8 +165,8 @@ class InteractionOptions(object):
     def set_force_command(self, force_cmd = None):
         """
         @param force_command:
-        --> None:  populate with vector of default values
-        --> [float]:  copy all elements. Checks length.
+          - None:  populate with vector of default values
+          - [float]:  copy all elements. Checks length.
         """
         if force_cmd is None:
             self._data.force_command =  [self.default_force_command]*self.n_dim_cart
@@ -172,8 +179,8 @@ class InteractionOptions(object):
     def set_interaction_frame(self, interaction_frame = None):
         """
         @param interaction_frame:
-        --> None:  populate with vector of default values
-        --> Pose: copy all the elements
+          - None:  populate with vector of default values
+          - Pose: copy all the elements
         """
         if interaction_frame is None:
             self._data.interaction_frame = Pose(
@@ -187,8 +194,8 @@ class InteractionOptions(object):
     def set_endpoint_name(self, endpoint_name = None):
         """
         @param endpoint_name:
-        --> None:  set it to a default name (right hand)
-        --> string: copy element.
+          - None:  set it to a default name (right hand)
+          - string: copy element.
         """
         if endpoint_name is None:
             self._data.endpoint_name = self.default_endpoint_name
@@ -197,9 +204,9 @@ class InteractionOptions(object):
 
     def set_in_endpoint_frame(self, in_endpoint_frame = None):
         """
-        @param in_endpoint_frame
-        --> None:  set it to a default frame (False, i.e., base frame)
-        --> bool:  copy element
+        @param in_endpoint_frame:
+          - None:  set it to a default frame (False, i.e., base frame)
+          - bool:  copy element
         """
         if in_endpoint_frame is None:
             self._data.in_endpoint_frame = self.default_in_endpoint_frame
@@ -208,11 +215,11 @@ class InteractionOptions(object):
 
     def set_interaction_control_mode(self, interaction_mode = None):
         """
-        @param interaction control mode:
-        --> None:  set impedance mode by default
-        --> mode:  set each direction by the input mode
+        @param interaction_mode:
+          - None:  set impedance mode by default
+          - mode:  set each direction by the input mode
             (1: impedance, 2: force, 3: impedance with force limit, 4: force with motion limit)
-        --> [mode]:  copy all elements. Checks length.
+          - [mode]:  copy all elements. Checks length.
         """
         if interaction_mode is None:
             self._data.interaction_control_mode = [self.default_interaction_mode]*self.n_dim_cart
@@ -233,6 +240,9 @@ class InteractionOptions(object):
                              self.n_dim_cart)
 
     def to_msg(self):
+        """
+        @return: InteractionControlCommand.msg
+        """
         return deepcopy(self._data)
 
     def to_dict(self):

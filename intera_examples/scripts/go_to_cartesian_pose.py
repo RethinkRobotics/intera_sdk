@@ -94,14 +94,14 @@ def main():
 
         traj_options = TrajectoryOptions()
         traj_options.interpolation_type = TrajectoryOptions.CARTESIAN
-        traj = MotionTrajectory(trajectory_options = traj_options)
+        traj = MotionTrajectory(trajectory_options = traj_options, limb = limb)
 
         wpt_opts = MotionWaypointOptions(max_linear_speed=args.linear_speed,
                                          max_linear_accel=args.linear_accel,
                                          max_rotational_speed=args.rotational_speed,
                                          max_rotational_accel=args.rotational_accel,
                                          max_joint_speed_ratio=1.0)
-        waypoint = MotionWaypoint(options = wpt_opts.to_msg())
+        waypoint = MotionWaypoint(options = wpt_opts.to_msg(), limb = limb)
 
         joint_names = limb.joint_names()
 

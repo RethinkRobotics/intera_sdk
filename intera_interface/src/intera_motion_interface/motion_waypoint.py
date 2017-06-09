@@ -40,16 +40,16 @@ class MotionWaypoint(object):
     @staticmethod
     def get_default_joint_angles():
         """
-        @return: a set of joint angles corresponding to the arm directly in
-            front of the robot with the elbow up.
+        @return: a set of joint angles corresponding to the sawyer arm
+            directly in front of the robot with the elbow up.
         """
         return [0.0, -0.9, 0.0, 1.8, 0.0, -0.9, 0.0]
 
     @staticmethod
     def get_default_active_endpoint():
         """
-        @return: the active endpoint corresponding to the tip of sawyer's arm
-            when nothing else is attached.
+        @return: the active endpoint  string corresponding to the tip of
+            sawyer's arm when nothing else is attached.
         """
         return 'right_hand'
 
@@ -66,8 +66,8 @@ class MotionWaypoint(object):
             If set to None, then use default active endpoint
         @param options: waypoint options.
             If set to None, then use default waypoint options
-        @param limb: limb interface object.
-            If set to None, then create a new object
+        @param limb: Limb object
+            if limb is None: create a new instance of Limb
         @return: a intera Waypoint.msg object with default values
         """
         self._data = Waypoint()
@@ -77,6 +77,9 @@ class MotionWaypoint(object):
         self.set_waypoint_options(options)
 
     def set_from_message(self, wpt_msg):
+        """
+        @param wpt_msg: Waypoint message
+        """
         if isinstance(wpt_msg, Waypoint):
             self._data = deepcopy(wpt_msg)
         else:
@@ -100,7 +103,7 @@ class MotionWaypoint(object):
 
     def set_angles_from_joint_state(self, joint_state):
         """
-        @param joint_state
+        @param joint_state: JointState object
         """
         if not isinstance(joint_state, JointState):
             rospy.logerr('Invalid argument: must be of type JointState')
@@ -110,6 +113,11 @@ class MotionWaypoint(object):
             self.set_joint_angles(joint_angles = angles)
 
     def get_joint_angles(self):
+        """
+        Get the waypoint joint angles
+        @return: joint positions
+        @rtype: [float]
+        """
         return deepcopy(self._data.joint_positions)
 
     def set_joint_angles(self, joint_angles = [],
@@ -167,6 +175,9 @@ class MotionWaypoint(object):
         self._data.active_endpoint = active_endpoint
 
     def to_msg(self):
+        """
+        @return: Waypoint.msg
+        """
         return deepcopy(self._data)
 
     def to_dict(self):
@@ -184,16 +195,8 @@ class MotionWaypoint(object):
     def to_yaml_file(self, file_name):
         """
         Write the contents of the waypoint to a yaml file
+        @param file_name: location to write file. Will create directory if needed.
         """
         file_name = ensure_path_to_file_exists(file_name)
         with open(file_name, "w") as outfile:
             yaml.dump(self.to_dict(), outfile, default_flow_style=False)
-
-    def to_csv_file(self, file_name):
-        file_name = ensure_path_to_file_exists(file_name)
-        waypoint_data = []
-        for wpt in self._trajectory.waypoints:
-            waypoint_data.append(wpt.joint_positions)
-        with open(file_name, "wb") as f:
-            writer = csv.writer(f)
-            writer.writerows(waypoint_data)
