@@ -21,11 +21,15 @@ import intera_motion_msgs.msg
 
 
 class MotionControllerActionClient(object):
+    """
+    Simple ROS action client for sending trajectory messages to
+    the Motion Controller.
+    """
 
     def __init__(self):
         """
-        Constructor - creates a new motion controller action client and waits
-        for a connection to the motion controller action server.
+        Constructor - creates a new motion controller action client and
+        waits for a connection to the motion controller action server.
         """
         self._waypointSequenceId = 0
         self._client = actionlib.SimpleActionClient(
@@ -38,6 +42,9 @@ class MotionControllerActionClient(object):
             rospy.signal_shutdown("Timed out waiting for Action Server")
 
     def stop_trajectory(self):
+        """
+        Send a Motion Stop command
+        """
         goal = intera_motion_msgs.msg.MotionCommandGoal()
         goal.command = intera_motion_msgs.msg.MotionCommandGoal.MOTION_STOP
         self._client.send_goal(goal)
@@ -46,7 +53,7 @@ class MotionControllerActionClient(object):
     def send_trajectory(self, trajectory):
         """
         @param trajectory: a Trajectory.msg that will be packaged up with the
-            MOTION_START command and then sent to the motion controller.
+            MOTION_START command and sent to the motion controller.
         @return: (void) immediately after sending
         """
         goal = intera_motion_msgs.msg.MotionCommandGoal()

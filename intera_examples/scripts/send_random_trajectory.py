@@ -116,17 +116,17 @@ def main():
                 sys.exit(1)
 
         # Set the trajectory options
+        limb = Limb()
         traj_opts = TrajectoryOptions()
         traj_opts.interpolation_type = args.trajType
-        traj = MotionTrajectory(trajectory_options = traj_opts)
+        traj = MotionTrajectory(trajectory_options = traj_opts, limb = limb)
 
         # Set the waypoint options
         wpt_opts = MotionWaypointOptions(max_joint_speed_ratio=args.speed_ratio,
                                         max_joint_accel=args.accel_ratio)
-        waypoint = MotionWaypoint(options = wpt_opts.to_msg())
+        waypoint = MotionWaypoint(options = wpt_opts.to_msg(), limb = limb)
 
         # Append a waypoint at the current pose
-        limb = Limb()
         waypoint.set_joint_angles(limb.joint_ordered_angles())
         traj.append_waypoint(waypoint.to_msg())
 

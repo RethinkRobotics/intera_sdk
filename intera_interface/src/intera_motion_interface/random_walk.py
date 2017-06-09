@@ -39,24 +39,43 @@ class RandomWalk(object):
         self._maximum_distance = 1.0
 
     def set_lower_limits(self, low):
+        """
+        @param low: [float]
+        @return false if dimensions do not match
+        @rtype: bool
+        """
         if not self._check_dimension(low):
             return False
         self._lower_limit = deepcopy(low)
         return True
 
     def set_upper_limits(self, upp):
+        """
+        @param upp: [float]
+        @return false if dimensions do not match
+        @rtype: bool
+        """
         if not self._check_dimension(upp):
             return False
         self._upper_limit = deepcopy(upp)
         return True
 
     def set_last_point(self, val):
+        """
+        Set the initial seed point
+        @param low: val [float]
+        @return false if dimensions do not match
+        @rtype: bool
+        """
         if not self._check_dimension(val):
             return False
         self._last_point = deepcopy(val)
         return True
 
     def set_boundary_padding(self, pad):
+        """
+        @param pad: bounday padding, must be [0,0.5)
+        """
         if pad < 0.0:
             rospy.logwarn(' cannot set negative padding values')
             pad = 0.0
@@ -66,6 +85,9 @@ class RandomWalk(object):
         self._boundary_padding = pad
 
     def set_maximum_distance(self, dist):
+        """
+        @param dist: maximum scaled step distance, must be (0,1]
+        """
         if dist < 0.00001:
             rospy.logwarn(' distance must be positive!')
             dist = 0.00001
@@ -75,9 +97,17 @@ class RandomWalk(object):
         self._maximum_distance = dist
 
     def get_last_point(self):
+        """
+        @return: the last point used
+        @rtype: [float]
+        """
         return deepcopy(self._last_point)
 
     def get_next_point(self):
+        """
+        @return: ext random point
+        @rtype: [float]
+        """
         if self._lower_limit is None:
             rospy.logerr('must define lower limits')
             return None

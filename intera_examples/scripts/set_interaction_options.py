@@ -180,17 +180,14 @@ def main():
 
         msg = interaction_options.to_msg()
 
+        # print the resultant interaction options once
+        rospy.loginfo(msg)
+        pub.publish(msg)
+
         if args.rate > 0:
             while not rospy.is_shutdown():
-                # print the resultant interaction options
-                rospy.loginfo(msg)
-                pub.publish(msg)
                 rate.sleep()
-        else:
-            # print the resultant interaction options
-            rospy.loginfo(msg)
-            pub.publish(msg)
-
+                pub.publish(msg)
 
     except rospy.ROSInterruptException:
         rospy.logerr('Keyboard interrupt detected from the user. %s',

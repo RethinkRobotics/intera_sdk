@@ -31,7 +31,7 @@ class MotionWaypointOptions(object):
     It's primary purpose is to facilitate message creation and input checking.
     """
 
-    # default parameters
+    # default Sawyer parameters
     default_speed_ratio = 0.7
     default_joint_tolerance = 0.05  # rad
     default_max_linear_speed = 0.6  # m/s
@@ -41,6 +41,11 @@ class MotionWaypointOptions(object):
 
     @staticmethod
     def get_accel_preset(accel_name):
+        """
+        Get the motion presets for max joint acceleration.
+        This does not need to be set for Cartesian Trajectories.
+        @return list [float]: limits from joints (j0 ... j6)
+        """
         if accel_name == 'slow':
             return [1.5, 1.5, 3.0, 3.0, 3.0, 3.0, 3.0]
         if accel_name == 'medium':
@@ -53,29 +58,33 @@ class MotionWaypointOptions(object):
         return None
 
     def __init__(self, n_dim = 0,
+                 label = "default",
                  max_joint_speed_ratio = None,
                  joint_tolerances = None,
+                 max_joint_accel = None,
                  max_linear_speed = None,
                  max_linear_accel = None,
                  max_rotational_speed = None,
                  max_rotational_accel= None,
-                 max_joint_accel = None,
-                 label = "default",
                  corner_distance = 0.0):
         """
         Create a motion waypoint options object. All parameters are
         optional. If ommitted or set to None, then use default value.
+        See setter functions for more details.
+
+        The last four parametes only apply to Cartesian trajectories.
+
         @param n_dim: Number of dimensions (joints) for the point.
-        @param max_joint_speed_ratio: Scales the maximum joint speed vector
-            if empty or n_dim==0: set to empty
-        @param joint_tolerances
-        @param max_linear_speed
-        @param max_linear_accel
-        @param max_rotational_speed
-        @param max_rotational_accel
-        @param max_joint_accel
-            if empty or n_dim==0: set to empty
-        @param label
+        @param label: waypoint name
+        @param max_joint_speed_ratio: Scales the maximum joint speed vector.
+            If empty list, set to empty
+        @param joint_tolerances: joint error tolerance
+        @param max_joint_accel: max joint acceleration.
+            If empty list, set to empty
+        @param max_linear_speed: max linear speed
+        @param max_linear_accel: max linear acceleration
+        @param max_rotational_speed: max rotational speed
+        @param max_rotational_accel: max rotational accceleration
         """
 
         self._n_dim = n_dim
@@ -92,6 +101,11 @@ class MotionWaypointOptions(object):
         self.set_corner_distance(corner_distance)
 
     def set_max_joint_speed_ratio(self, speed_ratio = None):
+        """
+        The waypoint max joint speed is set to a percentage of the physical
+        max joint speed. Cartesian paths should be set to 1.0
+        @param speed_ratio: ratio [0.0, 1.0]
+        """
         if speed_ratio is None:
             speed_ratio = self.default_speed_ratio
         speed_ratio = clamp_float_warn(0.05, speed_ratio, 1.0, 'speed_ratio')
@@ -102,10 +116,11 @@ class MotionWaypointOptions(object):
     def set_joint_tolerances(self, tol = []):
         """
         @param joint_tolerances:
-        --> None:  populate with vector of default values
-        --> []: set tolerance vector to empty
-        --> float:  set every element in the joint_tolerance to this values
-        --> [float]:  copy all elements of joint_tolerances. Checks length.
+        The error tolerance (radians) before the trajcectory is slowed
+          - None:  populate with vector of default values
+          - []: set tolerance vector to empty
+          - float:  set every element in the joint_tolerance to this values
+          - [float]:  copy all elements of joint_tolerances. Checks length.
         """
         if tol is None:
             self.set_joint_tolerances(self.default_joint_tolerance)
@@ -120,24 +135,40 @@ class MotionWaypointOptions(object):
             rospy.logerr('Invalid input to set_joint_tolerances!')
 
     def set_max_linear_speed(self, speed = None):
+        """
+        For Cartesian paths only
+        @param speed: max linear tip speed (m/s)
+        """
         if speed is None:
             speed = self.default_max_linear_speed
         tol = clamp_float_warn(0.001, speed, float('inf'), 'max linear speed')
         self._data.max_linear_speed = speed
 
     def set_max_linear_accel(self, accel = None):
+        """
+        For Cartesian paths only
+        @param accel: max linear tip acceleration (m/s/s)
+        """
         if accel is None:
             accel = self.default_max_linear_accel
         tol = clamp_float_warn(0.001, accel, float('inf'), 'max linear accel')
         self._data.max_linear_accel = accel
 
     def set_max_rotational_speed(self, speed = None):
+        """
+        For Cartesian paths only
+        @param speed: max rotational tip speed (rad/s)
+        """
         if speed is None:
             speed = self.default_max_rot_speed
         tol = clamp_float_warn(0.001, speed, float('inf'), 'max rotational speed')
         self._data.max_rotational_speed = speed
 
     def set_max_rotational_accel(self, accel = None):
+        """
+        For Cartesian paths only
+        @param accel: max rotational tip acceleration (rad/s/s)
+        """
         if accel is None:
             accel = self.default_max_rot_accel
         tol = clamp_float_warn(0.001, accel, float('inf'), 'max rotational accel')
@@ -146,11 +177,12 @@ class MotionWaypointOptions(object):
     def set_max_joint_accel(self, max_joint_accel = []):
         """
         @param max_joint_accel:
-        --> None:  populate with vector of default values
-        --> []: set tolerance vector to empty
-        --> float:  scale the maximum acceleration for each joint by this
-        --> [float]:  copy all elements of max_joint_accel. Checks length.
-        --> str:  use a motion preset
+        Max joint acceleration per joint (rad/s/s)
+          - None:  populate with vector of default values
+          - []: set tolerance vector to empty
+          - float:  scale the maximum acceleration for each joint by this
+          - [float]:  copy all elements of max_joint_accel. Checks length.
+          - str:  use a motion preset
         """
         if max_joint_accel is None:
             self.set_max_joint_accel('fast')
@@ -171,12 +203,25 @@ class MotionWaypointOptions(object):
 
 
     def set_label(self, label="default"):
+        """
+        param label: name of waypoint
+        """
         if isinstance(label, str):
             self._data.label = deepcopy(label)
         else:
             rospy.logerr('Input must be a string!')
 
     def set_corner_distance(self, corner_distance = None):
+        """
+        For Cartesian paths only
+        @param corner_distance: Used for smoothing corners for continuous motion (meters)
+
+        The distance from the waypoint to where the curve starts while blending from
+        one straight line segment to the next.
+        Larger distance:  trajectory passes farther from the waypoint at a higher speed
+        Smaller distance:  trajectory passes closer to the waypoint at a lower speed
+        Zero distance:  trajectory passes through the waypoint at zero speed
+        """
         if corner_distance is None:
             corner_distance = 0.0;
         corner_distance = clamp_float_warn(0.0, corner_distance, 0.5, 'corner_distance')
@@ -187,6 +232,7 @@ class MotionWaypointOptions(object):
     def check_array_consistency(self):
         """
         @return: true iff all arrays in the data structure are self consistent.
+        @rtype: bool
         """
         a = len(self._data.joint_tolerances)
         b = len(self._data.max_joint_accel)
@@ -197,6 +243,9 @@ class MotionWaypointOptions(object):
             return False
 
     def to_msg(self):
+        """
+        @return: MotionWaypoint.msg
+        """
         return deepcopy(self._data)
 
     def to_dict(self):
@@ -214,6 +263,7 @@ class MotionWaypointOptions(object):
     def to_yaml_file(self, file_name):
         """
         Write the contents of the waypoint options to a yaml file
+        @param file_name: location to write file. Will create directory if needed.
         """
         file_name = ensure_path_to_file_exists(file_name)
         with open(file_name, "w") as outfile:

@@ -56,11 +56,11 @@ def main():
     try:
         rospy.init_node('go_to_joint_angles_py')
         limb = Limb()
-        traj = MotionTrajectory()
+        traj = MotionTrajectory(limb = limb)
 
         wpt_opts = MotionWaypointOptions(max_joint_speed_ratio=args.speed_ratio,
                                          max_joint_accel=args.accel_ratio)
-        waypoint = MotionWaypoint(options = wpt_opts.to_msg())
+        waypoint = MotionWaypoint(options = wpt_opts.to_msg(), limb = limb)
 
         joint_angles = limb.joint_ordered_angles()
 

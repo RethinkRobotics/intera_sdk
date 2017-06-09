@@ -18,23 +18,12 @@
 import csv
 import yaml
 import rospy
-import rosbag
-import actionlib
 from intera_motion_msgs.msg import (
     Trajectory,
     TrajectoryOptions,
     Waypoint
 )
-import os.path
-from intera_core_msgs.msg import (
-    JointLimits
-)
-from sensor_msgs.msg import (
-    JointState
-)
-from motion_controller_action_client import (
-    MotionControllerActionClient
-)
+from motion_controller_action_client import MotionControllerActionClient
 from motion_waypoint import MotionWaypoint
 from motion_waypoint_options import MotionWaypointOptions
 from utility_functions import ensure_path_to_file_exists
@@ -44,6 +33,11 @@ from intera_interface import Limb
 
 
 class MotionTrajectory(object):
+    """
+    This class is a wrapper for the intera motion message:  Trajectory.msg
+    The class also creates an MotionControllerActionClient for sending
+    messages to the Motion Controller.
+    """
 
     def __init__(self, label = None,
                  joint_names = None,
@@ -57,8 +51,8 @@ class MotionTrajectory(object):
             if joint_names is None: use default names
         @param trajectory_options: options for the trajectory
             if trajectory_options is None: use default options
-        @param limb: limb interface object.
-            If set to None, then create a new object
+        @param limb: Limb object
+            if limb is None: create a new instance of Limb
         """
 
         # Used for sending the trajectory to the motion controller
@@ -71,37 +65,73 @@ class MotionTrajectory(object):
         self.set_trajectory_options(trajectory_options)
 
     def stop_trajectory(self):
+        """
+        Send a Motion Stop command
+        """
         self._client.stop_trajectory()
 
     def send_trajectory(self, wait_for_result=True):
+        """
+        Checks the trajectory message is complete.
+        The message then will be packaged up with the MOTION_START
+        command and sent to the motion controller.
+        @param wait_for_result:
+          - If true, the function will not until the trajectory is finished
+          - If false, return True immediately after sending
+        @return: True if the goal finished
+        @rtype: bool
+        """
         if not self._traj.waypoints:
             rospy.logerr("Trajectory is empty! Cannot send.")
             return None
         self._check_options()
         self._client.send_trajectory(self.to_msg())
-        return self._client.wait_for_result() if wait_for_result else None
+        return self._client.wait_for_result() if wait_for_result else True
 
     def get_state(self):
+        """
+        Get the action client state information of current goal.
+        @return: the goal's state
+        """
         return self._client.get_state()
 
     def wait_for_result(self):
+        """
+        The function will not until the trajectory is finished
+        @return True if the goal finished
+        """
         return self._client.wait_for_result()
 
     def set_data(self, traj_msg):
+        """
+        @param traj_msg: Trajectory.msg
+        """
         if isinstance(traj_msg, Trajectory):
             self._traj = deepcopy(traj_msg)
         else:
             rospy.logerr('Cannot set trajectory data. Invalid type.')
 
     def set_label(self, label=None):
+        """
+        @param label: string
+            if label is None: use default
+        """
         self._traj.label = 'default' if label is None else label
 
     def set_joint_names(self, joint_names = None):
+        """
+        @param joint_names: name for each joint in the robot, list [string]
+            if joint_names is None: use default names
+        """
         if joint_names is None:
             joint_names = self._limb.joint_names()
         self._traj.joint_names = deepcopy(joint_names)
 
     def set_trajectory_options(self, trajectory_options = None):
+        """
+        @param trajectory_options: options for the trajectory
+            if trajectory_options is None: use default options
+        """
         # TODO:  Better support for interaction control options.
         if trajectory_options is None:
             trajectory_options = TrajectoryOptions()
@@ -114,18 +144,27 @@ class MotionTrajectory(object):
     def get_dimension(self):
         """
         @return: number of dimensions along the trajectory
+        @rtype: int
         """
         return len(self._joint_names)
 
     def get_label(self):
+        """
+        @return: trajectory name
+        @rtype: string
+        """
         return self._traj.label
 
     def clear_waypoints(self):
+        """
+        Clear the trajectory waypoints
+        """
         self._traj.waypoints = []
 
     def append_waypoint(self, waypoint):
         """
         Appends a waypoint to the trajectory message
+        @param waypoint: either Waypoint message or MotionWaypoint object
         """
         if isinstance(waypoint, Waypoint):
             wpt = deepcopy(waypoint)
@@ -140,13 +179,16 @@ class MotionTrajectory(object):
     def get_waypoint_joint_angles_as_list(self):
         """
         @return: a list of lists, with the following format:
-        [joint_names,waypoint_0,waypoint_1,...waypoint_N]
+            [joint_names, waypoint_0, waypoint_1, ...waypoint_N]
         """
         data = list()
         data.append(self._traj.joint_names)
         return data.extend([deepcopy(wpt.joint_positions) for wpt in self._traj.waypoints])
 
     def to_msg(self):
+        """
+        @return: Trajectory.msg
+        """
         return deepcopy(self._traj)
 
     def to_dict(self):
@@ -164,6 +206,7 @@ class MotionTrajectory(object):
     def to_yaml_file(self, file_name):
         """
         Write the contents of the trajectory message to a yaml file
+        @param file_name: location to write file. Will create directory if needed.
         """
         file_name = ensure_path_to_file_exists(file_name)
         with open(file_name, "w") as outfile:
@@ -173,6 +216,7 @@ class MotionTrajectory(object):
         """
         Write the joint angles of the waypoints to a csv file. The first row
         contains the joint names and subsequent rows contain joint angles.
+        @param file_name: location to write file. Will create directory if needed.
         """
         file_name = ensure_path_to_file_exists(file_name)
         waypoint_data = self.get_waypoint_joint_angles_as_list()
@@ -184,6 +228,7 @@ class MotionTrajectory(object):
         """
         Check to make sure the defined waypoints have the necessary parameters
         given the provided options and correct the waypoints when possible.
+        @rtype: bool
         """
         if (self._traj.trajectory_options.interpolation_type ==
             TrajectoryOptions.CARTESIAN):
@@ -192,7 +237,8 @@ class MotionTrajectory(object):
     def _check_cartesian_options(self):
         """
         Checks the waypoints to make sure that cartesian endpoints are defined
-        and attempts to calculate them if possible
+        and attempts to calculate them if possible\
+        @rtype: bool
         """
         for index, wpt in enumerate(self._traj.waypoints):
             pose = wpt.pose.pose
@@ -201,7 +247,7 @@ class MotionTrajectory(object):
                            pose.orientation.y, pose.orientation.z]
             # If the endpoint pose has not been set
             if not sum(position) or not sum(orientation):
-                new_wpt = MotionWaypoint(options = wpt.options)
+                new_wpt = MotionWaypoint(options = wpt.options, limb = self._limb)
                 new_wpt.set_joint_angles(joint_angles = wpt.joint_positions,
                                          active_endpoint = wpt.active_endpoint,
                                          perform_fk = True)
