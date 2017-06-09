@@ -579,7 +579,8 @@ class Limb(object):
 
     def ik_request(self, pose,
                    end_point='right_hand', joint_seed=None,
-                   nullspace_goal=None, nullspace_gain=0.4):
+                   nullspace_goal=None, nullspace_gain=0.4,
+                   allow_collision=False):
         """
         Inverse Kinematics request sent to IK Service
 
@@ -593,6 +594,8 @@ class Limb(object):
         @param nullspace_goal: desired joints, or subset of joints, to bias the solver (optional)
         @type nullspace_gain: double
         @param nullspace_gain: gain used to bias toward the nullspace goal [0.0, 1.0] (optional)
+        @type allow_collision: bool
+        @param allow_collision: does not check if Ik solution is in collision
         @rtype: dict({str:float})
         @return: valid joint positions if exists.  False if no solution is found.
         """
@@ -636,12 +639,8 @@ class Limb(object):
             return False
         limb_joints = {}
         # Check if result valid, and type of seed ultimately used to get solution
-        if (resp.result_type[0] > 0):
-            seed_str = {
-                        ikreq.SEED_USER: 'User Provided Seed',
-                        ikreq.SEED_CURRENT: 'Current Joint Angles',
-                        ikreq.SEED_NS_MAP: 'Nullspace Setpoints',
-                       }.get(resp.result_type[0], 'None')
+        if (resp.result_type[0] > 0
+                or (allow_collision and resp.result_type[0] == resp.IK_IN_COLLISION)):
             # Format solution into Limb API-compatible dictionary
             limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
         else:
