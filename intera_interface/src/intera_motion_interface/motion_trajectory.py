@@ -183,7 +183,8 @@ class MotionTrajectory(object):
         """
         data = list()
         data.append(self._traj.joint_names)
-        return data.extend([deepcopy(wpt.joint_positions) for wpt in self._traj.waypoints])
+        data.extend([deepcopy(wpt.joint_positions) for wpt in self._traj.waypoints])
+        return data
 
     def to_msg(self):
         """
