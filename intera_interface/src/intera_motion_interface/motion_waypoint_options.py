@@ -57,6 +57,19 @@ class MotionWaypointOptions(object):
         rospy.logwarn('Did not recognize accel preset. Skipping.')
         return None
 
+    @staticmethod
+    def get_speed_ratio_preset(speed_name):
+        if speed_name == 'slow':
+            return 0.25
+        if speed_name == 'medium':
+            return 0.6
+        if speed_name == 'fast':
+            return 0.9
+        if speed_name == 'express':
+            return 1.0
+        rospy.logwarn('Did not recognize speed ratio preset. Skipping.')
+        return None
+
     def __init__(self, n_dim = 0,
                  label = "default",
                  max_joint_speed_ratio = None,

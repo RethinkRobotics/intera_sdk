@@ -14,6 +14,7 @@ find_package(catkin
   dynamic_reconfigure
   intera_core_msgs
   intera_motion_msgs
+  rospy_message_converter
 )
 
 catkin_python_setup()
@@ -38,6 +39,7 @@ catkin_package(
   dynamic_reconfigure
   intera_core_msgs
   intera_motion_msgs
+  rospy_message_converter
 )
 
 install(
