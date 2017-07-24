@@ -18,6 +18,7 @@
 import os
 import rospy
 
+
 def get_formatted_decimal_string(i, n):
     """
     @param i: index
@@ -35,18 +36,25 @@ def ensure_path_to_file_exists(raw_file_path):
     1) Expands the ~ in the file path string
     2) Creates any intermediate directories that do not exist
     @param raw_file_path
+    @return: file_name = valid path to file
     """
     file_name = os.path.expanduser(raw_file_path)
     file_dir = os.path.dirname(file_name)
-    if not os.path.exists(file_dir):
+    if file_dir and not os.path.exists(file_dir):
         os.makedirs(file_dir)
     return file_name
 
+
 def is_valid_check_list_for_none(list_data):
+    """
+    @param list_data: a python list
+    @return true iff all elements in the list are not None
+    """
     if None in list_data:
         rospy.logwarn("This list contains at least one None value!")
         return False
     return True
+
 
 def clamp_float_warn(low, val, upp, name):
     """

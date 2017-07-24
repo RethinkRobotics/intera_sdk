@@ -170,9 +170,10 @@ class MotionWaypoint(object):
 
         if active_endpoint is None:
             active_endpoint = MotionWaypoint.get_default_active_endpoint()
-
-        self._data.joint_positions = joint_angles
         self._data.active_endpoint = active_endpoint
+
+        if joint_angles:
+            self._data.joint_positions = joint_angles
 
     def to_msg(self):
         """
