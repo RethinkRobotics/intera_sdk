@@ -98,7 +98,7 @@ class Cameras(object):
         return False
 
     def set_callback(self, camera_name, callback, callback_args=None,
-        queue_size=10, rectify_image=True):
+        queue_size=1, buff_size=2**24, rectify_image=True):
         """
         Setup the callback function to show image.
 
@@ -110,6 +110,9 @@ class Cameras(object):
         @param callback_args: additional arguments to pass to the callback
         @type queue_size: int
         @param queue_size: maximum number of messages to receive at a time
+        @type buff_size: int
+        @param buff_size: incoming message buffer size in bytes.
+            Defaults to handle head image of 4.1 MB.
         @type rectify_image: bool
         @param rectify_image: specify whether subscribe to the rectified or
                               raw (unrectified) image topic
@@ -123,7 +126,8 @@ class Cameras(object):
             else:
                 image_string = "image_raw"
             rospy.Subscriber('/'.join(["/io/internal_camera", camera_name,
-                image_string]), Image, callback, callback_args=callback_args)
+                image_string]), Image, callback, callback_args=callback_args,
+                queue_size=queue_size, buff_size=buff_size)
 
     def start_streaming(self, camera_name):
         """
