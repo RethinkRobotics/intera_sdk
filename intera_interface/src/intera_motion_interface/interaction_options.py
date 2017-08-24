@@ -245,7 +245,7 @@ class InteractionOptions(object):
                 rospy.logerr('The number of interaction_control_mode elements must be 1 or %d',
                              self.n_dim_cart)
 
-    def set_disable_damping_in_force_control(self, disable_damping_in_force_control = self.default_disable_damping_in_force_control):
+    def set_disable_damping_in_force_control(self, disable_damping_in_force_control = default_disable_damping_in_force_control):
         """
         @param disable_damping_in_force_control:
           - None:  set it to False by default
@@ -253,7 +253,7 @@ class InteractionOptions(object):
         """
         self._data.disable_damping_in_force_control = disable_damping_in_force_control
 
-    def set_disable_reference_resetting(self, disable_reference_resetting = self.default_disable_reference_resetting):
+    def set_disable_reference_resetting(self, disable_reference_resetting = default_disable_reference_resetting):
         """
         @param disable_reference_resetting:
           - None:  set it to False by default
