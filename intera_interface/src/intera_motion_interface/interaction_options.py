@@ -245,27 +245,21 @@ class InteractionOptions(object):
                 rospy.logerr('The number of interaction_control_mode elements must be 1 or %d',
                              self.n_dim_cart)
 
-    def set_disable_damping_in_force_control(self, disable_damping_in_force_control = None):
+    def set_disable_damping_in_force_control(self, disable_damping_in_force_control = self.default_disable_damping_in_force_control):
         """
         @param disable_damping_in_force_control:
           - None:  set it to False by default
           - [bool]: copy the element.
         """
-        if disable_damping_in_force_control is None:
-            self.set_disable_damping_in_force_control(self.default_disable_damping_in_force_control) # default value
-        else:
-            self._data.disable_damping_in_force_control = disable_damping_in_force_control
+        self._data.disable_damping_in_force_control = disable_damping_in_force_control
 
-    def set_disable_reference_resetting(self, disable_reference_resetting = None):
+    def set_disable_reference_resetting(self, disable_reference_resetting = self.default_disable_reference_resetting):
         """
         @param disable_reference_resetting:
           - None:  set it to False by default
           - [bool]: copy the element.
         """
-        if disable_reference_resetting is None:
-            self.set_disable_reference_resetting(self.disable_reference_resetting) # default value
-        else:
-            self._data.disable_reference_resetting = disable_reference_resetting
+        self._data.disable_reference_resetting = disable_reference_resetting
 
 
     def to_msg(self):
