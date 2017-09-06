@@ -12,13 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+import rospy
+
+from intera_core_msgs.msg import IOComponentCommand
+
+
 class IOCommand(object):
     '''
     Container for a generic io command
     '''
-    def __init__(self, op, args=None):
+    def __init__(self, op, args = None, now = False):
+        self.time = rospy.Time()
         self.op = op
         self.args = args if args else {}
+
+    def __str__(self):
+        return str({"time": self.time, "op": self.op, "args": self.args})
+
+    def as_msg(self, now = None):
+        if now == None:       # use time we have OR set to now if we don't have time!
+            self.time = self.time if not self.time.is_zero() else rospy.Time.now()
+        elif now == True:     # set time to now
+            self.time = rospy.Time.now()
+        elif now == False:    # reset time to empty (0,0)
+            self.time = rospy.Time()
+
+        return IOComponentCommand(
+            time = self.time,
+            op = self.op,
+            args = json.dumps(self.args)
+        )
 
 class SetCommand(IOCommand):
     '''

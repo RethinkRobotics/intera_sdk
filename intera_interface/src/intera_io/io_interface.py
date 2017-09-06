@@ -42,10 +42,10 @@ class IOInterface(object):
         self.cmd_times = []
         self.ports = dict()
         self.signals = dict()
-        self.state = None
-        self.config = None
-        self.state_changed = intera_dataflow.Signal()
+        self.config = config_msg_type()
+        self.state = status_msg_type()
         self.config_changed = intera_dataflow.Signal()
+        self.state_changed = intera_dataflow.Signal()
 
         self._config_sub = rospy.Subscriber(self._path + "/config",
                                             config_msg_type,
@@ -59,8 +59,8 @@ class IOInterface(object):
         # Wait for the state to be populated
         intera_dataflow.wait_for(
                           lambda: not self.state is None,
-                          timeout=5.0,
-                          timeout_msg=("Failed to get state.")
+                          timeout=5.0, raise_on_error=False,
+                          timeout_msg=("Failed to get state at: {}.".format(self._path + "/state"))
                           )
 
         rospy.logdebug("Making new IOInterface on %s" % (self._path,))
@@ -152,7 +152,7 @@ class IOInterface(object):
         """
         cmd_time = rospy.Time.now()
         self.cmd_times.append(cmd_time)
-        self.cmd_times = self.cmd_times[-100:]
+        self.cmd_times = self.cmd_times[-100:]  # cache last 100 cmd timestamps
         cmd_msg = IOComponentCommand(
             time=cmd_time,
             op=op,
@@ -182,10 +182,6 @@ class IODeviceInterface(IOInterface):
             'io/' + node_name + '/' + dev_name,
             IODeviceConfiguration,
             IODeviceStatus)
-        self.config = IODeviceConfiguration()
-        self.state = IODeviceStatus()
-        self.invalidate_config()
-        self.invalidate_state()
         self._threads = dict()
         self._callback_items = dict()
         self._callback_functions = dict()
