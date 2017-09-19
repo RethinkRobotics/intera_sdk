@@ -146,6 +146,13 @@ def main():
         "-kn", "--K_nullspace", type=float,
         nargs='+', default=[5.0, 10.0, 5.0, 10.0, 5.0, 10.0, 5.0],
         help="A list of desired nullspace stiffnesses, one for each of the 7 joints (a single value can be provided to apply the same value to all the directions) -- units are in (Nm/rad)")
+    parser.add_argument(
+        "-ddifc",  "--disable_damping_in_force_control", action='store_true', default=False,
+        help="Disable damping in force control")
+    parser.add_argument(
+        "-drr",  "--disable_reference_resetting", action='store_true', default=False,
+        help="The reference signal is reset to actual position to avoid jerks/jumps when interaction parameters are changed. This option allows the user to disable this feature.")
+
 
     args = parser.parse_args(rospy.myargv()[1:])
 
@@ -212,6 +219,10 @@ def main():
                     rospy.logerr('Invalid input to quaternion!')
             else:
                 rospy.logerr('Invalid input to interaction_frame!')
+
+        interaction_options.set_disable_damping_in_force_control(args.disable_damping_in_force_control)
+        interaction_options.set_disable_reference_resetting(args.disable_reference_resetting)
+
 
         trajectory_options.interaction_params = interaction_options.to_msg()
         traj.set_trajectory_options(trajectory_options)

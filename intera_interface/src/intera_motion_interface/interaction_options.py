@@ -47,6 +47,8 @@ class InteractionOptions(object):
     default_in_endpoint_frame = False
     default_force_command = 0.0
     default_interaction_mode = impedance_mode
+    default_disable_damping_in_force_control = False
+    default_disable_reference_resetting = False
 
     def __init__(self, header = None,
                  interaction_control_active = None,
@@ -58,7 +60,9 @@ class InteractionOptions(object):
                  interaction_frame = None,
                  endpoint_name = None,
                  in_endpoint_frame = None,
-                 interaction_control_mode = None):
+                 interaction_control_mode = None,
+                 disable_damping_in_force_control = None,
+                 disable_reference_resetting = None):
         """
         Create a interaction options object. All parameters are
         optional. If ommitted or set to None, then use default value.
@@ -77,6 +81,8 @@ class InteractionOptions(object):
         self.set_endpoint_name(endpoint_name)
         self.set_in_endpoint_frame(in_endpoint_frame)
         self.set_interaction_control_mode(interaction_control_mode)
+        self.set_disable_damping_in_force_control(disable_damping_in_force_control)
+        self.set_disable_reference_resetting(disable_reference_resetting)
 
     def set_header(self, header = None):
         """
@@ -238,6 +244,23 @@ class InteractionOptions(object):
             else:
                 rospy.logerr('The number of interaction_control_mode elements must be 1 or %d',
                              self.n_dim_cart)
+
+    def set_disable_damping_in_force_control(self, disable_damping_in_force_control = default_disable_damping_in_force_control):
+        """
+        @param disable_damping_in_force_control:
+          - None:  set it to False by default
+          - [bool]: copy the element.
+        """
+        self._data.disable_damping_in_force_control = disable_damping_in_force_control
+
+    def set_disable_reference_resetting(self, disable_reference_resetting = default_disable_reference_resetting):
+        """
+        @param disable_reference_resetting:
+          - None:  set it to False by default
+          - [bool]: copy the element.
+        """
+        self._data.disable_reference_resetting = disable_reference_resetting
+
 
     def to_msg(self):
         """
