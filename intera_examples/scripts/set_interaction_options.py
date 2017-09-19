@@ -16,25 +16,10 @@
 
 import rospy
 from intera_core_msgs.msg import InteractionControlCommand
-import numpy as np
 import argparse
-from copy import deepcopy
 from geometry_msgs.msg import Pose
 from intera_motion_interface import InteractionOptions
-
-def int2bool(var):
-    """
-    Convert integer value/list to bool value/list
-    """
-    var_out = deepcopy(var)
-
-    if isinstance(var, int):
-        var_out = bool(var)
-    elif len(var) >= 1:
-        for i in range(0, len(var)):
-            var_out[i] = bool(var[i])
-
-    return var_out
+from intera_motion_interface.utility_functions import int2bool
 
 def main():
     """
@@ -70,10 +55,7 @@ def main():
     --> Set the pose of the interaction_frame -- position: (0.1, 0.2, 0.3) and orientation (1, 0, 0, 0)
 
     -ef
-    --> Set in_endpoint_frame to True in the current configuration
-
-    -en 'right_hand'
-    --> Specify the desired endpoint frame where impedance and force control behaviors are defined
+    --> Set in_endpoint_frame to True in the current configuration (use TCP frame as reference frame)
 
     -f 0.0 0.0 30.0 0.0 0.0 0.0
     --> Set force_command to [0.0 0.0 30.0 0.0 0.0 0.0] in the current configuration
@@ -122,25 +104,27 @@ def main():
         nargs='+', default=[5.0, 10.0, 5.0, 10.0, 5.0, 10.0, 5.0],
         help="A list of desired nullspace stiffnesses, one for each of the 7 joints (a single value can be provided to apply the same value to all the directions) -- units are in (Nm/rad)")
     parser.add_argument(
+        "-dd",  "--disable_damping_in_force_control", action='store_true', default=False,
+        help="Disable damping in force control")
+    parser.add_argument(
+        "-dr",  "--disable_reference_resetting", action='store_true', default=False,
+        help="The reference signal is reset to actual position to avoid jerks/jumps when interaction parameters are changed. This option allows the user to disable this feature.")
+    parser.add_argument(
+        "-rc",  "--rotations_for_constrained_zeroG", action='store_true', default=False,
+        help="Allow arbitrary rotational displacements from the current orientation for constrained zero-G (works only with a stationary reference orientation)")
+    parser.add_argument(
         "-r",  "--rate", type=int, default=10,
         help="A desired publish rate for updating interaction control commands (10Hz by default) -- 0 if we want to publish it only once")
-    parser.add_argument(
-        "-ddifc",  "--disable_damping_in_force_control", action='store_true', default=False,
-        help="Disable damping in force control")
-
-    parser.add_argument(
-        "-drr",  "--disable_reference_resetting", action='store_true', default=False,
-        help="The reference signal is reset to actual position to avoid jerks/jumps when interaction parameters are changed. This option allows the user to disable this feature.")
 
     args = parser.parse_args(rospy.myargv()[1:])
 
     try:
         rospy.init_node('set_interaction_options_py')
-        pub = rospy.Publisher('/robot/limb/right/interaction_control_command', InteractionControlCommand, queue_size=10)
+        pub = rospy.Publisher('/robot/limb/right/interaction_control_command', InteractionControlCommand, queue_size = 1)
         rospy.sleep(0.5)
 
         if args.rate > 0:
-            rate = rospy.Rate(args.rate) # 10hz
+            rate = rospy.Rate(args.rate)
         elif args.rate == 0:
             rospy.logwarn('Interaction control options will be set only once!')
         elif args.rate < 0:
@@ -149,44 +133,36 @@ def main():
         # set the interaction control options in the current configuration
         interaction_options = InteractionOptions()
 
-        if args.interaction_active is not None:
-            interaction_options.set_interaction_control_active(int2bool(args.interaction_active))
-        if args.K_impedance is not None:
-            interaction_options.set_K_impedance(args.K_impedance)
-        if args.max_impedance is not None:
-            interaction_options.set_max_impedance(int2bool(args.max_impedance))
-        if args.interaction_control_mode is not None:
-            interaction_options.set_interaction_control_mode(args.interaction_control_mode)
-        if args.in_endpoint_frame is not None:
-            interaction_options.set_in_endpoint_frame(int2bool(args.in_endpoint_frame))
-        if args.force_command is not None:
-            interaction_options.set_force_command(args.force_command)
-        if args.K_nullspace is not None:
-            interaction_options.set_K_nullspace(args.K_nullspace)
-        if args.endpoint_name is not None:
-            interaction_options.set_endpoint_name(args.endpoint_name)
-        if args.interaction_frame is not None:
-            if len(args.interaction_frame) < 7:
-                rospy.logerr('The number of elements must be 7!')
-            elif len(args.interaction_frame) == 7:
-                quat = np.array([args.interaction_frame[3], args.interaction_frame[4], args.interaction_frame[5], args.interaction_frame[6]])
-                if np.linalg.norm(quat) < 1.0 + 1e-7 and np.linalg.norm(quat) > 1.0 - 1e-7:
-                    interaction_frame = Pose()
-                    interaction_frame.position.x = args.interaction_frame[0]
-                    interaction_frame.position.y = args.interaction_frame[1]
-                    interaction_frame.position.z = args.interaction_frame[2]
-                    interaction_frame.orientation.w = args.interaction_frame[3]
-                    interaction_frame.orientation.x = args.interaction_frame[4]
-                    interaction_frame.orientation.y = args.interaction_frame[5]
-                    interaction_frame.orientation.z = args.interaction_frame[6]
-                    interaction_options.set_interaction_frame(interaction_frame)
-                else:
-                    rospy.logerr('Invalid input to quaternion!')
+        interaction_options.set_interaction_control_active(int2bool(args.interaction_active))
+        interaction_options.set_K_impedance(args.K_impedance)
+        interaction_options.set_max_impedance(int2bool(args.max_impedance))
+        interaction_options.set_interaction_control_mode(args.interaction_control_mode)
+        interaction_options.set_in_endpoint_frame(args.in_endpoint_frame)
+        interaction_options.set_force_command(args.force_command)
+        interaction_options.set_K_nullspace(args.K_nullspace)
+        if len(args.interaction_frame) < 7:
+            rospy.logerr('The number of elements must be 7!')
+        elif len(args.interaction_frame) == 7:
+            quat_sum_square = args.interaction_frame[3]*args.interaction_frame[3] + args.interaction_frame[4]*args.interaction_frame[4] 
+            + args.interaction_frame[5]*args.interaction_frame[5] + args.interaction_frame[6]*args.interaction_frame[6]
+            if quat_sum_square  < 1.0 + 1e-7 and quat_sum_square > 1.0 - 1e-7:
+                interaction_frame = Pose()
+                interaction_frame.position.x = args.interaction_frame[0]
+                interaction_frame.position.y = args.interaction_frame[1]
+                interaction_frame.position.z = args.interaction_frame[2]
+                interaction_frame.orientation.w = args.interaction_frame[3]
+                interaction_frame.orientation.x = args.interaction_frame[4]
+                interaction_frame.orientation.y = args.interaction_frame[5]
+                interaction_frame.orientation.z = args.interaction_frame[6]
+                interaction_options.set_interaction_frame(interaction_frame)
             else:
-                rospy.logerr('Invalid input to interaction_frame!')
+                rospy.logerr('Invalid input to quaternion! The quaternion must be a unit quaternion!')
+        else:
+            rospy.logerr('Invalid input to interaction_frame!')
 
         interaction_options.set_disable_damping_in_force_control(args.disable_damping_in_force_control)
         interaction_options.set_disable_reference_resetting(args.disable_reference_resetting)
+        interaction_options.set_rotations_for_constrained_zeroG(args.rotations_for_constrained_zeroG)
 
         msg = interaction_options.to_msg()
 

@@ -17,6 +17,7 @@
 
 import os
 import rospy
+from copy import deepcopy
 
 
 def get_formatted_decimal_string(i, n):
@@ -78,3 +79,45 @@ def clamp_float_warn(low, val, upp, name):
                                ' to the upper bound: ',  str(upp)]))
         return upp
     return val
+
+def int2bool(var):
+    """
+    Convert integer value/list to bool value/list
+    """
+    var_out = deepcopy(var)
+
+    if isinstance(var, int):
+        var_out = bool(var)
+    elif len(var) >= 1:
+        for i in range(0, len(var)):
+            var_out[i] = bool(var[i])
+
+    return var_out
+
+def bool2int(var):
+    """
+    Convert bool value/list to int value/list
+    """
+    var_out = deepcopy(var)
+
+    if isinstance(var, bool):
+        var_out = int(var)
+    elif len(var) >= 1:
+        for i in range(0, len(var)):
+            var_out[i] = int(var[i])
+
+    return var_out
+
+def boolToggle(var):
+    """
+    Toggle bool value/list
+    """
+    var_out = deepcopy(var)
+
+    if isinstance(var, bool):
+        var_out = not var
+    elif len(var) >= 1:
+        for i in range(0, len(var)):
+            var_out[i] = not var[i]
+
+    return var_out
