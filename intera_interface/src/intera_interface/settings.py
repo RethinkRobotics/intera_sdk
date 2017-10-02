@@ -20,7 +20,7 @@ SDK_VERSION = '5.2.0'
 CHECK_VERSION = True
 # Version Compatibility Maps - {current: compatible}
 VERSIONS_SDK2ROBOT = {'5.1.0': ['5.1.0', '5.1.1', '5.1.2'],
-                      '5.2.0': ['5.2.0']
+                      '5.2.0': ['5.2.0', '5.2.1']
                      }
 VERSIONS_SDK2GRIPPER = {'5.1.0':
                           {
