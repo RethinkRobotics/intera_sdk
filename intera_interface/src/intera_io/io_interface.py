@@ -56,12 +56,23 @@ class IOInterface(object):
         self._command_pub = rospy.Publisher(self._path + "/command",
                                             IOComponentCommand, queue_size=10)
 
-        # Wait for the state to be populated
+        # Wait for the config to be populated
         intera_dataflow.wait_for(
-                          lambda: not self.state is None,
-                          timeout=5.0, raise_on_error=False,
-                          timeout_msg=("Failed to get state at: {}.".format(self._path + "/state"))
-                          )
+            lambda: self.config is not None and self.is_config_valid(),
+            timeout=5.0,
+            timeout_msg=("Failed to get config at: {}.".format(self._path + "/config"))
+        )
+
+        # Wait for the state to be populated too (optional)
+        # TODO: arg for if this should block (/or raise?) wait for state?
+        is_init = intera_dataflow.wait_for(
+            lambda: self.state is not None and self.is_state_valid(),
+            timeout=5.0, raise_on_error=False,
+            timeout_msg=("Failed to get initial state at: {}".format(self._path + "/state"))
+        )
+        if not is_init:
+            rospy.logwarn("Failed to get initial state at: {}."
+                " Device may be unattached or not active.".format(self._path + "/state"))
 
         rospy.logdebug("Making new IOInterface on %s" % (self._path,))
 
@@ -217,7 +228,8 @@ class IODeviceInterface(IOInterface):
         return True if the signal value is set, False if the requested signal is invalid
         """
         if signal_name not in self.list_signal_names():
-            rospy.logerr("Cannot find signal '{0}' in this IO Device.".format(signal_name))
+            rospy.logerr("Cannot find signal '{0}' in this IO Device ({1}).".format(signal_name,
+                self._path))
             return
         if signal_type == None:
             s_type = self.get_signal_type(signal_name)
