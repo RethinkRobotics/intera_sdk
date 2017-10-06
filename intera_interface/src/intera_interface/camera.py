@@ -75,7 +75,7 @@ class Cameras(object):
         @rtype: bool
         @return: True if the name exists in camera name list, False otherwise.
         """
-        if camera_name  not in self.list_cameras():
+        if camera_name not in self.list_cameras():
             rospy.logerr(' '.join([camera_name, "not in the list of cameras"
                 " detected on this robot:", ' , '.join(self.list_cameras())]))
             return False
