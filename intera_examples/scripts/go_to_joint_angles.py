@@ -51,6 +51,9 @@ def main():
     parser.add_argument(
         "-a",  "--accel_ratio", type=float, default=0.5,
         help="A value between 0.001 (slow) and 1.0 (maximum joint accel)")
+    parser.add_argument(
+        "--timeout", type=float, default=None,
+        help="Max time in seconds to block before returning")
     args = parser.parse_args(rospy.myargv()[1:])
 
     try:
@@ -74,7 +77,7 @@ def main():
         waypoint.set_joint_angles(joint_angles = args.joint_angles)
         traj.append_waypoint(waypoint.to_msg())
 
-        result = traj.send_trajectory()
+        result = traj.send_trajectory(timeout=args.timeout)
         if result is None:
             rospy.logerr('Trajectory FAILED to send')
             return

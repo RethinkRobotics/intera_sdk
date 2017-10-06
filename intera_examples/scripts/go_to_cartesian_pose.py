@@ -86,6 +86,9 @@ def main():
     parser.add_argument(
         "--rotational_accel", type=float, default=1.57,
         help="The max rotational acceleration of the endpoint (rad/s/s)")
+    parser.add_argument(
+        "--timeout", type=float, default=None,
+        help="Max time in seconds to block before returning")
     args = parser.parse_args(rospy.myargv()[1:])
 
     try:
@@ -161,7 +164,7 @@ def main():
 
         traj.append_waypoint(waypoint.to_msg())
 
-        result = traj.send_trajectory()
+        result = traj.send_trajectory(timeout=args.timeout)
         if result is None:
             rospy.logerr('Trajectory FAILED to send')
             return

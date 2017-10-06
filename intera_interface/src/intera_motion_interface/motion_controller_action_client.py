@@ -54,12 +54,17 @@ class MotionControllerActionClient(object):
         goal.trajectory = trajectory
         self._client.send_goal(goal)
 
-    def wait_for_result(self):
+    def wait_for_result(self, timeout=None):
         """
         Wait for the current task to finish and then return the result
+        @param timeout: maximum time to block before returning
         @return: the result of the MotionCommand.action
         """
-        self._client.wait_for_result()
+        if timeout is None:
+            rosTimeout = rospy.Duration()
+        else:
+            rosTimeout = rospy.Duration(timeout)
+        self._client.wait_for_result(rosTimeout)
         return self._client.get_result()
 
     def get_state(self):

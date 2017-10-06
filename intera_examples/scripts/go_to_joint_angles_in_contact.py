@@ -146,6 +146,9 @@ def main():
         "-kn", "--K_nullspace", type=float,
         nargs='+', default=[4.0, 4.0, 4.0, 4.0, 4.0, 4.0, 4.0],
         help="A list of desired nullspace stiffnesses, one for each of the 7 joints (a single value can be provided to apply the same value to all the directions) -- units are in (Nm/rad)")
+    parser.add_argument(
+        "--timeout", type=float, default=None,
+        help="Max time in seconds to block before returning")
 
     args = parser.parse_args(rospy.myargv()[1:])
 
@@ -216,7 +219,7 @@ def main():
         trajectory_options.interaction_params = interaction_options.to_msg()
         traj.set_trajectory_options(trajectory_options)
 
-        result = traj.send_trajectory()
+        result = traj.send_trajectory(timeout=args.timeout)
         if result is None:
             rospy.logerr('Trajectory FAILED to send!')
             return
