@@ -22,7 +22,7 @@ from intera_core_msgs.msg import (
 import intera_dataflow
 from intera_interface import (
     Gripper,
-    SimpleIOGripper
+    SimpleClickSmartGripper
 )
 
 
@@ -54,7 +54,7 @@ class GripperFactory(object):
 
     def _lookup_gripper_class(self, ee_type):
         EE_CLASS_MAP = dict({
-            "SmartToolPlate": SimpleIOGripper,
+            "SmartToolPlate": SimpleClickSmartGripper,
             "ElectricParallelGripper": Gripper,
             "default": Gripper
         })

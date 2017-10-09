@@ -23,7 +23,7 @@ from intera_io import IODeviceInterface
 from intera_io.io_command import IOCommand
 
 
-class SimpleIOGripper(object):
+class SimpleClickSmartGripper(object):
     """
     Bare bones Interface class for a gripper with a chip on the Intera Research Robot.
     """
