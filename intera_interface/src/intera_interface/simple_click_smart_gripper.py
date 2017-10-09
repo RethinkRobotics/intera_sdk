@@ -66,6 +66,14 @@ class SimpleClickSmartGripper(object):
         self._device_config = json.loads(self.config.device.config)
         self.endpoint_map = self._device_config['params']['endpoints']
 
+    def is_ready(self):
+        return (self._node_device_status and self._node_device_status.tag == 'ready'
+            and self.gripper_io.is_valid())
+
+    def needs_init(self):
+        return (self._node_device_status and (self._node_device_status.tag == 'down'
+            or self._node_device_status.tag == 'unready'))
+
     def initialize(self, timeout=5.0):
         # activate tool
         cmd = IOCommand('activate', {"devices": [self.name]})
@@ -76,14 +84,6 @@ class SimpleClickSmartGripper(object):
                 lambda: self.is_ready(), timeout=timeout,
                 timeout_msg=("Failed to initialize gripper.")
             )
-
-    def is_ready(self):
-        return (self._node_device_status and self._node_device_status.tag == 'ready'
-            and self.gripper_io.is_valid())
-
-    def needs_init(self):
-        return (self._node_device_status and (self._node_device_status.tag == 'down'
-            or self._node_device_status.tag == 'unready'))
 
     def get_ee_signal_value(self, ee_signal_type, endpoint_id=None):
         (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
