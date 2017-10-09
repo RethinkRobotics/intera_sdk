@@ -30,11 +30,12 @@ class SimpleIOGripper(object):
     def __init__(self, ee_device_id, initialize=True):
         self.name = ee_device_id
         self.endpoint_map = None
+        self.gripper_io = None
         self._node_state = None
         self._node_device_status = None
 
         self._node_command_pub = rospy.Publisher('io/end_effector/command', IOComponentCommand, queue_size=10)
-        self._node_state_sub = rospy.Subscriber('/io/end_effector/state', IONodeStatus, self._node_state_cb)
+        self._node_state_sub = rospy.Subscriber('io/end_effector/state', IONodeStatus, self._node_state_cb)
 
         # Wait for the gripper device status to be true
         intera_dataflow.wait_for(
@@ -53,9 +54,7 @@ class SimpleIOGripper(object):
 
     def _node_state_cb(self, msg):
         # if we don't have a message yet, or if the timestamp is different: search for our device
-        if (not self._node_state or (
-                self._node_state.time.secs != msg.time.secs or
-                self._node_state.time.nsecs != msg.time.nsecs)):
+        if not self._node_state or IODeviceInterface.time_changed(self._node_state.time, msg.time):
             self._node_state = msg
             if len(msg.devices) and msg.devices[0].name == self.name:
                 self._node_device_status = msg.devices[0].status
@@ -66,10 +65,6 @@ class SimpleIOGripper(object):
     def _load_endpoint_info(self):
         self._device_config = json.loads(self.config.device.config)
         self.endpoint_map = self._device_config['params']['endpoints']
-
-    def needs_init(self):
-        return (self._node_device_status and (self._node_device_status.tag == 'down'
-            or self._node_device_status.tag == 'unready'))
 
     def initialize(self, timeout=5.0):
         # activate tool
@@ -86,15 +81,19 @@ class SimpleIOGripper(object):
         return (self._node_device_status and self._node_device_status.tag == 'ready'
             and self.gripper_io.is_valid())
 
-    def set_ee_signal_value(self, ee_signal_type, value, endpoint_id=None, timeout=5.0):
-        (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
-        if ee_signal_type in endpoint_info:
-            return self.set_signal_value(endpoint_info[ee_signal_type], value)
+    def needs_init(self):
+        return (self._node_device_status and (self._node_device_status.tag == 'down'
+            or self._node_device_status.tag == 'unready'))
 
     def get_ee_signal_value(self, ee_signal_type, endpoint_id=None):
         (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
         if ee_signal_type in endpoint_info:
             return self.get_signal_value(endpoint_info[ee_signal_type])
+
+    def set_ee_signal_value(self, ee_signal_type, value, endpoint_id=None, timeout=5.0):
+        (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
+        if ee_signal_type in endpoint_info:
+            return self.set_signal_value(endpoint_info[ee_signal_type], value)
 
     def get_ee_signals(self, endpoint_id=None):
         (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)

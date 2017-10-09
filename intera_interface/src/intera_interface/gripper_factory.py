@@ -20,37 +20,39 @@ from intera_core_msgs.msg import (
     IOComponentConfiguration
 )
 import intera_dataflow
+from intera_interface import (
+    Gripper,
+    SimpleIOGripper
+)
 
-# Gripper
-# SimpleIOGripper
 
 class GripperFactory(object):
 
-    def __init__(self, live=True):
+    def __init__(self):
         self.states = []
         self.configs = []
-        # node interface
+        self._node_state = None
+        self._node_config = None
         self._node_state_sub = rospy.Subscriber('/io/end_effector/state', IONodeStatus, self._node_state_cb)
         self._node_config_sub = rospy.Subscriber('/io/end_effector/config', IONodeConfiguration, self._node_config_cb)
 
-        if live:
-            intera_dataflow.wait_for(
-                lambda: not self.states is None,
-                timeout=5.0, raise_on_error=False,
-                timeout_msg=("Failed to get gripper. No gripper attached on the robot.")
-            )
+        intera_dataflow.wait_for(
+            lambda: self._node_state is not None,
+            timeout=5.0, raise_on_error=False,
+            timeout_msg=("Failed to get gripper. No gripper attached on the robot.")
+        )
 
     def _node_state_cb(self, msg):
-        self.node_state = msg
+        self._node_state = msg
         if msg.devices:
             self.states = msg.devices
 
     def _node_config_cb(self, msg):
-        self.node_config = msg
+        self._node_config = msg
         if msg.devices:
             self.configs = msg.devices
 
-    def lookupGripperClass(self, ee_type):
+    def _lookup_gripper_class(self, ee_type):
         EE_CLASS_MAP = dict({
             "SmartToolPlate": SimpleIOGripper,
             "ElectricParallelGripper": Gripper,
@@ -59,7 +61,7 @@ class GripperFactory(object):
 
         return EE_CLASS_MAP.get(ee_type, None) or EE_CLASS_MAP["default"]
 
-    def parseConfig(self, config):
+    def _parse_config(self, config):
         ee_config = config
         if type(ee_config) == IOComponentConfiguration:
             ee_config = ee_config.config
@@ -68,10 +70,11 @@ class GripperFactory(object):
         if type(ee_config) == dict:
             return ee_config
 
-    def getCurrentGripperInterface(self):
+    def get_current_gripper_interface(self):
+        gripper = None
 
         if len(self.states) <= 0:
-            # wait a second
+            # wait a second for any grippers to populate
             intera_dataflow.wait_for(
                 lambda: (len(self.states) > 0 and len(self.configs) > 0),
                 timeout=5.0, raise_on_error=False,
@@ -84,18 +87,14 @@ class GripperFactory(object):
             ee_config = None
             for conf in self.configs:
                 if conf.name == ee_id:
-                    ee_config = self.parseConfig(conf.config)
+                    ee_config = self._parse_config(conf.config)
                     break
 
-            needs_init = True if (ee_state.status.tag == 'down' or ee_state.status.tag == 'unready') else False
-
-            gripper_class = self.lookupGripperClass(ee_config['props']['type'])
-
-            gripper = None
+            gripper_class = self._lookup_gripper_class(ee_config['props']['type'])
+            needs_init = (ee_state.status.tag == 'down' or ee_state.status.tag == 'unready')
             try:
                 gripper = gripper_class(ee_id, needs_init)
             except:
                 gripper = gripper_class(ee_id, False)
-            return gripper
-        else:
-            return None
+
+        return gripper

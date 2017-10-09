@@ -22,14 +22,12 @@ from threading import Lock
 import intera_dataflow
 from io_command import SetCommand
 
-from intera_core_msgs.msg import IODeviceConfiguration, IODeviceStatus, \
-                                 IOComponentCommand
+from intera_core_msgs.msg import (
+    IODeviceConfiguration,
+    IODeviceStatus,
+    IOComponentCommand
+)
 
-def _time_changed(time1, time2):
-    """
-    return true if the times are different
-    """
-    return (time1.secs != time2.secs) or (time1.nsecs != time2.nsecs)
 
 class IOInterface(object):
     """
@@ -130,7 +128,7 @@ class IOInterface(object):
         """
         config topic callback
         """
-        if not self.config or _time_changed(self.config.time, msg.time):
+        if not self.config or self.time_changed(self.config.time, msg.time):
             with self.config_mutex:
                 self.config = msg
                 self.config_changed()
@@ -149,7 +147,7 @@ class IOInterface(object):
         """
         state topic callback
         """
-        if not self.state or _time_changed(self.state.time, msg.time):
+        if not self.state or self.time_changed(self.state.time, msg.time):
             with self.state_mutex:
                 self.state = msg
                 self.state_changed()
@@ -183,6 +181,14 @@ class IOInterface(object):
                     break
             return False
         return True
+
+    @staticmethod
+    def time_changed(time1, time2):
+        """
+        return true if the times are different
+        """
+        return (time1.secs != time2.secs) or (time1.nsecs != time2.nsecs)
+
 
 class IODeviceInterface(IOInterface):
     """
