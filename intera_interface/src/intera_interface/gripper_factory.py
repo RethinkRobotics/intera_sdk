@@ -27,7 +27,15 @@ from intera_interface import (
 
 
 class GripperFactory(object):
+    """
+    Helper class for creating a Gripper interface for the End Effector
+    currently connected to the robot. Use the get_current_gripper_interface() fn.
 
+    Listens to the end_effector IO Node for a list of End Effectors currently
+    attached. The fn get_current_gripper_interface() will determine the type of the
+    first currently connected gripper and return an instance of a corresponding
+    SDK Gripper class to control the gripper.
+    """
     def __init__(self):
         self.states = []
         self.configs = []
@@ -39,7 +47,7 @@ class GripperFactory(object):
         intera_dataflow.wait_for(
             lambda: self._node_state is not None,
             timeout=5.0, raise_on_error=False,
-            timeout_msg=("Failed to get gripper. No gripper attached on the robot.")
+            timeout_msg=("Failed to connect to end_effector IO Node.")
         )
 
     def _node_state_cb(self, msg):
@@ -71,13 +79,24 @@ class GripperFactory(object):
             return ee_config
 
     def get_current_gripper_interface(self):
+        """
+        Instantiates and returns an interface to control the gripper
+        currently attached to the robot.
+
+        Looks for the type of the first detected gripper attached to the robot
+        and returns an instance of a Gripper or SimpleClickSmartGripper class
+        configured to control the EE.
+
+        @rtype: Gripper|SimpleClickSmartGripper
+        @return: instance of an interface to control attached gripper
+        """
         gripper = None
 
         if len(self.states) <= 0:
-            # wait a second for any grippers to populate
+            # wait a moment for any attached grippers to populate
             intera_dataflow.wait_for(
                 lambda: (len(self.states) > 0 and len(self.configs) > 0),
-                timeout=5.0, raise_on_error=False,
+                timeout=5.0,
                 timeout_msg=("Failed to get gripper. No gripper attached on the robot.")
             )
 
@@ -85,9 +104,9 @@ class GripperFactory(object):
             ee_state = self.states[0]
             ee_id = ee_state.name
             ee_config = None
-            for conf in self.configs:
-                if conf.name == ee_id:
-                    ee_config = self._parse_config(conf.config)
+            for device in self.configs:
+                if device.name == ee_id:
+                    ee_config = self._parse_config(device.config)
                     break
 
             gripper_class = self._lookup_gripper_class(ee_config['props']['type'])

@@ -25,7 +25,17 @@ from intera_io.io_command import IOCommand
 
 class SimpleClickSmartGripper(object):
     """
-    Bare bones Interface class for a gripper with a chip on the Intera Research Robot.
+    Bare bones Interface class for a ClickSmart gripper on the Intera Research Robot.
+
+    This ClickSmart interface uses "End Effector (EE) Signal Types" to
+    reference the Input/Output Signals configured on the ClickSmart device.
+    EE Signal Types include types such as "grip", (is)"open", (is)"closed",
+    (set)"object_kg". Each set of EE Signals is associated with a given
+    endpoint_id, but this endpoint_id can be left out in most of the interfaces
+    if a ClickSmart device only has a single endpoint configured.
+
+    ClickSmart devices can be configured using the Intera Studio GUI. The
+    configurations are stored on the ClickSmart device itself.
     """
     def __init__(self, ee_device_id, initialize=True):
         self.name = ee_device_id
@@ -67,15 +77,36 @@ class SimpleClickSmartGripper(object):
         self.endpoint_map = self._device_config['params']['endpoints']
 
     def is_ready(self):
+        """
+        Returns bool describing if the gripper is ready to control,
+        (i.e. initialized ('activated'), not busy, no errors).
+
+        @rtype: bool
+        @return: True if in ready state, False otherwise
+        """
         return (self._node_device_status and self._node_device_status.tag == 'ready'
             and self.gripper_io.is_valid())
 
     def needs_init(self):
+        """
+        Returns True if device is not initialized and can be initialized
+        now ('activated').
+
+        @rtype: bool
+        @return: True if not initialized and can be, False otherwise
+        """
         return (self._node_device_status and (self._node_device_status.tag == 'down'
             or self._node_device_status.tag == 'unready'))
 
     def initialize(self, timeout=5.0):
-        # activate tool
+        """
+        Activate ClickSmart - initializes device and signals and attaches
+        the EE's URDF model to the internal RobotModel. Compensation
+        of the EE's added mass may cause arm to move.
+
+        @type timeout: float
+        @param timeout: timeout in seconds
+        """
         cmd = IOCommand('activate', {"devices": [self.name]})
         msg = cmd.as_msg()
         self._node_command_pub.publish(msg)
@@ -86,42 +117,136 @@ class SimpleClickSmartGripper(object):
             )
 
     def get_ee_signal_value(self, ee_signal_type, endpoint_id=None):
+        """
+        Return current value of the given EE Signal on the ClickSmart.
+
+        EE Signals are identified by "type" (such as "grip", (is)"open", etc.)
+        and are configured per endpoint. If the ClickSmart has multiple endpoints,
+        optionally specify the endpoint_id with which the signal is associated.
+
+        @type ee_signal_type: str
+        @param ee_signal_type: EE Signal Type of the signal to return; one of
+            those listed in get_ee_signals().
+        @type endpoint_id: str
+        @param endpoint_id: endpoint_id associated with signal; (default: 1st endpoint found)
+
+        @rtype: bool|float
+        @return: value of signal
+        """
         (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
         if ee_signal_type in endpoint_info:
             return self.get_signal_value(endpoint_info[ee_signal_type])
 
     def set_ee_signal_value(self, ee_signal_type, value, endpoint_id=None, timeout=5.0):
+        """
+        Sets the value of the given EE Signal on the ClickSmart.
+
+        EE Signals are identified by "type" (such as "grip", (is)"open", etc.)
+        and are configured per endpoint. If the ClickSmart has multiple endpoints,
+        optionally specify the endpoint_id with which the signal is associated.
+
+        @type ee_signal_type: str
+        @param ee_signal_type: EE Signal Type of the signal to return; one of
+            those listed in get_ee_signals().
+        @type value: bool|float
+        @param value: new value to set the signal to
+        @type endpoint_id: str
+        @param endpoint_id: endpoint_id associated with signal; (default: 1st endpoint found)
+        @type timeout: float
+        @param timeout: timeout in seconds
+        """
         (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
         if ee_signal_type in endpoint_info:
-            return self.set_signal_value(endpoint_info[ee_signal_type], value)
+            self.set_signal_value(endpoint_info[ee_signal_type], value)
 
     def get_ee_signals(self, endpoint_id=None):
+        """
+        Returns dict of EE Signals by EE Signal Type for given endpoint.
+
+        Use the EE Signal Types (the keys) to specify signals in
+        get_ee_signal_value() and set_ee_signal_value().
+
+        EE Signals are identified by "type" (such as "grip", (is)"open", etc.)
+        and are configured per endpoint. If the ClickSmart has multiple endpoints,
+        optionally specify the endpoint_id with which the signal is associated.
+
+        @type endpoint_id: str
+        @param endpoint_id: endpoint_id associated with signal; (default: 1st endpoint found)
+        @rtype: dict({str:str})
+        @return: dict of EE Signal Types to signal_name
+        """
         (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
         exclude = ['endpoint_id', 'label', 'type', 'actuationTimeS']
         return {k: v for k,v in endpoint_info.iteritems() if k not in exclude}
 
     def get_all_ee_signals(self):
+        """
+        Returns dict of EE Signals by EE Signal Type for all endpoints,
+        organized under endpoint_id.
+
+        Use the EE Signal Types (the keys) to specify signals in
+        get_ee_signal_value() and set_ee_signal_value().
+
+        EE Signals are identified by "type" (such as "grip", (is)"open", etc.)
+        and are configured per endpoint. If the ClickSmart has multiple endpoints,
+        optionally specify the endpoint_id with which the signal is associated.
+
+        @type endpoint_id: str
+        @param endpoint_id: endpoint_id associated with signal; (default: 1st endpoint found)
+        @rtype: dict({str:dict({str:str})})
+        @return: dicts for each endpoint_id of EE Signal Types to signal_name
+        """
         info = dict()
         for ept in self.list_endpoint_names():
             info[ept] = self.get_ee_signals(ept)
         return info
 
     def get_all_signals(self):
+        """
+        Returns generic info for all IO Signals on device, in a flat map keyed by signal_name.
+
+        @rtype: dict
+        @return: generic data-type, value, and IO Data for all signals
+        """
         return self.gripper_io.signals
 
     def list_endpoint_names(self):
+        """
+        Returns list of endpoint_ids currently configured on this ClickSmart device.
+
+        @rtype: list [str]
+        @return: list of endpoint_ids in ClickSmart config
+        """
         if self.endpoint_map:
             return self.endpoint_map.keys()
         else:
             return []
 
     def get_endpoint_info(self, endpoint_id=None):
+        """
+        Returns the endpoint_id and endpoint info for the default endpoint,
+        or for the given endpoint_id if specified.
+
+        Use to find the default endpoint_id by calling without args.
+        Or lookup the current configuration info for a specific endpoint,
+        including EE Signals, and Intera UI labels.
+
+        @type endpoint_id: str
+        @param endpoint_id: optional endpoint_id to lookup; default: looksup
+            and returns info for the default endpoint_id of this ClickSmart
+        @rtype: tuple [ str, dict]
+        @return: (endpoint_id, endpoint_info) - the default endpoint_id (or the one specified)
+            and signal/config info associated with endpoint
+        """
         if self.endpoint_map is None or len(self.endpoint_map.keys()) <= 0:
             rospy.logerr('Cannot use endpoint signals without any endpoints!')
             return
         endpoint_id = self.endpoint_map.keys()[0] if endpoint_id is None else endpoint_id
         return (endpoint_id, self.endpoint_map[endpoint_id])
 
-    # proxy-pass through
     def __getattr__(self, name):
+        """
+        This is a proxy-pass through mechanism that lets you look up methods and variables
+        on the underlying IODeviceInterface for the ClickSmart, as if they were on this class.
+        """
         return getattr(self.gripper_io, name)
