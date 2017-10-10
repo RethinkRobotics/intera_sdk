@@ -61,10 +61,9 @@ class MotionControllerActionClient(object):
         @return: the result of the MotionCommand.action
         """
         if timeout is None:
-            rosTimeout = rospy.Duration()
+             self._client.wait_for_result()
         else:
-            rosTimeout = rospy.Duration(timeout)
-        self._client.wait_for_result(rosTimeout)
+            self._client.wait_for_result(rospy.Duration(timeout))
         return self._client.get_result()
 
     def get_state(self):

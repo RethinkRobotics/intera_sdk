@@ -88,7 +88,7 @@ def main():
         help="The max rotational acceleration of the endpoint (rad/s/s)")
     parser.add_argument(
         "--timeout", type=float, default=None,
-        help="Max time in seconds to block before returning")
+        help="Max time allocated to finish the goal before returning (sec). None is interpreted as an infinite timeout.")
     args = parser.parse_args(rospy.myargv()[1:])
 
     try:
