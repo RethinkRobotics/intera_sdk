@@ -57,7 +57,7 @@ class MotionControllerActionClient(object):
     def wait_for_result(self, timeout=None):
         """
         Wait for the current task to finish and then return the result
-        @param timeout: maximum time to block before returning
+        @param timeout: maximum time to wait. If timeout is reached, return None.
         @return: the result of the MotionCommand.action
         """
         if timeout is None:

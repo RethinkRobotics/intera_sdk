@@ -53,7 +53,7 @@ def main():
         help="A value between 0.001 (slow) and 1.0 (maximum joint accel)")
     parser.add_argument(
         "--timeout", type=float, default=None,
-        help="Max time allocated to finish the goal before returning (sec). None is interpreted as an infinite timeout.")
+        help="Max time in seconds to complete motion goal before returning. None is interpreted as an infinite timeout.")
     args = parser.parse_args(rospy.myargv()[1:])
 
     try:

@@ -148,7 +148,7 @@ def main():
         help="A list of desired nullspace stiffnesses, one for each of the 7 joints (a single value can be provided to apply the same value to all the directions) -- units are in (Nm/rad)")
     parser.add_argument(
         "--timeout", type=float, default=None,
-        help="Max time allocated to finish the goal before returning (sec). None is interpreted as an infinite timeout.")
+        help="Max time in seconds to complete motion goal before returning. None is interpreted as an infinite timeout.")
 
     args = parser.parse_args(rospy.myargv()[1:])
 

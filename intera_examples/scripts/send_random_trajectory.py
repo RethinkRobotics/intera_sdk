@@ -100,7 +100,7 @@ def main():
         help="Save motion controller log messages to this file name")
     parser.add_argument(
         "--timeout", type=float, default=None,
-        help="Max time allocated to finish the goal before returning (sec). None is interpreted as an infinite timeout.")
+        help="Max time in seconds to complete motion goal before returning. None is interpreted as an infinite timeout.")
     args = parser.parse_args()
 
     if args.waypoint_count < 1:
