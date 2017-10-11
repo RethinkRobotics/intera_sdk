@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import rospy
+from intera_core_msgs.msg import IONodeConfiguration
 import intera_dataflow
 from intera_io import IODeviceInterface
-from intera_core_msgs.msg import IONodeConfiguration
 
 
 class Gripper(object):
