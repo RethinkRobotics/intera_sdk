@@ -74,10 +74,18 @@ class MotionTrajectory(object):
         self._client.stop_trajectory()
 
     def send_trajectory(self, wait_for_result=True, timeout=None):
-	"""
+        """
+        Checks the trajectory message is complete.
+        The message then will be packaged up with the MOTION_START
+        command and sent to the motion controller.
+        @param wait_for_result:
+          - If true, the function will not return until the trajectory is finished
+          - If false, return True immediately after sending
         @param timeout: maximum time to wait for trajectory result.
-	    If timeout is reached, return None.
-	"""
+          - If timeout is reached, return None.
+        @return: True if the goal finished
+        @rtype: bool
+        """
         if not self._traj.waypoints:
             rospy.logerr("Trajectory is empty! Cannot send.")
             return None
@@ -89,9 +97,9 @@ class MotionTrajectory(object):
         return self._client.get_state()
 
     def wait_for_result(self, timeout=None):
-	"""
+        """
         @param timeout: maximum time to wait. If timeout is reached, return None.
-	"""
+        """
         return self._client.wait_for_result(timeout)
 
     def set_data(self, traj_msg):
