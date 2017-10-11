@@ -26,6 +26,22 @@ from intera_interface import (
 )
 
 
+def get_current_gripper_interface():
+    """
+    Instantiate and return an interface to control the gripper
+    currently attached to the robot.
+
+    Looks for the type of the first detected gripper attached to the robot
+    and returns an instance of a Gripper or SimpleClickSmartGripper class
+    configured to control the EE.
+
+    @rtype: Gripper|SimpleClickSmartGripper
+    @return: instance of an interface to control attached gripper
+    """
+    gf = GripperFactory()
+    return gf.get_current_gripper_interface()
+
+
 class GripperFactory(object):
     """
     Helper class for creating a Gripper interface for the End Effector
@@ -46,7 +62,7 @@ class GripperFactory(object):
 
         intera_dataflow.wait_for(
             lambda: self._node_state is not None,
-            timeout=5.0, raise_on_error=False,
+            timeout=5.0,
             timeout_msg=("Failed to connect to end_effector IO Node.")
         )
 
@@ -80,7 +96,7 @@ class GripperFactory(object):
 
     def get_current_gripper_interface(self):
         """
-        Instantiates and returns an interface to control the gripper
+        Instantiate and return an interface to control the gripper
         currently attached to the robot.
 
         Looks for the type of the first detected gripper attached to the robot

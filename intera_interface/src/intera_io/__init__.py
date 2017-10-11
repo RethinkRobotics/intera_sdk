@@ -13,3 +13,4 @@
 # limitations under the License.
 
 from .io_interface import IODeviceInterface
+from .io_command import IOCommand

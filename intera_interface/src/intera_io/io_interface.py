@@ -62,15 +62,14 @@ class IOInterface(object):
         )
 
         # Wait for the state to be populated too (optional)
-        # TODO: arg for if this should block (/or raise?) wait for state?
         is_init = intera_dataflow.wait_for(
             lambda: self.state is not None and self.is_state_valid(),
-            timeout=5.0, raise_on_error=False,
-            timeout_msg=("Failed to get initial state at: {}".format(self._path + "/state"))
+            timeout=5.0,
+            raise_on_error=False
         )
         if not is_init:
-            rospy.logwarn("Failed to get initial state at: {}."
-                " Device may be unattached or not active.".format(self._path + "/state"))
+            rospy.loginfo("Did not receive initial state at: {}."
+                " Device may not be activated yet.".format(self._path + "/state"))
 
         rospy.logdebug("Making new IOInterface on %s" % (self._path,))
 
@@ -280,7 +279,8 @@ class IODeviceInterface(IOInterface):
         return True if the port value is set, False if the requested port is invalid
         """
         if port_name not in list_port_names():
-            rospy.logerr("Cannot find port '{0}' in this IO Device.".format(port_name))
+            rospy.logerr("Cannot find port '{0}' in this IO Device ({1}).".format(port_name,
+                self._path))
             return
         if port_type == None:
             p_type = self.get_port_type(port_name)

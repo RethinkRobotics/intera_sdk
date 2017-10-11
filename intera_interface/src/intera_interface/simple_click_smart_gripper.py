@@ -19,8 +19,10 @@ from intera_core_msgs.msg import (
     IOComponentCommand
 )
 import intera_dataflow
-from intera_io import IODeviceInterface
-from intera_io.io_command import IOCommand
+from intera_io import (
+    IODeviceInterface,
+    IOCommand
+)
 
 
 class SimpleClickSmartGripper(object):
@@ -107,6 +109,7 @@ class SimpleClickSmartGripper(object):
         @type timeout: float
         @param timeout: timeout in seconds
         """
+        rospy.loginfo("Activating ClickSmart...")
         cmd = IOCommand('activate', {"devices": [self.name]})
         msg = cmd.as_msg()
         self._node_command_pub.publish(msg)

@@ -20,17 +20,32 @@ from intera_core_msgs.msg import IOComponentCommand
 
 class IOCommand(object):
     '''
-    Container for a generic io command
+    Container for a generic IO command
     '''
-    def __init__(self, op, args = None, now = False):
-        self.time = rospy.Time()
+    def __init__(self, op, args=None, time=None, now=False):
+        self.time = rospy.Time() if time is None else time
+        if now:
+            self.time = rospy.Time.now()
         self.op = op
         self.args = args if args else {}
 
     def __str__(self):
         return str({"time": self.time, "op": self.op, "args": self.args})
 
-    def as_msg(self, now = None):
+    def as_msg(self, now=None):
+        """
+        Returns a properly formatted ROS Message that can be used in a Publisher.
+
+        Primarily "stringify"s the json '.args' field and creates an actual
+        IOComponentCommand ROS Message. Also sets the timestamp if not currently set.
+
+        @type now: bool|None
+        @param now: sets the '.time' field of the ROS Message. True: set time to now();
+            False: reset time to empty (0, 0); Default: set time to now if unset or empty
+
+        @rtype: IOComponentCommand
+        @return: proper ROS Message to Publish
+        """
         if now == None:       # use time we have OR set to now if we don't have time!
             self.time = self.time if not self.time.is_zero() else rospy.Time.now()
         elif now == True:     # set time to now
