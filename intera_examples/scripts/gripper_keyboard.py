@@ -31,7 +31,7 @@ def map_keyboard(limb):
     rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state()
     try:
-        gripper = intera_interface.Gripper(limb)
+        gripper = intera_interface.Gripper(limb + '_gripper')
     except ValueError:
         rospy.logerr("Could not detect a gripper attached to the robot.")
         return

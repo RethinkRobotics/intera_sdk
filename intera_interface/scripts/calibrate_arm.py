@@ -100,7 +100,7 @@ def gripper_removed(side):
     Verify grippers are removed for calibration.
     """
     try:
-        gripper = intera_interface.Gripper(side)
+        gripper = intera_interface.Gripper(side + '_gripper')
     except Exception, e:
         return True
     rospy.logerr("Calibration Client: Cannot calibrate with grippers attached."

@@ -66,7 +66,7 @@ def map_file(filename, limb, loops=1):
     limb_interface = intera_interface.Limb(limb)
     has_gripper = True
     try:
-        gripper = intera_interface.Gripper(limb)
+        gripper = intera_interface.Gripper(limb + '_gripper')
     except ValueError:
         has_gripper = False
         rospy.loginfo("Could not detect a gripper attached to the robot")
