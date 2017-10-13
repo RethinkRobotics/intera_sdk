@@ -34,7 +34,7 @@ def map_keyboard(side):
         gripper = intera_interface.Gripper(side)
     except:
         has_gripper = False
-        rospy.logerr("Could not initalize the gripper.")
+        rospy.logerr("Could not initialize the gripper.")
     else:
         has_gripper = True
 
