@@ -48,6 +48,13 @@ def show_image_callback(img_data, (edge_detection, window_name)):
 
 def main():
     """Camera Display Example
+
+    Cognex Hand Camera Ranges
+        - exposure: [0.01-100]
+        - gain: [0-255]
+    Head Camera Ranges:
+        - exposure: [0-100], -1 for auto-exposure
+        - gain: [0-79], -1 for auto-gain
     """
     rp = intera_interface.RobotParams()
     valid_cameras = rp.get_camera_names()
@@ -69,10 +76,10 @@ def main():
         help='Streaming the Canny edge detection image')
     parser.add_argument(
         '-g', '--gain', type=int,
-        help='Set gain for camera ([0-79], -1 = auto)')
+        help='Set gain for camera (-1 = auto)')
     parser.add_argument(
-        '-x', '--exposure', type=int,
-        help='Set exposure for camera ([0-100], -1 = auto)')
+        '-x', '--exposure', type=float,
+        help='Set exposure for camera (-1 = auto)')
     args = parser.parse_args()
 
     print("Initializing node... ")
@@ -86,30 +93,21 @@ def main():
     if not cameras.verify_camera_exists(args.camera):
         rospy.logerr("Invalid camera name, exiting the example.")
         return
+    rospy.loginfo("Opening camera '{0}'...".format(args.camera))
     cameras.start_streaming(args.camera)
     rectify_image = not args.raw
     use_canny_edge = args.edge
     cameras.set_callback(args.camera, show_image_callback,
         rectify_image=rectify_image, callback_args=(use_canny_edge, args.camera))
-    camera_interface = cameras.cameras_io[args.camera]['interface']
 
     # optionally set gain and exposure parameters
     if args.gain is not None:
-        if args.gain in range(-1, 80):
-            camera_interface.set_signal_value('set_gain', args.gain)
-            rospy.sleep(1)
-            rospy.loginfo("Gain set to: {0}".format(camera_interface.get_signal_value('set_gain')))
-        else:
-            rospy.logerr("Gain must be within [0-79] or -1 for auto gain")
+        if cameras.set_gain(args.camera, args.gain):
+            rospy.loginfo("Gain set to: {0}".format(cameras.get_gain(args.camera)))
 
     if args.exposure is not None:
-        if args.exposure in range(-1, 101):
-            camera_interface.set_signal_value('set_exposure', args.exposure)
-            rospy.sleep(1)
-            rospy.loginfo("Exposure set to: {0}".format(camera_interface.get_signal_value('set_exposure')))
-        else:
-            rospy.logerr("Exposure must be within [0-100] or -1 for auto exposure")
-
+        if cameras.set_exposure(args.camera, args.exposure):
+            rospy.loginfo("Exposure set to: {0}".format(cameras.get_exposure(args.camera)))
 
     def clean_shutdown():
         print("Shutting down camera_display node.")
