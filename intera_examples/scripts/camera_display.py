@@ -71,7 +71,12 @@ def main():
 
     print("Initializing node... ")
     rospy.init_node('camera_display', anonymous=True)
-    camera = intera_interface.Cameras()
+    try:
+        camera = intera_interface.Cameras()
+    except OSError as e:
+        rospy.logfatal("Could not find all of the expected cameras for this robot.\n"
+                "Please contact Rethink support: support@rethinkrobotics.com")
+        return
     if not camera.verify_camera_exists(args.camera):
         rospy.logerr("Invalid camera name, exiting the example.")
         return
