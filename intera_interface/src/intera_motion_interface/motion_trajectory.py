@@ -70,14 +70,16 @@ class MotionTrajectory(object):
         """
         self._client.stop_trajectory()
 
-    def send_trajectory(self, wait_for_result=True):
+    def send_trajectory(self, wait_for_result=True, timeout=None):
         """
         Checks the trajectory message is complete.
         The message then will be packaged up with the MOTION_START
         command and sent to the motion controller.
         @param wait_for_result:
-          - If true, the function will not until the trajectory is finished
+          - If true, the function will not return until the trajectory is finished
           - If false, return True immediately after sending
+        @param timeout: maximum time to wait for trajectory result.
+          - If timeout is reached, return None.
         @return: True if the goal finished
         @rtype: bool
         """
@@ -86,7 +88,7 @@ class MotionTrajectory(object):
             return None
         self._check_options()
         self._client.send_trajectory(self.to_msg())
-        return self._client.wait_for_result() if wait_for_result else True
+        return self._client.wait_for_result(timeout) if wait_for_result else True
 
     def get_state(self):
         """
@@ -95,12 +97,16 @@ class MotionTrajectory(object):
         """
         return self._client.get_state()
 
-    def wait_for_result(self):
+    def wait_for_result(self, timeout=None):
         """
-        The function will not until the trajectory is finished
-        @return True if the goal finished
+        The function will wait until the trajectory is finished,
+        or the specified timeout is reached.
+        @param timeout: maximum time to wait. 
+        @return None if timeout is reached, else
+                True if the goal is achieved
+                False if failed to achieve goal
         """
-        return self._client.wait_for_result()
+        return self._client.wait_for_result(timeout)
 
     def set_data(self, traj_msg):
         """
