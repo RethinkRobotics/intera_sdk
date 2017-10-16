@@ -98,6 +98,9 @@ def main():
     parser.add_argument(
         "--log_file_output",
         help="Save motion controller log messages to this file name")
+    parser.add_argument(
+        "--timeout", type=float, default=None,
+        help="Max time in seconds to complete motion goal before returning. None is interpreted as an infinite timeout.")
     args = parser.parse_args()
 
     if args.waypoint_count < 1:
@@ -158,7 +161,7 @@ def main():
             traj.set_log_file_name(args.log_file_output)
 
         if not args.do_not_send:
-            result = traj.send_trajectory()
+            result = traj.send_trajectory(timeout=args.timeout)
             if result is not None and result.result:
                 rospy.loginfo('Motion controller %s',
                               'successfully finished the trajectory!')
