@@ -140,6 +140,9 @@ def main():
     parser.add_argument(
         "-rc",  "--rotations_for_constrained_zeroG", action='store_true', default=False,
         help="Allow arbitrary rotational displacements from the current orientation for constrained zero-G (use only for a stationary reference orientation)")
+    parser.add_argument(
+        "--timeout", type=float, default=None,
+        help="Max time in seconds to complete motion goal before returning. None is interpreted as an infinite timeout.")
 
     args = parser.parse_args(rospy.myargv()[1:])
 
@@ -204,7 +207,7 @@ def main():
         trajectory_options.interaction_params = interaction_options.to_msg()
         traj.set_trajectory_options(trajectory_options)
 
-        result = traj.send_trajectory()
+        result = traj.send_trajectory(timeout=args.timeout)
         if result is None:
             rospy.logerr('Trajectory FAILED to send!')
             return
