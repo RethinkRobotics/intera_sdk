@@ -62,7 +62,7 @@ def map_joystick(joystick, side):
     limb = intera_interface.Limb(side)
     gripper = None
     try:
-        gripper = intera_interface.Gripper(side)
+        gripper = intera_interface.Gripper(side + '_gripper')
     except:
         rospy.loginfo("Could not detect a connected electric gripper.")
 

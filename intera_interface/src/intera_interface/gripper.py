@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import rospy
+from intera_core_msgs.msg import IONodeConfiguration
 import intera_dataflow
 from intera_io import IODeviceInterface
-from intera_core_msgs.msg import IONodeConfiguration
 
 
 class Gripper(object):
@@ -29,23 +29,27 @@ class Gripper(object):
     MAX_VELOCITY = 3.0
     MIN_VELOCITY = 0.15
 
-    def __init__(self, side="right", calibrate=True):
+    def __init__(self, ee_name="right_gripper", calibrate=True):
         """
         Constructor.
 
-        @type side: str
-        @param side: robot gripper name
+        @type name: str
+        @param name: robot gripper name (default: "right_gripper")
         @type calibrate: bool
         @param calibrate: Attempts to calibrate the gripper when initializing class (defaults True)
         """
         self.devices = None
-        self.name = '_'.join([side, 'gripper'])
+        self.name = ee_name
+        if ee_name == 'right' or ee_name == 'left':
+            rospy.logwarn(("Specifying gripper by 'side' is deprecated, please use full name"
+                " (ex: 'right_gripper')."))
+            self.name = '_'.join([ee_name, 'gripper'])
         self.ee_config_sub = rospy.Subscriber('/io/end_effector/config', IONodeConfiguration, self._config_callback)
         # Wait for the gripper device status to be true
         intera_dataflow.wait_for(
             lambda: not self.devices is None, timeout=5.0,
             timeout_msg=("Failed to get gripper. No gripper attached on the robot.")
-            )
+        )
 
         self.gripper_io = IODeviceInterface("end_effector", self.name)
         if self.has_error():
@@ -65,56 +69,40 @@ class Gripper(object):
     def reboot(self):
         """
         Power cycle the gripper, removing calibration information.
-
-        Basic call to the gripper reboot command. Waits for gripper to return
-        ready state but does not clear errors that could occur during boot.
-
-        @rtype: bool
-        @return: True if successfully Rebooted, False otherwise
         """
-        return self.gripper_io.set_signal_value("reboot", True)
+        self.gripper_io.set_signal_value("reboot", True)
 
     def stop(self):
         """
         Set the gripper to stop executing command at the current
         position, apply holding force.
-
-        @rtype: bool
-        @return: True if successfully Stopped, False otherwise
         """
-        return self.gripper_io.set_signal_value("go", False)
+        self.gripper_io.set_signal_value("go", False)
 
     def start(self):
         """
         Set the gripper to start executing command at the current
         position, apply holding force.
-
-        @rtype: bool
-        @return: True if successfully Started, False otherwise
         """
-        return self.gripper_io.set_signal_value("go", True)
+        self.gripper_io.set_signal_value("go", True)
 
     def open(self, position=MAX_POSITION):
         """
         Set the gripper position to open by providing opening position.
+
         @type: float
         @param: the postion of gripper in meters
-
-        @rtype: bool
-        @return: True if successfully set Position, False otherwise
         """
-        return self.gripper_io.set_signal_value("position_m", position)
+        self.gripper_io.set_signal_value("position_m", position)
 
     def close(self, position=MIN_POSITION):
         """
         Set the gripper position to close by providing closing position.
+
         @type: float
         @param: the postion of gripper in meters
-
-        @rtype: bool
-        @return: True if successfully set Position, False otherwise
         """
-        return self.gripper_io.set_signal_value("position_m", position)
+        self.gripper_io.set_signal_value("position_m", position)
 
     def has_error(self):
         """
@@ -171,9 +159,17 @@ class Gripper(object):
         minimum travel distance.
 
         @rtype: bool
-        @return: True if successfully calibrating, False otherwise
+        @return: True if calibration was successful, False otherwise
         """
-        return self.gripper_io.set_signal_value("calibrate", True)
+        self.gripper_io.set_signal_value("calibrate", True)
+        success = intera_dataflow.wait_for(
+            lambda: self.is_calibrated(),
+            timeout=5.0,
+            raise_on_error=False
+        )
+        if not success:
+            rospy.logerr("({0}) calibration failed.".format(self.name))
+        return success
 
     def get_position(self):
         """
@@ -187,24 +183,20 @@ class Gripper(object):
     def set_position(self, position):
         """
         Set the position of gripper.
-        @type: float
-        @param: the postion of gripper in meters
 
-        @rtype: bool
-        @return: True if successfully set value, False otherwise
+        @type: float
+        @param: the postion of gripper in meters (m)
         """
-        return self.gripper_io.set_signal_value("position_m", position)
+        self.gripper_io.set_signal_value("position_m", position)
 
     def set_velocity(self, speed):
         """
         Set the velocity at which the gripper position movement will execute.
-        @type: float
-        @param: the velocity of gripper in meters per second
 
-        @rtype: float
-        @return: Current Velocity value in Meters / second (m/s)
+        @type: float
+        @param: the velocity of gripper in meters per second (m/s)
         """
-        return self.gripper_io.set_signal_value("speed_mps", speed)
+        self.gripper_io.set_signal_value("speed_mps", speed)
 
     def get_force(self):
         """
@@ -215,32 +207,18 @@ class Gripper(object):
         """
         return self.gripper_io.get_signal_value("force_response_n")
 
-    def set_holding_force(self, holding_force):
-        """
-        Set holding force of successful gripper grasp.
-
-        Set the force at which the gripper will continue applying after a
-        position command has completed either from successfully achieving the
-        commanded position, or by exceeding the moving force threshold.
-
-        @type: float
-        @param: the holding force of gripper in newton
-
-        @rtype: bool
-        @return: True if successfully set value, False otherwise
-        """
-        return self.gripper_io.set_signal_value("holding_force_n", holding_force)
-
     def set_object_weight(self, object_weight):
         """
         Set the weight of the object in kilograms.
-        @type: float
-        @param: the object weight in newton
 
-        @rtype: bool
-        @return: True if successfully set value, False otherwise
+        Object mass is set as a point mass at the location of the tool endpoint
+        link in the URDF (e.g. 'right_gripper_tip'). The robot's URDF and
+        internal robot model will be updated to compensate for the mass.
+
+        @type: float
+        @param: the object weight in kilograms (kg)
         """
-        return self.gripper_io.set_signal_value("object_kg", object_weight)
+        self.gripper_io.set_signal_value("object_kg", object_weight)
 
     def set_dead_zone(self, dead_zone):
         """
@@ -249,8 +227,12 @@ class Gripper(object):
 
         @type: float
         @param: the dead zone of gripper in meters
-
-        @rtype: bool
-        @return: True if successfully set value, False otherwise
         """
-        return self.gripper_io.set_signal_value("dead_zone_m", dead_zone)
+        self.gripper_io.set_signal_value("dead_zone_m", dead_zone)
+
+    def set_holding_force(self, holding_force):
+        """
+        @deprecated: Function deprecated. Holding force is now a fixed value.
+        """
+        rospy.logerr("Removed variable holding force to improve gripper performance.")
+        return False

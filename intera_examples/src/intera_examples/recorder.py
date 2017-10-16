@@ -33,7 +33,7 @@ class JointRecorder(object):
 
         self._limb_right = intera_interface.Limb(side)
         try:
-            self._gripper = intera_interface.Gripper(side)
+            self._gripper = intera_interface.Gripper(self.gripper_name)
             rospy.loginfo("Electric gripper detected.")
         except Exception as e:
             self._gripper = None
@@ -42,7 +42,7 @@ class JointRecorder(object):
         # Verify Gripper Have No Errors and are Calibrated
         if self._gripper:
             if self._gripper.has_error():
-                self._gripper.reboot()                
+                self._gripper.reboot()
             if not self._gripper.is_calibrated():
                 self._gripper.calibrate()
 

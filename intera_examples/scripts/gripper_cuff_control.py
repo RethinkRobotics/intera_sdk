@@ -20,7 +20,8 @@ import sys
 import rospy
 
 from intera_interface import (
-    Gripper,
+    SimpleClickSmartGripper,
+    get_current_gripper_interface,
     Lights,
     Cuff,
     RobotParams,
@@ -52,29 +53,37 @@ class GripperConnect(object):
             self._cuff.register_callback(self._light_action,
                                          '{0}_cuff'.format(arm))
         try:
-            self._gripper = Gripper(arm)
-            if not (self._gripper.is_calibrated() or
-                    self._gripper.calibrate() == True):
-                rospy.logerr("({0}_gripper) calibration failed.".format(
-                               self._gripper.name))
-                raise
+            self._gripper = get_current_gripper_interface()
+            self._is_clicksmart = isinstance(self._gripper, SimpleClickSmartGripper)
+
+            if self._is_clicksmart:
+                if self._gripper.needs_init():
+                    self._gripper.initialize()
+            else:
+                if not (self._gripper.is_calibrated() or
+                        self._gripper.calibrate() == True):
+                    raise
             self._cuff.register_callback(self._close_action,
                                          '{0}_button_upper'.format(arm))
             self._cuff.register_callback(self._open_action,
                                          '{0}_button_lower'.format(arm))
+
             rospy.loginfo("{0} Cuff Control initialized...".format(
                           self._gripper.name))
         except:
             self._gripper = None
+            self._is_clicksmart = False
             msg = ("{0} Gripper is not connected to the robot."
                    " Running cuff-light connection only.").format(arm.capitalize())
             rospy.logwarn(msg)
 
-
     def _open_action(self, value):
         if value and self._gripper.is_ready():
             rospy.logdebug("gripper open triggered")
-            self._gripper.open()
+            if self._is_clicksmart:
+                self._gripper.set_ee_signal_value('grip', False)
+            else:
+                self._gripper.open()
             if self._lights:
                 self._set_lights('red', False)
                 self._set_lights('green', True)
@@ -82,7 +91,10 @@ class GripperConnect(object):
     def _close_action(self, value):
         if value and self._gripper.is_ready():
             rospy.logdebug("gripper close triggered")
-            self._gripper.close()
+            if self._is_clicksmart:
+                self._gripper.set_ee_signal_value('grip', True)
+            else:
+                self._gripper.close()
             if self._lights:
                 self._set_lights('green', False)
                 self._set_lights('red', True)
