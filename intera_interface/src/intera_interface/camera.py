@@ -12,10 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
+
 import rospy
+
 from sensor_msgs.msg import Image
-from intera_io import IODeviceInterface
+from intera_core_msgs.msg import IONodeConfiguration
+
+import intera_dataflow
 from robot_params import RobotParams
+from intera_io import IODeviceInterface
+
 
 class Cameras(object):
     """
@@ -26,6 +33,10 @@ class Cameras(object):
         """
         Constructor.
         """
+        self._node_config = None
+        self._node_config_sub = rospy.Subscriber('io/internal_camera/config', IONodeConfiguration, self._node_config_cb)
+        self.cameras_io = dict()
+
         camera_param_dict = RobotParams().get_camera_details()
         camera_list = camera_param_dict.keys()
         # check to make sure cameras is not an empty list
@@ -33,21 +44,54 @@ class Cameras(object):
             rospy.logerr(' '.join(["camera list is empty: ", ' , '.join(camera_list)]))
             return
 
+        intera_dataflow.wait_for(
+            lambda: self._node_config is not None,
+            timeout=5.0,
+            timeout_msg=("Failed to connect to Camera Node and retrieve configuration.")
+        )
+        cameras_to_load = self._get_camera_launch_config().keys()
+
         camera_capabilities = {
             "mono": ['cognex'],
             "color": ['ienso_ethernet'],
             "auto_exposure": ['ienso_ethernet'],
             "auto_gain": ['ienso_ethernet']
         }
-        self.cameras_io = dict()
         for camera in camera_list:
             cameraType = camera_param_dict[camera]['cameraType']
-            self.cameras_io[camera] = {
-                'interface': IODeviceInterface("internal_camera", camera),
-                'is_color': (cameraType in camera_capabilities['color']),
-                'has_auto_exposure': (cameraType in camera_capabilities['auto_exposure']),
-                'has_auto_gain': (cameraType in camera_capabilities['auto_gain']),
-            }
+            try:
+                interface = IODeviceInterface("internal_camera", camera)
+
+                self.cameras_io[camera] = {
+                    'interface': interface,
+                    'is_color': (cameraType in camera_capabilities['color']),
+                    'has_auto_exposure': (cameraType in camera_capabilities['auto_exposure']),
+                    'has_auto_gain': (cameraType in camera_capabilities['auto_gain']),
+                }
+            except OSError as e:
+                if camera not in cameras_to_load:
+                    rospy.logwarn("Expected camera ({0}) is not configured to launch in this run"
+                    " configuration. Make sure you are running in SDK Mode.".format(camera))
+                else:
+                    rospy.logerr("Could not find expected camera ({0}) for this robot.\n"
+                        "Please contact Rethink support: support@rethinkrobotics.com".format(camera))
+
+    def _node_config_cb(self, msg):
+        self._node_config = msg
+
+    def _get_camera_launch_config(self):
+        """
+        Retrieve set of camera params for cameras configured to load in current
+        software mode configuration.
+        """
+        plugins = self._node_config.plugins
+        cameras_params = dict()
+        for plugin in plugins:
+            plugin_config = json.loads(plugin.config)
+            if 'params' in plugin_config and 'cameras' in plugin_config['params']:
+                for camera in plugin_config['params']['cameras']:
+                    cameras_params[camera['name']] = camera
+        return cameras_params
 
     def _camera_streaming_status(self, camera_name):
         """
