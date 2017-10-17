@@ -32,16 +32,22 @@ class Cameras(object):
         if not camera_list:
             rospy.logerr(' '.join(["camera list is empty: ", ' , '.join(camera_list)]))
             return
-        camera_color_dict = {"mono":['cognex'], "color":['ienso_ethernet']}
+
+        camera_capabilities = {
+            "mono": ['cognex'],
+            "color": ['ienso_ethernet'],
+            "auto_exposure": ['ienso_ethernet'],
+            "auto_gain": ['ienso_ethernet']
+        }
         self.cameras_io = dict()
         for camera in camera_list:
-            if camera_param_dict[camera]['cameraType'] in camera_color_dict[''
-            'color']:
-                is_color = True
-            else:
-                is_color = False
-            self.cameras_io[camera] = {'interface': IODeviceInterface("internal"
-                "_camera", camera), 'is_color': is_color}
+            cameraType = camera_param_dict[camera]['cameraType']
+            self.cameras_io[camera] = {
+                'interface': IODeviceInterface("internal_camera", camera),
+                'is_color': (cameraType in camera_capabilities['color']),
+                'has_auto_exposure': (cameraType in camera_capabilities['auto_exposure']),
+                'has_auto_gain': (cameraType in camera_capabilities['auto_gain']),
+            }
 
     def _camera_streaming_status(self, camera_name):
         """
@@ -55,6 +61,12 @@ class Cameras(object):
         """
         return self.cameras_io[camera_name]['interface'].get_signal_value(
             "camera_streaming")
+
+    def _get_signal_status(self, camera_name, signal_name):
+        for signal in self.cameras_io[camera_name]['interface'].state.signals:
+            if signal.name == signal_name:
+                return signal.status
+        return None
 
     def list_cameras(self):
         """
@@ -75,7 +87,7 @@ class Cameras(object):
         @rtype: bool
         @return: True if the name exists in camera name list, False otherwise.
         """
-        if camera_name  not in self.list_cameras():
+        if camera_name not in self.list_cameras():
             rospy.logerr(' '.join([camera_name, "not in the list of cameras"
                 " detected on this robot:", ' , '.join(self.list_cameras())]))
             return False
@@ -90,8 +102,8 @@ class Cameras(object):
 
         @rtype: bool
         @return: True if the camera is streaming, False camera is not
-                 streaming, False with log error means camera name not exists
-                 in camera name list
+                 streaming, False with log error means camera name does not
+                 exist in camera name list
         """
         if self.verify_camera_exists(camera_name):
             return self._camera_streaming_status(camera_name)
@@ -133,7 +145,7 @@ class Cameras(object):
 
     def start_streaming(self, camera_name):
         """
-        Start camera streaming for the given camera name, This only allows
+        Start camera streaming for the given camera name. This only allows
         one camera open at one time and forces closed any other open cameras
         before open the wanted one.
 
@@ -141,11 +153,11 @@ class Cameras(object):
         @param camera_name: camera name
 
         @rtype: bool
-        @return: False if camera not exists in camera_name_list or the
+        @return: False if camera does not exist in camera_name_list or the
                  interface is not able to stop streaming other camera.
                  Additionally, returns False if the interface is not able
                  to start streaming the desired camera. Returns True if the
-                 camera already streaming or the camera successfully start
+                 camera is already streaming or the camera successfully starts
                  streaming.
         """
         if not self.verify_camera_exists(camera_name):
@@ -175,15 +187,15 @@ class Cameras(object):
 
     def stop_streaming(self, camera_name):
         """
-        Stop camera streaming by given the camera name.
+        Stop camera streaming for the given camera name.
 
         @type camera_name: str
         @param camera_name: camera name
 
         @rtype: bool
-        @return: False if camera not exists in camera name list or not able
-                 to stop streaming camera. True if the camera not is streaming
-                 mode or the camera successfully stop streaming.
+        @return: False if camera does not exist in camera name list or not able
+                 to stop streaming camera. True if the camera is already not in
+                 streaming mode or streaming is successfully stopped.
         """
         if not self.verify_camera_exists(camera_name):
             return False
@@ -191,10 +203,102 @@ class Cameras(object):
             self.cameras_io[camera_name]['interface'].set_signal_value(
                 "camera_streaming", False)
             if self._camera_streaming_status(camera_name):
-                rospy.logerr(' '.join(["Failed to stop", camera_name,
+                rospy.logerr(' '.join(["Failed to stop ", camera_name,
                 " from streaming on this robot."]))
                 return False
             else:
                 return True
         else: # Camera not in streaming mode
             return True
+
+    def get_exposure(self, camera_name):
+        """
+        Return the current exposure setting for the given camera.
+
+        @type camera_name: str
+        @param camera_name: camera name
+
+        @rtype: int|float
+        @return: current exposure setting (-1 means auto-exposure was set)
+        """
+        if self.verify_camera_exists(camera_name):
+            return self.cameras_io[camera_name]['interface'].get_signal_value('set_exposure')
+        return None
+
+    def get_gain(self, camera_name):
+        """
+        Return the current gain setting for the given camera.
+
+        @type camera_name: str
+        @param camera_name: camera name
+
+        @rtype: int
+        @return: current gain setting (-1 means auto-gain was set)
+        """
+        if self.verify_camera_exists(camera_name):
+            return self.cameras_io[camera_name]['interface'].get_signal_value('set_gain')
+        return None
+
+    def set_exposure(self, camera_name, exposure):
+        """
+        Set the exposure on the given camera.
+
+        Cognex hand_camera: Range [0.01-100]
+        head_camera: Range [0-100], or -1 for auto-exposure
+        Setting auto-exposure will turn off auto-gain (and vice-versa).
+
+        @type camera_name: str
+        @param camera_name: camera name
+        @type exposure: int|float
+        @param exposure: new exposure setting, or -1 for auto-exposure
+
+        @rtype: bool
+        @return: False, if camera is not available or the given exposure value
+                 is invalid. True, if new exposure setting was sent to camera.
+        """
+        success = False
+        if self.verify_camera_exists(camera_name):
+            if exposure == -1 and not self.cameras_io[camera_name]['has_auto_exposure']:
+                rospy.logerr("Camera ({0}) does not support auto-exposure".format(camera_name))
+            else:
+                # send camera signal
+                self.cameras_io[camera_name]['interface'].set_signal_value('set_exposure', exposure)
+
+                # check result
+                status = self._get_signal_status(camera_name, 'set_exposure')
+                success = (status and status.tag == 'ready')
+                if not success:
+                    rospy.logerr("Problem setting signal: {}".format(status or "Signal Not Found"))
+
+        return success
+
+    def set_gain(self, camera_name, gain):
+        """
+        Set the gain on the given camera.
+
+        Cognex hand_camera: Range [0-255]
+        head_camera: Range [0-79], or -1 for auto-gain
+        Note: Setting auto-exposure will turn off auto-gain (and vice-versa).
+
+        @type camera_name: str
+        @param camera_name: camera name
+        @type gain: int
+        @param gain: new gain value, -1 for auto-gain
+
+        @rtype: bool
+        @return: False, if camera is not available or the given gain value is
+                 invalid. True, if new gain setting was sent to camera.
+        """
+        success = False
+        if self.verify_camera_exists(camera_name):
+            if gain == -1 and not self.cameras_io[camera_name]['has_auto_gain']:
+                rospy.logerr("Camera ({0}) does not support auto-gain".format(camera_name))
+            else:
+                self.cameras_io[camera_name]['interface'].set_signal_value('set_gain', gain)
+
+                status = self._get_signal_status(camera_name, 'set_gain')
+                success = (status and status.tag == 'ready')
+                if not success:
+                    rospy.logerr("Problem setting signal: {}".format(status or "Signal Not Found"))
+
+        return success

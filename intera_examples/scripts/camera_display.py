@@ -48,6 +48,13 @@ def show_image_callback(img_data, (edge_detection, window_name)):
 
 def main():
     """Camera Display Example
+
+    Cognex Hand Camera Ranges
+        - exposure: [0.01-100]
+        - gain: [0-255]
+    Head Camera Ranges:
+        - exposure: [0-100], -1 for auto-exposure
+        - gain: [0-79], -1 for auto-gain
     """
     rp = intera_interface.RobotParams()
     valid_cameras = rp.get_camera_names()
@@ -62,29 +69,45 @@ def main():
         '-c', '--camera', type=str, default="head_camera",
         choices=valid_cameras, help='Setup Camera Name for Camera Display')
     parser.add_argument(
-        '-r', '--raw', action='store_true', 
+        '-r', '--raw', action='store_true',
         help='Specify use of the raw image (unrectified) topic')
     parser.add_argument(
         '-e', '--edge', action='store_true',
         help='Streaming the Canny edge detection image')
+    parser.add_argument(
+        '-g', '--gain', type=int,
+        help='Set gain for camera (-1 = auto)')
+    parser.add_argument(
+        '-x', '--exposure', type=float,
+        help='Set exposure for camera (-1 = auto)')
     args = parser.parse_args()
 
     print("Initializing node... ")
     rospy.init_node('camera_display', anonymous=True)
     try:
-        camera = intera_interface.Cameras()
+        cameras = intera_interface.Cameras()
     except OSError as e:
         rospy.logfatal("Could not find all of the expected cameras for this robot.\n"
                 "Please contact Rethink support: support@rethinkrobotics.com")
         return
-    if not camera.verify_camera_exists(args.camera):
+    if not cameras.verify_camera_exists(args.camera):
         rospy.logerr("Invalid camera name, exiting the example.")
         return
-    camera.start_streaming(args.camera)
+    rospy.loginfo("Opening camera '{0}'...".format(args.camera))
+    cameras.start_streaming(args.camera)
     rectify_image = not args.raw
     use_canny_edge = args.edge
-    camera.set_callback(args.camera, show_image_callback,
+    cameras.set_callback(args.camera, show_image_callback,
         rectify_image=rectify_image, callback_args=(use_canny_edge, args.camera))
+
+    # optionally set gain and exposure parameters
+    if args.gain is not None:
+        if cameras.set_gain(args.camera, args.gain):
+            rospy.loginfo("Gain set to: {0}".format(cameras.get_gain(args.camera)))
+
+    if args.exposure is not None:
+        if cameras.set_exposure(args.camera, args.exposure):
+            rospy.loginfo("Exposure set to: {0}".format(cameras.get_exposure(args.camera)))
 
     def clean_shutdown():
         print("Shutting down camera_display node.")
