@@ -247,6 +247,34 @@ class SimpleClickSmartGripper(object):
         endpoint_id = self.endpoint_map.keys()[0] if endpoint_id is None else endpoint_id
         return (endpoint_id, self.endpoint_map[endpoint_id])
 
+    def send_configuration(self, config, timeout=5.0):
+        """
+        Send a new JSON EndEffector configuration to the device.
+
+        @type config: dict
+        @param config: new json config to save on device
+        @type timeout: float
+        @param timeout: timeout in seconds - currently will wait for a minimum of
+                        3 seconds before returning (to allow for reconfiguration)
+        """
+        rospy.loginfo("Reconfiguring ClickSmart...")
+
+        cmd = IOCommand('reconfigure', {"devices": {self.name: config}, "write_config": True})
+        msg = cmd.as_msg()
+        self._node_command_pub.publish(msg)
+        if timeout:
+            # allow time for reconfiguration and storage write process
+            # TODO: use cmd acknowlegment timestamp, not hard-coded delay
+            delay = 3.0
+            delay_time = rospy.Time.now() + rospy.Duration(delay)
+            intera_dataflow.wait_for(
+                lambda: (rospy.Time.now() > delay_time and
+                    (self.is_ready() or self.needs_init())),
+                timeout=max(timeout, delay),
+                body=lambda: self._node_command_pub.publish(msg),
+                timeout_msg=("Failed to reconfigure gripper.")
+            )
+
     def __getattr__(self, name):
         """
         This is a proxy-pass through mechanism that lets you look up methods and variables
