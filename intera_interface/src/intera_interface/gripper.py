@@ -24,8 +24,6 @@ class Gripper(object):
     """
     MAX_POSITION = 0.041667
     MIN_POSITION = 0.0
-    MAX_FORCE = 10.0
-    MIN_FORCE = 0.0
     MAX_VELOCITY = 3.0
     MIN_VELOCITY = 0.15
 
@@ -191,12 +189,34 @@ class Gripper(object):
 
     def set_velocity(self, speed):
         """
+        DEPRECATED: Use set_cmd_velocity(speed)
+
         Set the velocity at which the gripper position movement will execute.
 
         @type: float
         @param: the velocity of gripper in meters per second (m/s)
         """
+        self.set_cmd_velocity(speed)
+
+    def set_cmd_velocity(self, speed):
+        """
+        Set the commanded velocity at which the gripper position
+        movement will execute.
+
+        @type: float
+        @param: the velocity of gripper in meters per second (m/s)
+        """
         self.gripper_io.set_signal_value("speed_mps", speed)
+
+    def get_cmd_velocity(self):
+        """
+        Get the commanded velocity at which the gripper position
+        movement executes.
+
+        @rtype: float
+        @return: the velocity of gripper in meters per second (m/s)
+        """
+        return self.gripper_io.get_signal_value("speed_mps")
 
     def get_force(self):
         """
@@ -218,7 +238,20 @@ class Gripper(object):
         @type: float
         @param: the object weight in kilograms (kg)
         """
-        self.gripper_io.set_signal_value("object_kg", object_weight)
+        self.gripper_io.set_signal_value(self.name+"_tip_object_kg", object_weight)
+
+    def get_object_weight(self):
+        """
+        Get the currently configured weight of the object in kilograms.
+
+        Object mass is set as a point mass at the location of the tool endpoint
+        link in the URDF (e.g. 'right_gripper_tip'). The robot's URDF and
+        internal robot model will be updated to compensate for the mass.
+
+        @rtype: float
+        @return: the object weight in kilograms (kg)
+        """
+        return self.gripper_io.get_signal_value(self.name+"_tip_object_kg")
 
     def set_dead_zone(self, dead_zone):
         """
@@ -229,6 +262,16 @@ class Gripper(object):
         @param: the dead zone of gripper in meters
         """
         self.gripper_io.set_signal_value("dead_zone_m", dead_zone)
+
+    def get_dead_zone(self):
+        """
+        Get the gripper dead zone describing the position error threshold
+        where a move will be considered successful.
+
+        @rtype: float
+        @return: the dead zone of gripper in meters
+        """
+        return self.gripper_io.get_signal_value("dead_zone_m")
 
     def set_holding_force(self, holding_force):
         """
