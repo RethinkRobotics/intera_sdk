@@ -80,18 +80,13 @@ def main():
     parser.add_argument(
         '-x', '--exposure', type=float,
         help='Set exposure for camera (-1 = auto)')
-    args = parser.parse_args()
+    args = parser.parse_args(rospy.myargv()[1:])
 
     print("Initializing node... ")
     rospy.init_node('camera_display', anonymous=True)
-    try:
-        cameras = intera_interface.Cameras()
-    except OSError as e:
-        rospy.logfatal("Could not find all of the expected cameras for this robot.\n"
-                "Please contact Rethink support: support@rethinkrobotics.com")
-        return
+    cameras = intera_interface.Cameras()
     if not cameras.verify_camera_exists(args.camera):
-        rospy.logerr("Invalid camera name, exiting the example.")
+        rospy.logerr("Could not detect the specified camera, exiting the example.")
         return
     rospy.loginfo("Opening camera '{0}'...".format(args.camera))
     cameras.start_streaming(args.camera)
