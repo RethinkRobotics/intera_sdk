@@ -30,7 +30,11 @@ def map_keyboard(limb):
     print("Getting robot state...")
     rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state()
+    gripper = None
+    original_deadzone = None
     def clean_shutdown():
+        if gripper and original_deadzone:
+            gripper.set_dead_zone(original_deadzone)
         print("Exiting example.")
     try:
         gripper = intera_interface.Gripper(limb + '_gripper')
@@ -95,7 +99,6 @@ def map_keyboard(limb):
                                        key=lambda x: x[1][2]):
                     print("  %s: %s" % (key, val[2]))
     # force shutdown call if caught by key handler
-    gripper.set_dead_zone(original_deadzone)
     rospy.signal_shutdown("Example finished.")
 
 
