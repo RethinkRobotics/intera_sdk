@@ -34,19 +34,16 @@ def map_joystick(joystick, limb):
     print("Getting robot state... ")
     rs = intera_interface.RobotEnable(intera_interface.CHECK_VERSION)
     init_state = rs.state()
-    try:
-        gripper = intera_interface.Gripper(limb + '_gripper')
-    except ValueError:
-        rospy.logerr("Could not detect a gripper attached to the robot.")
-        return
-
     def clean_shutdown():
         print("\nExiting example...")
+    try:
+        gripper = intera_interface.Gripper(limb + '_gripper')
+    except (ValueError, OSError) as e:
+        rospy.logerr("Could not detect an electric gripper attached to the robot.")
+        clean_shutdown()
+        return
 
     rospy.on_shutdown(clean_shutdown)
-
-    # decrease position dead_zone
-    gripper.set_dead_zone(2.5)
 
     # abbreviations
     jhi = lambda s: joystick.stick_value(s) > 0
@@ -62,24 +59,30 @@ def map_joystick(joystick, limb):
                     doc = doc()
                 print("%s: %s" % (str(test[1]), doc))
 
-    def offset_position(offset):
-        current = gripper.get_position()
-        set_position = min(gripper.MAX_POSITION,
-                          max(gripper.MIN_POSITION,
-                             current + offset))
-        gripper.set_position(set_position)
+    def offset_position(offset_pos):
+        cmd_pos = max(min(gripper.get_position() + offset_pos, gripper.MAX_POSITION), gripper.MIN_POSITION)
+        gripper.set_position(cmd_pos)
+        print("commanded position set to {0} m".format(cmd_pos))
 
-    def offset_holding(offset):
-        current = gripper.get_force()
-        print("Current force {0}".format(current))
-        holding_force = min(gripper.MAX_FORCE,
-                           max(gripper.MIN_FORCE,
-                              current + offset))
-        gripper.set_holding_force(holding_force)
+    def update_velocity(offset_vel):
+        cmd_speed = max(min(gripper.get_cmd_velocity() + offset_vel, gripper.MAX_VELOCITY), gripper.MIN_VELOCITY)
+        gripper.set_velocity(cmd_speed)
+        print("commanded velocity set to {0} m/s".format(cmd_speed))
 
-    num_steps = 10.0
-    position_step = (gripper.MAX_POSITION - gripper.MIN_POSITION) / num_steps
-    force_step = (gripper.MAX_FORCE - gripper.MIN_FORCE) / num_steps
+
+    # decrease position dead_zone
+    original_deadzone = gripper.get_dead_zone()
+    # WARNING: setting the deadzone below this can cause oscillations in
+    # the gripper position. However, setting the deadzone to this
+    # value is required to achieve the incremental commands in this example
+    gripper.set_dead_zone(0.001)
+    rospy.loginfo("Gripper deadzone set to {}".format(gripper.get_dead_zone()))
+    num_steps = 8.0
+    percent_delta = 1.0 / num_steps
+    position_increment = (gripper.MAX_POSITION - gripper.MIN_POSITION) * percent_delta
+    velocity_increment = (gripper.MAX_VELOCITY - gripper.MIN_VELOCITY) * percent_delta
+
+
     bindings_list = []
     bindings = (
         #(test, command, description)
@@ -88,14 +91,15 @@ def map_joystick(joystick, limb):
         ((bdn, ['leftTrigger']), (gripper.close, []), "close"),
         ((bup, ['leftTrigger']), (gripper.open, []), "open (release)"),
         ((bdn, ['leftBumper']), (gripper.stop, []), "stop"),
-        ((jlo, ['leftStickVert']), (offset_position, [-position_step]),
+        ((jlo, ['leftStickVert']), (offset_position, [-position_increment]),
                                     "decrease position"),
-        ((jhi, ['leftStickVert']), (offset_position, [position_step]),
+        ((jhi, ['leftStickVert']), (offset_position, [position_increment]),
                                      "increase position"),
-        ((jlo, ['rightStickVert']), (offset_holding, [-force_step]),
-                                    "decrease holding force"),
-        ((jhi, ['rightStickVert']), (offset_holding, [force_step]),
-                                    "increase holding force"),
+        ((jlo, ['rightStickVert']), (update_velocity, [-velocity_increment]),
+                                    "decrease commanded velocity"),
+        ((jhi, ['rightStickVert']), (update_velocity, [velocity_increment]),
+                                    "increase commanded velocity"),
+
         ((bdn, ['function1']), (print_help, [bindings_list]), "help"),
         ((bdn, ['function2']), (print_help, [bindings_list]), "help"),
     )
@@ -110,9 +114,10 @@ def map_joystick(joystick, limb):
         # test each joystick condition and call binding cmd if true
         for (test, cmd, doc) in bindings:
             if test[0](*test[1]):
-                cmd[0](*cmd[1])
                 print(doc)
+                cmd[0](*cmd[1])
         rate.sleep()
+    gripper.set_dead_zone(original_deadzone)
     rospy.signal_shutdown("Example finished.")
 
 

@@ -30,37 +30,48 @@ def map_keyboard(limb):
     print("Getting robot state...")
     rs = intera_interface.RobotEnable(CHECK_VERSION)
     init_state = rs.state()
-    try:
-        gripper = intera_interface.Gripper(limb + '_gripper')
-    except ValueError:
-        rospy.logerr("Could not detect a gripper attached to the robot.")
-        return
     def clean_shutdown():
         print("Exiting example.")
+    try:
+        gripper = intera_interface.Gripper(limb + '_gripper')
+    except (ValueError, OSError) as e:
+        rospy.logerr("Could not detect an electric gripper attached to the robot.")
+        clean_shutdown()
+        return
     rospy.on_shutdown(clean_shutdown)
-    def offset_position(offset):
-        current = gripper.get_position()
-        gripper.set_position(current + offset)
 
-    def offset_holding(offset):
-        current = gripper.get_force()
-        gripper.set_holding_force(current + offset)
+    def offset_position(offset_pos):
+        cmd_pos = max(min(gripper.get_position() + offset_pos, gripper.MAX_POSITION), gripper.MIN_POSITION)
+        gripper.set_position(cmd_pos)
+        print("commanded position set to {0} m".format(cmd_pos))
 
-    num_steps = 10.0
-    thirty_percent_velocity = 0.3*(gripper.MAX_VELOCITY - gripper.MIN_VELOCITY) + gripper.MIN_VELOCITY
+    def update_velocity(offset_vel):
+        cmd_speed = max(min(gripper.get_cmd_velocity() + offset_vel, gripper.MAX_VELOCITY), gripper.MIN_VELOCITY)
+        gripper.set_velocity(cmd_speed)
+        print("commanded velocity set to {0} m/s".format(cmd_speed))
+
+
+    original_deadzone = gripper.get_dead_zone()
+    # WARNING: setting the deadzone below this can cause oscillations in
+    # the gripper position. However, setting the deadzone to this
+    # value is required to achieve the incremental commands in this example
+    gripper.set_dead_zone(0.001)
+    rospy.loginfo("Gripper deadzone set to {}".format(gripper.get_dead_zone()))
+    num_steps = 8.0
+    percent_delta = 1.0 / num_steps
+    velocity_increment = (gripper.MAX_VELOCITY - gripper.MIN_VELOCITY) * percent_delta
+    position_increment = (gripper.MAX_POSITION - gripper.MIN_POSITION) * percent_delta
     bindings = {
     #   key: (function, args, description)
         'r': (gripper.reboot, [], "reboot"),
         'c': (gripper.calibrate, [], "calibrate"),
         'q': (gripper.close, [], "close"),
         'o': (gripper.open, [], "open"),
-        '+': (gripper.set_velocity, [gripper.MAX_VELOCITY], "set 100% velocity"),
-        '-': (gripper.set_velocity, [thirty_percent_velocity], "set 30% velocity"),
+        '+': (update_velocity, [velocity_increment], "increase velocity by {0}%".format(percent_delta*100)),
+        '-': (update_velocity, [-velocity_increment],"decrease velocity by {0}%".format(percent_delta*100)),
         's': (gripper.stop, [], "stop"),
-        'h': (offset_holding, [-(gripper.MAX_FORCE / num_steps)], "decrease holding force"),
-        'j': (offset_holding, [gripper.MAX_FORCE / num_steps], "increase holding force"),
-        'u': (offset_position, [-(gripper.MAX_POSITION / num_steps)], "decrease position"),
-        'i': (offset_position, [gripper.MAX_POSITION / num_steps], "increase position"),
+        'u': (offset_position, [-position_increment], "decrease position by {0}%".format(percent_delta*100)),
+        'i': (offset_position, [position_increment], "increase position by {0}%".format(percent_delta*100)),
     }
 
     done = False
@@ -74,8 +85,8 @@ def map_keyboard(limb):
                 done = True
             elif c in bindings:
                 cmd = bindings[c]
+                print("command: {0}".format(cmd[2]))
                 cmd[0](*cmd[1])
-                print("command: %s" % (cmd[2],))
             else:
                 print("key bindings: ")
                 print("  Esc: Quit")
@@ -84,6 +95,7 @@ def map_keyboard(limb):
                                        key=lambda x: x[1][2]):
                     print("  %s: %s" % (key, val[2]))
     # force shutdown call if caught by key handler
+    gripper.set_dead_zone(original_deadzone)
     rospy.signal_shutdown("Example finished.")
 
 
@@ -93,8 +105,8 @@ def main():
     Use your dev machine's keyboard to control and configure grippers.
 
     Run this example to command various gripper movements while
-    adjusting gripper parameters, including calibration, velocity,
-    and force. Uses the intera_interface.Gripper class and the
+    adjusting gripper parameters, including calibration, and velocity:
+    Uses the intera_interface.Gripper class and the
     helper function, intera_external_devices.getch.
     """
     epilog = """
