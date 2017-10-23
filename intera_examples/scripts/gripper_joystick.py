@@ -34,8 +34,12 @@ def map_joystick(joystick, limb):
     print("Getting robot state... ")
     rs = intera_interface.RobotEnable(intera_interface.CHECK_VERSION)
     init_state = rs.state()
+    gripper = None
+    original_deadzone = None
     def clean_shutdown():
-        print("\nExiting example...")
+        if gripper and original_deadzone:
+            gripper.set_dead_zone(original_deadzone)
+        print("Exiting example.")
     try:
         gripper = intera_interface.Gripper(limb + '_gripper')
     except (ValueError, OSError) as e:
@@ -117,7 +121,6 @@ def map_joystick(joystick, limb):
                 print(doc)
                 cmd[0](*cmd[1])
         rate.sleep()
-    gripper.set_dead_zone(original_deadzone)
     rospy.signal_shutdown("Example finished.")
 
 

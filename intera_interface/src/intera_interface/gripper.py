@@ -196,6 +196,8 @@ class Gripper(object):
         @type: float
         @param: the velocity of gripper in meters per second (m/s)
         """
+        rospy.logwarn("The set_velocity function is DEPRECATED. Please "
+                      "update your code to use set_cmd_velocity() instead")
         self.set_cmd_velocity(speed)
 
     def set_cmd_velocity(self, speed):
