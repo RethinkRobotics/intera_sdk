@@ -51,7 +51,7 @@ def map_keyboard(limb):
 
     def update_velocity(offset_vel):
         cmd_speed = max(min(gripper.get_cmd_velocity() + offset_vel, gripper.MAX_VELOCITY), gripper.MIN_VELOCITY)
-        gripper.set_velocity(cmd_speed)
+        gripper.set_cmd_velocity(cmd_speed)
         print("commanded velocity set to {0} m/s".format(cmd_speed))
 
 
