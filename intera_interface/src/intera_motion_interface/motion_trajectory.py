@@ -64,11 +64,12 @@ class MotionTrajectory(object):
         self.set_joint_names(joint_names)
         self.set_trajectory_options(trajectory_options)
 
-    def stop_trajectory(self):
+    def stop_trajectory(self, wait_for_result=True, timeout=None):
         """
         Send a Motion Stop command
         """
         self._client.stop_trajectory()
+        return self._client.wait_for_result(timeout) if wait_for_result else True
 
     def send_trajectory(self, wait_for_result=True, timeout=None):
         """
@@ -101,7 +102,7 @@ class MotionTrajectory(object):
         """
         The function will wait until the trajectory is finished,
         or the specified timeout is reached.
-        @param timeout: maximum time to wait. 
+        @param timeout: maximum time to wait.
         @return None if timeout is reached, else
                 True if the goal is achieved
                 False if failed to achieve goal

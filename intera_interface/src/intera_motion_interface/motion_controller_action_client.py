@@ -48,7 +48,6 @@ class MotionControllerActionClient(object):
         goal = intera_motion_msgs.msg.MotionCommandGoal()
         goal.command = intera_motion_msgs.msg.MotionCommandGoal.MOTION_STOP
         self._client.send_goal(goal)
-        rospy.loginfo('Stopping trajectory')
 
     def send_trajectory(self, trajectory):
         """
