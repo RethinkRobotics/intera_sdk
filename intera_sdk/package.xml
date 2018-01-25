@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>intera_sdk</name>
-  <version>5.1.0</version>
+  <version>5.2.0</version>
   <description>
     intera_sdk metapackage containing all of the SDK packages
     for Rethink Robotics' robots.
