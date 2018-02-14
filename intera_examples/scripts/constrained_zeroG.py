@@ -21,6 +21,9 @@ from geometry_msgs.msg import Pose
 from intera_motion_interface import InteractionOptions
 from intera_motion_interface.utility_functions import (int2bool, bool2int, boolToggle)
 
+import intera_interface
+from intera_interface import CHECK_VERSION
+
 def main():
     """
     Initiate constrained zero-G with a desired behavior from the current pose.
@@ -244,8 +247,9 @@ def main():
         rospy.loginfo(msg)
         pub.publish(msg)
 
+        rs = intera_interface.RobotEnable(CHECK_VERSION)
         if args.rate > 0:
-            while not rospy.is_shutdown():
+            while not rospy.is_shutdown() and rs.state().enabled:
                 rate.sleep()
                 pub.publish(msg)
 
@@ -253,6 +257,12 @@ def main():
         rospy.logerr('Keyboard interrupt detected from the user. %s',
                      'Exiting the node...')
 
+    if not rs.state().enabled:
+        # send a message to put the robot back into position mode
+        position_mode = InteractionOptions()
+        position_mode.set_interaction_control_active(False)
+        pub.publish(position_mode.to_msg())
+        rospy.sleep(0.5)
 
 if __name__ == '__main__':
     main()
