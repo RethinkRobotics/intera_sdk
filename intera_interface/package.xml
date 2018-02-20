@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>intera_interface</name>
-  <version>5.3.0</version>
+  <version>5.4.0</version>
   <description>
     Python interface classes for control of
     Intera-enable Robots from Rethink Robotics.
