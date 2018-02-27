@@ -21,7 +21,7 @@ import threading
 import rospy
 import intera_interface
 from intera_interface import CHECK_VERSION
-from intera_core_msgs.msg import AssemblyState, HomingState, HomingCommand
+from intera_core_msgs.msg import RobotAssemblyState, HomingState, HomingCommand
 
 class HomeJoints(object):
     def __init__(self):
@@ -40,7 +40,7 @@ class HomeJoints(object):
             queue_size=10)
         self._enable_sub = rospy.Subscriber(
             '/robot/state',
-            AssemblyState,
+            RobotAssemblyState,
             self._enable_state_cb)
         self._homing_sub = rospy.Subscriber(
             '/robot/homing_states',

@@ -28,7 +28,7 @@ from std_msgs.msg import (
 import intera_dataflow
 
 from intera_core_msgs.msg import (
-    AssemblyState,
+    RobotAssemblyState,
 )
 import settings
 
@@ -63,7 +63,7 @@ class RobotEnable(object):
         self._state = None
         state_topic = 'robot/state'
         self._state_sub = rospy.Subscriber(state_topic,
-                                           AssemblyState,
+                                           RobotAssemblyState,
                                            self._state_callback
                                            )
         if versioned and not self.version_check():
@@ -97,8 +97,8 @@ class RobotEnable(object):
         """
         Returns the last known robot state.
 
-        @rtype: intera_core_msgs/AssemblyState
-        @return: Returns the last received AssemblyState message
+        @rtype: intera_core_msgs/RobotAssemblyState
+        @return: Returns the last received RobotAssemblyState message
         """
         return self._state
 
@@ -150,7 +150,7 @@ http://sdk.rethinkrobotics.com/intera/SDK_Shell
             raise IOError(errno.EREMOTEIO, "Failed to Reset due to lack of Error State.")
 
         if (self._state.stopped and
-              self._state.estop_button == AssemblyState.ESTOP_BUTTON_PRESSED):
+              self._state.estop_button == RobotAssemblyState.ESTOP_BUTTON_PRESSED):
             rospy.logfatal(error_estop)
             raise IOError(errno.EREMOTEIO, "Failed to Reset: E-Stop Engaged")
 
