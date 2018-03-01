@@ -346,3 +346,22 @@ class Cameras(object):
                     rospy.logerr("Problem setting signal: {}".format(status or "Signal Not Found"))
 
         return success
+
+    def set_cognex_strobe(self, value):
+        """
+        Set the strobe on the Cognex right_hand_camera only.
+
+        @type value: bool
+        @param value: True for strobe on, False for strobe off
+
+        @rtype: bool
+        @return: False, if Cognex camera is not available and
+                 True, otherwise.
+        """
+        success = True
+        try:
+            self.cameras_io['right_hand_camera']['interface'].set_signal_value('set_strobe', bool(value))
+        except KeyError as e:
+            success = False
+            rospy.logerr("Cannot find Cognex camera with the name {}".format(e))
+        return success
