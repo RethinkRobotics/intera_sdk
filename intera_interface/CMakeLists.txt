@@ -13,6 +13,7 @@ find_package(catkin
   trajectory_msgs
   dynamic_reconfigure
   intera_core_msgs
+  intera_motion_msgs
 )
 
 catkin_python_setup()
@@ -36,6 +37,7 @@ catkin_package(
   trajectory_msgs
   dynamic_reconfigure
   intera_core_msgs
+  intera_motion_msgs
 )
 
 install(

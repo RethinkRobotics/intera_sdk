@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2013-2017, Rethink Robotics Inc.
+# Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,10 +31,10 @@ def map_keyboard(side):
     limb = intera_interface.Limb(side)
 
     try:
-        gripper = intera_interface.Gripper(side)
+        gripper = intera_interface.Gripper(side + '_gripper')
     except:
         has_gripper = False
-        rospy.logerr("Could not initalize the gripper.")
+        rospy.loginfo("The electric gripper is not detected on the robot.")
     else:
         has_gripper = True
 
@@ -68,11 +68,14 @@ def map_keyboard(side):
         '6': (set_j, [limb, joints[5], 0.1], joints[5]+" increase"),
         'y': (set_j, [limb, joints[5], -0.1], joints[5]+" decrease"),
         '7': (set_j, [limb, joints[6], 0.1], joints[6]+" increase"),
-        'u': (set_j, [limb, joints[6], -0.1], joints[6]+" decrease"),
+        'u': (set_j, [limb, joints[6], -0.1], joints[6]+" decrease")
+     }
+    if has_gripper:
+        bindings.update({
         '8': (set_g, "close", side+" gripper close"),
         'i': (set_g, "open", side+" gripper open"),
         '9': (set_g, "calibrate", side+" gripper calibrate")
-     }
+        })
     done = False
     print("Controlling joints. Press ? for help, Esc to quit.")
     while not done and not rospy.is_shutdown():

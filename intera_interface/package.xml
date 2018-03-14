@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package>
   <name>intera_interface</name>
-  <version>5.1.0</version>
+  <version>5.2.0</version>
   <description>
     Python interface classes for control of
     Intera-enable Robots from Rethink Robotics.
@@ -25,6 +25,7 @@
   <build_depend>rospy</build_depend>
   <build_depend>actionlib</build_depend>
   <build_depend>intera_core_msgs</build_depend>
+  <build_depend>intera_motion_msgs</build_depend>
   <build_depend>control_msgs</build_depend>
   <build_depend>dynamic_reconfigure</build_depend>
   <build_depend>sensor_msgs</build_depend>
@@ -35,11 +36,13 @@
   <run_depend>rospy</run_depend>
   <run_depend>actionlib</run_depend>
   <run_depend>intera_core_msgs</run_depend>
+  <run_depend>intera_motion_msgs</run_depend>
   <run_depend>control_msgs</run_depend>
   <run_depend>dynamic_reconfigure</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>trajectory_msgs</run_depend>
+  <run_depend>rospy_message_converter</run_depend>
   <run_depend>xacro</run_depend>
 
   <export>

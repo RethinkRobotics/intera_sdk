@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2017, Rethink Robotics Inc.
+# Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,13 @@ from sensor_msgs.msg import (
 )
 from std_msgs.msg import (
     Float64,
+    Header
+)
+from geometry_msgs.msg import (
+    PoseStamped,
+    Pose,
+    Point,
+    Quaternion,
 )
 
 import intera_dataflow
@@ -31,7 +38,14 @@ import intera_dataflow
 from intera_core_msgs.msg import (
     JointCommand,
     EndpointState,
+    EndpointStates,
     CollisionDetectionState,
+)
+from intera_core_msgs.srv import (
+    SolvePositionIK,
+    SolvePositionIKRequest,
+    SolvePositionFK,
+    SolvePositionFKRequest
 )
 import settings
 from robot_params import RobotParams
@@ -88,8 +102,9 @@ class Limb(object):
         self._cartesian_pose = dict()
         self._cartesian_velocity = dict()
         self._cartesian_effort = dict()
-        self._joint_names = { limb: joint_names }
+        self._joint_names = joint_names
         self._collision_state = False
+        self._tip_states = None
 
         ns = '/robot/limb/' + limb + '/'
 
@@ -123,6 +138,13 @@ class Limb(object):
             queue_size=1,
             tcp_nodelay=True)
 
+        _tip_states_sub = rospy.Subscriber(
+            ns + 'tip_states',
+            EndpointStates,
+            self._on_tip_states,
+            queue_size=1,
+            tcp_nodelay=True)
+
         _collision_state_sub = rospy.Subscriber(
             ns + 'collision_detection_state',
             CollisionDetectionState,
@@ -138,6 +160,12 @@ class Limb(object):
             queue_size=1,
             tcp_nodelay=True)
 
+        ns_pkn = "ExternalTools/" + limb + "/PositionKinematicsNode/"
+        self._iksvc = rospy.ServiceProxy(ns_pkn + 'IKService', SolvePositionIK)
+        self._fksvc = rospy.ServiceProxy(ns_pkn + 'FKService', SolvePositionFK)
+        rospy.wait_for_service(ns_pkn + 'IKService', 5.0)
+        rospy.wait_for_service(ns_pkn + 'FKService', 5.0)
+
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
         intera_dataflow.wait_for(lambda: len(self._joint_angle.keys()) > 0,
@@ -145,11 +173,15 @@ class Limb(object):
         err_msg = ("%s limb init failed to get current endpoint_state "
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
         intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
-                                 timeout_msg=err_msg)
+                                 timeout_msg=err_msg, timeout=5.0)
+        err_msg = ("%s limb init failed to get current tip_states "
+                   "from %s") % (self.name.capitalize(), ns + 'tip_states')
+        intera_dataflow.wait_for(lambda: self._tip_states is not None,
+                                 timeout_msg=err_msg, timeout=5.0)
 
     def _on_joint_states(self, msg):
         for idx, name in enumerate(msg.name):
-            if name in self._joint_names[self.name]:
+            if name in self._joint_names:
                 self._joint_angle[name] = msg.position[idx]
                 self._joint_velocity[name] = msg.velocity[idx]
                 self._joint_effort[name] = msg.effort[idx]
@@ -197,6 +229,9 @@ class Limb(object):
             ),
         }
 
+    def _on_tip_states(self, msg):
+        self._tip_states = deepcopy(msg)
+
     def _on_collision_state(self, msg):
         if self._collision_state != msg.collision_state:
             self._collision_state = msg.collision_state
@@ -218,7 +253,7 @@ class Limb(object):
         @return: ordered list of joint names from proximal to distal
         (i.e. shoulder to wrist).
         """
-        return self._joint_names[self.name]
+        return self._joint_names
 
     def joint_angle(self, joint):
         """
@@ -239,6 +274,16 @@ class Limb(object):
         @return: unordered dict of joint name Keys to angle (rad) Values
         """
         return deepcopy(self._joint_angle)
+
+    def joint_ordered_angles(self):
+        """
+        Return all joint angles.
+
+        @rtype: [double]
+        @return: joint angles (rad) orded by joint_names from proximal to distal
+        (i.e. shoulder to wrist).
+        """
+        return [self._joint_angle[name] for name in self._joint_names]
 
     def joint_velocity(self, joint):
         """
@@ -327,6 +372,18 @@ class Limb(object):
                       L{Limb.Point}
         """
         return deepcopy(self._cartesian_effort)
+
+    def tip_state(self, tip_name):
+        """
+        Return Cartesian endpoint state for a given tip name
+
+        @rtype: EndpointState message
+        @return: pose, velocity, effort
+        """
+        try:
+            return deepcopy(self._tip_states.states[self._tip_states.names.index(tip_name)])
+        except ValueError:
+            return None
 
     def set_command_timeout(self, timeout):
         """
@@ -519,3 +576,145 @@ class Limb(object):
             raise_on_error=False,
             body=lambda: self.set_joint_positions(positions)
             )
+
+    def ik_request(self, pose,
+                   end_point='right_hand', joint_seed=None,
+                   nullspace_goal=None, nullspace_gain=0.4,
+                   allow_collision=False):
+        """
+        Inverse Kinematics request sent to IK Service
+
+        @type pose: geometry_msgs.Pose
+        @param pose: Cartesian pose of the end point
+        @type end_point: string
+        @param end_point: name of the end point (should be in URDF)
+        @type joint_seed: dict({str:float})
+        @param joint_seed: the joint angles for the initial IK guess (optional)
+        @type nullspace_goal: dict({str:float})
+        @param nullspace_goal: desired joints, or subset of joints, to bias the solver (optional)
+        @type nullspace_gain: double
+        @param nullspace_gain: gain used to bias toward the nullspace goal [0.0, 1.0] (optional)
+        @type allow_collision: bool
+        @param allow_collision: does not check if Ik solution is in collision
+        @rtype: dict({str:float})
+        @return: valid joint positions if exists.  False if no solution is found.
+        """
+        if not isinstance(pose, Pose):
+            rospy.logerr('pose is not of type geometry_msgs.msgs.Pose')
+            return False
+
+        # Add desired pose for inverse kinematics
+        ikreq = SolvePositionIKRequest()
+        hdr = Header(stamp=rospy.Time.now(), frame_id='base')
+        ikreq.pose_stamp.append(PoseStamped(header=hdr, pose=pose))
+        ikreq.tip_names.append(end_point)
+
+        # The joint seed is where the IK position solver starts its optimization
+        if joint_seed is not None:
+            ikreq.seed_mode = ikreq.SEED_USER
+            seed = JointState()
+            seed.name = joint_seed.keys()
+            seed.position = joint_seed.values()
+            ikreq.seed_angles.append(seed)
+
+        # Once the primary IK task is solved, the solver will then try to bias the
+        # the joint angles toward the goal joint configuration. The null space is
+        # the extra degrees of freedom the joints can move without affecting the
+        # primary IK task.
+        if nullspace_goal is not None:
+          ikreq.use_nullspace_goal.append(True)
+          # The nullspace goal can either be the full set or subset of joint angles
+          goal = JointState()
+          goal.names = nullspace_goal.keys()
+          goal.position = nullspace_goal.values()
+          ikreq.nullspace_goal.append(goal)
+          # The gain used to bias toward the nullspace goal. Must be [0.0, 1.0]
+          # If empty, the default gain of 0.4 will be used
+          ikreq.nullspace_gain.append(nullspace_gain)
+
+        try:
+            resp = self._iksvc(ikreq)
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.logerr("IK Service call failed: %s" % (e,))
+            return False
+        limb_joints = {}
+        # Check if result valid, and type of seed ultimately used to get solution
+        if (resp.result_type[0] > 0
+                or (allow_collision and resp.result_type[0] == resp.IK_IN_COLLISION)):
+            # Format solution into Limb API-compatible dictionary
+            limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
+        else:
+            rospy.logerr("INVALID POSE - No Valid Joint Solution Found.")
+            return False
+        return limb_joints
+
+    def fk_request(self, joint_angles,
+                   end_point='right_hand'):
+        """
+        Forward Kinematics request sent to FK Service
+
+        @type joint_angles: dict({str:float})
+        @param joint_angles: the arm's joint positions
+        @type end_point: string
+        @param end_point: name of the end point (should be in URDF)
+        @return: Forward Kinematics response from FK service
+        """
+        fkreq = SolvePositionFKRequest()
+        # Add desired pose for forward kinematics
+        joints = JointState()
+        joints.name = joint_angles.keys()
+        joints.position = joint_angles.values()
+        fkreq.configuration.append(joints)
+        # Request forward kinematics from base to end_point
+        fkreq.tip_names.append(end_point)
+        try:
+            resp = self._fksvc(fkreq)
+        except (rospy.ServiceException, rospy.ROSException), e:
+            rospy.logerr("FK Service call failed: %s" % (e,))
+            return False
+        return resp
+
+    def joint_angles_to_cartesian_pose(self, joint_angles,
+                                       end_point='right_hand'):
+        """
+        Convert joint angles to a Cartesian Pose. Calls FK service
+
+        @type joint_angles: dict({str:float})
+        @param joint_angles: the arm's joint positions
+        @type end_point: string
+        @param end_point: name of the end point (should be in URDF)
+        @rtype: geometry_msgs.Pose
+        @return: cartesian pose associated with joint state
+        """
+        resp = self.fk_request(joint_angles, end_point)
+
+        if resp is None:
+            rospy.logerr("Failed to get cartesian pose - check FK server.")
+            return None
+        if not resp.isValid[0]:
+            rospy.loginfo("INVALID JOINTS - No Cartesian Solution Found.")
+            return None
+        return resp.pose_stamp[0].pose
+
+    def fk_request_in_collision(self, joint_angles,
+                                end_point='right_hand'):
+        """
+        Checks if the arm will be in collision with these joint angles.
+        Calls FK service
+
+        @type joint_angles: dict({str:float})
+        @param joint_angles: the arm's joint positions
+        @type end_point: string
+        @param end_point: name of the end point (should be in URDF)
+        @type pose: geometry_msgs.Pose
+        @rtype: bool
+        @return: True if in collision
+        """
+        resp = self.fk_request(joint_angles, end_point)
+        if resp is None:
+            rospy.logerr("Failed to get cartesian pose - check FK server.")
+            return True
+        if not resp.isValid[0]:
+            rospy.loginfo("INVALID JOINTS - No Cartesian Solution Found.")
+            return True
+        return resp.inCollision[0]

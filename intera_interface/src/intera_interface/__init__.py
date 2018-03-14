@@ -1,4 +1,4 @@
-# Copyright (c) 2013-2017, Rethink Robotics Inc.
+# Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,12 @@
 from .camera import Cameras
 from .digital_io import DigitalIO
 from .gripper import Gripper
+from .clicksmart_plate import SimpleClickSmartGripper
+from .gripper_factory import get_current_gripper_interface
 from .cuff import Cuff
 from .head import Head
 from .head_display import HeadDisplay
+from .joint_limits import JointLimits
 from .lights import Lights
 from .limb import Limb
 from .navigator import Navigator

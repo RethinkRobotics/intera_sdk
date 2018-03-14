@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# Copyright (c) 2013-2017, Rethink Robotics Inc.
+# Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,12 +95,12 @@ class CalibrateArm(object):
         l.set_joint_position_speed(speed=0.3)
         return cal_result
 
-def gripper_removed(side):
+def is_gripper_removed():
     """
     Verify grippers are removed for calibration.
     """
     try:
-        gripper = intera_interface.Gripper(side)
+        gripper = intera_interface.get_current_gripper_interface()
     except Exception, e:
         return True
     rospy.logerr("Calibration Client: Cannot calibrate with grippers attached."
@@ -123,7 +123,7 @@ def main():
     gripper_warn = ("IMPORTANT: Make sure to remove grippers and other"
                     " attachments before running Calibrate.")
     rospy.loginfo(gripper_warn)
-    if not gripper_removed(args.limb):
+    if not is_gripper_removed():
         return 1
 
     ca = CalibrateArm(arm)

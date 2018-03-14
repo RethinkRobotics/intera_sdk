@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2013-2017, Rethink Robotics Inc.
+# Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -71,11 +71,11 @@ class Trajectory(object):
         self.gripper_name = '_'.join([limb, 'gripper'])
         #gripper interface - for gripper command playback
         try:
-            self.gripper = intera_interface.Gripper(limb)
+            self.gripper = intera_interface.Gripper(self.gripper_name)
         except:
             self.gripper = None
             rospy.loginfo("Did not detect a connected electric gripper.")
-            
+
         #flag to signify the arm trajectories have begun executing
         self._arm_trajectory_started = False
         #reentrant lock to prevent same-thread lockout
