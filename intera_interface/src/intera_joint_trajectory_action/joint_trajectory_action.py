@@ -456,9 +456,14 @@ class JointTrajectoryActionServer(object):
                 if (self._goal_error[error[0]] > 0
                         and self._goal_error[error[0]] < math.fabs(error[1])):
                     return error[0]
+            foobar = self._get_current_velocities(joint_names)
             if (self._stopped_velocity > 0.0 and
-                max([abs(cur_vel) for cur_vel in self._get_current_velocities(joint_names)]) >
+                max([abs(cur_vel) for cur_vel in foobar]) >
                     self._stopped_velocity):
+                for idx, cur_vel in enumerate(foobar):
+                    if abs(cur_vel) > self._stopped_velocity:
+                        rospy.logerr("{0} rad/s Max Goal Velocity Threshold Exceeded on Joint {1} at {2}".format(
+                             self._stopped_velocity, joint_names[idx], cur_vel))
                 return False
             else:
                 return True
