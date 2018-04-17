@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2013-2017, Rethink Robotics Inc.
+# Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -146,9 +146,9 @@ Related examples:
         help='path to input file'
     )
     parser.add_argument(
-        "-l", "--limb", dest="limb", default=valid_limbs[0],
+        "-a", "--arm", dest="arm", default=valid_limbs[0],
         choices=valid_limbs,
-        help="Limb on which to run the joint posotion file playback example.")
+        help="Arm on which to run the joint position file playback example.")
     parser.add_argument(
         '-l', '--loops', type=int, default=1,
         help='number of times to loop the input file. 0=infinite.'
@@ -169,7 +169,7 @@ Related examples:
     print("Enabling robot... ")
     rs.enable()
 
-    map_file(args.file, args.limb, args.loops)
+    map_file(args.file, args.arm, args.loops)
 
 
 if __name__ == '__main__':
