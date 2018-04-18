@@ -24,16 +24,168 @@ from intera_motion_interface.utility_functions import (int2bool, bool2int, boolT
 import intera_interface
 from intera_interface import CHECK_VERSION
 
+class ConstrainedZeroG(object):
+    """
+    Send interaction commands to place the robot in constrained zero-g mode
+    """
+
+    def __init__(self, args):
+        self.pub = rospy.Publisher('/robot/limb/right/interaction_control_command',
+                              InteractionControlCommand, queue_size = 1)
+        rospy.sleep(0.5)
+
+        self.repeat = False
+        if args.rate > 0:
+            self.rate = rospy.Rate(args.rate)
+            self.repeat = True
+        elif args.rate == 0:
+            rospy.logwarn('Interaction control options will be set only once!')
+        elif args.rate < 0:
+            rospy.logerr('Invalid publish rate!')
+
+        # set the interaction control options in the current configuration
+        interaction_options = InteractionOptions()
+
+        # if one of the options is set
+        unconstrained_axes_default = [0, 0, 0, 0, 0, 0]
+        unconstrained_axes = unconstrained_axes_default
+
+        # create a list of the constrained zero G modes
+        sum_mode_list = sum(bool2int([args.position_only, args.orientation_only,
+                                      args.plane_horizontal, args.plane_vertical_xz,
+                                      args.plane_vertical_yz, args.nullspace_only]))
+
+        # create a list of the free axis options
+        free_axis_list = bool2int([args.position_x, args.position_y, args.position_z,
+                                   args.orientation_x, args.orientation_y, args.orientation_z])
+        sum_free_axis_list = sum(free_axis_list)
+
+        zero_stiffness_axes = boolToggle(args.constrained_axes)
+        sum_zero_stiffness_axes = sum(zero_stiffness_axes)
+
+        if (sum_mode_list==0 and sum_zero_stiffness_axes==0 and sum_free_axis_list==0):
+            rospy.logerr('You need to either set one of the options or specify the ' \
+                         'desired axes of arbitrary movement!')
+            rospy.logerr('The movement of endpoint will be constrained in all directions!')
+
+        if (sum_mode_list>1 and sum_zero_stiffness_axes==0 and sum_free_axis_list==0):
+            rospy.logerr('You can set only one of the options among "pos_only", "ori_only", ' \
+                         '"plane_hor", and "plane_ver"!')
+            rospy.logerr('The movement of endpoint will be constrained in all directions!')
+
+        # give an error if the mode options as well as the individual axis options are set
+        if (sum_mode_list==1 and sum_zero_stiffness_axes==0 and sum_free_axis_list>0):
+            rospy.logerr('The individual axis options cannot be used together with the mode options!')
+            rospy.logerr('The movement of endpoint will be constrained in all directions!')
+
+        # give an error when the axes are specified by more than one method
+        if (sum_mode_list==0 and sum_zero_stiffness_axes>0 and sum_free_axis_list>0):
+            rospy.logerr('You can only set the axes either by an array or individual options!')
+            rospy.logerr('The movement of endpoint will be constrained in all directions!')
+
+        if (sum_mode_list==1 and sum_zero_stiffness_axes==0 and sum_free_axis_list>=0):
+            if args.position_only:
+                unconstrained_axes = [1, 1, 1, 0, 0, 0]
+            if args.orientation_only:
+                unconstrained_axes = [0, 0, 0, 1, 1, 1]
+            if args.plane_horizontal:
+                unconstrained_axes = [1, 1, 0, 0, 0, 0]
+            if args.plane_vertical_xz:
+                unconstrained_axes = [1, 0, 1, 0, 0, 0]
+            if args.plane_vertical_yz:
+                unconstrained_axes = [0, 1, 1, 0, 0, 0]
+            if args.nullspace_only:
+                unconstrained_axes = [0, 0, 0, 0, 0, 0]
+
+        # if the axes are specified by an array
+        if (sum_mode_list==0 and sum_zero_stiffness_axes>0 and sum_free_axis_list==0):
+            unconstrained_axes = zero_stiffness_axes
+
+        # if the axes are specified by individual options
+        if (sum_mode_list==0 and sum_zero_stiffness_axes==0 and sum_free_axis_list>0):
+            unconstrained_axes = free_axis_list
+
+        # set the stiffness to zero by default
+        interaction_options.set_K_impedance([0, 0, 0, 0, 0, 0])
+
+        # set the axes with maximum stiffness
+        interaction_options.set_max_impedance(boolToggle(int2bool(unconstrained_axes)))
+
+        interaction_options.set_in_endpoint_frame(args.in_endpoint_frame)
+
+        # set nullspace stiffness to zero if nullspace_only option is provided
+        if args.nullspace_only:
+            K_nullspace = [0, 0, 0, 0, 0, 0, 0]
+        else:
+            K_nullspace = args.K_nullspace
+
+        interaction_options.set_K_nullspace(K_nullspace)
+
+        if len(args.interaction_frame) < 7:
+            rospy.logerr('The number of elements must be 7!')
+        elif len(args.interaction_frame) == 7:
+            quat_sum_square = (args.interaction_frame[3]*args.interaction_frame[3]
+                              + args.interaction_frame[4]*args.interaction_frame[4]
+                              + args.interaction_frame[5]*args.interaction_frame[5]
+                              + args.interaction_frame[6]*args.interaction_frame[6])
+            if quat_sum_square  < 1.0 + 1e-7 and quat_sum_square > 1.0 - 1e-7:
+                interaction_frame = Pose()
+                interaction_frame.position.x = args.interaction_frame[0]
+                interaction_frame.position.y = args.interaction_frame[1]
+                interaction_frame.position.z = args.interaction_frame[2]
+                interaction_frame.orientation.w = args.interaction_frame[3]
+                interaction_frame.orientation.x = args.interaction_frame[4]
+                interaction_frame.orientation.y = args.interaction_frame[5]
+                interaction_frame.orientation.z = args.interaction_frame[6]
+                interaction_options.set_interaction_frame(interaction_frame)
+            else:
+                rospy.logerr('Invalid input to quaternion! The quaternion must be a unit quaternion!')
+        else:
+            rospy.logerr('Invalid input to interaction_frame!')
+
+        # always enable the rotations for constrained zero-G
+        interaction_options.set_rotations_for_constrained_zeroG(True)
+
+        self.msg = interaction_options.to_msg()
+
+    def send_msg(self):
+        try:
+            # print the resultant interaction options once
+            rospy.loginfo(self.msg)
+            self.pub.publish(self.msg)
+            rs = intera_interface.RobotEnable(CHECK_VERSION)
+            if self.repeat:
+                while not rospy.is_shutdown() and rs.state().enabled:
+                    self.rate.sleep()
+                    self.pub.publish(self.msg)
+        except rospy.ROSInterruptException:
+            rospy.logerr('Keyboard interrupt detected from the user. %s',
+                         'Exiting the node...')
+        if not rs.state().enabled:
+            self.send_position_cmd()
+
+    def send_position_cmd(self):
+        # send a message to put the robot back into position mode
+        position_mode = InteractionOptions()
+        position_mode.set_interaction_control_active(False)
+        self.pub.publish(position_mode.to_msg())
+        rospy.loginfo('Sending position command before shutdown')
+        rospy.sleep(0.5)
+
+
 def main():
     """
     Initiate constrained zero-G with a desired behavior from the current pose.
     The desired behavior can be specified by the optional arguments. By default,
     all directions will be set unconstrained when no options are provided.
     Note that the arm is not commanded to move but it will have the specified
-    interaction control behavior. If publish rate is 0 where the interaction
-    control command is only published once, after entering and exiting regular
-    zero-G, the arm will return to normal position mode. Also, regardless of
-    the publish rate, the regular zero-G behavior will not be affected by this.
+    interaction control behavior.
+
+    If publish the rate is 0, the interaction control command is only published
+    once; otherwise a last position command will be sent when the script exits.
+    For non-zero publishing rates, the arm will go back into constrained zero-G
+    if the arm's zero-g button is pressed and relased. Future motion commands
+    will use the interaction parameters set in the trajectory options.
 
     Call using:
     $ rosrun intera_examples constrained_zeroG.py  [arguments: see below]
@@ -76,6 +228,9 @@ def main():
 
     -r 20
     --> Set desired publish rate (Hz)
+
+    -r 0
+    --> The interaction command is published once, and the arm stays in that state
     """
 
     arg_fmt = argparse.RawDescriptionHelpFormatter
@@ -135,134 +290,14 @@ def main():
     parser.add_argument(
         "-r",  "--rate", type=int, default=10,
         help="A desired publish rate for updating interaction control commands (10Hz by default) -- 0 if we want to publish it only once")
+
     args = parser.parse_args(rospy.myargv()[1:])
 
-    try:
-        rospy.init_node('set_interaction_options_py')
-        pub = rospy.Publisher('/robot/limb/right/interaction_control_command', InteractionControlCommand, queue_size = 1)
-        rospy.sleep(0.5)
-
-        if args.rate > 0:
-            rate = rospy.Rate(args.rate)
-        elif args.rate == 0:
-            rospy.logwarn('Interaction control options will be set only once!')
-        elif args.rate < 0:
-            rospy.logerr('Invalid publish rate!')
-
-        # set the interaction control options in the current configuration
-        interaction_options = InteractionOptions()
-
-        # if one of the options is set
-        unconstrained_axes_default = [0, 0, 0, 0, 0, 0]
-        unconstrained_axes = unconstrained_axes_default
-
-        # create a list of the constrained zero G modes
-        sum_mode_list = sum(bool2int([args.position_only, args.orientation_only, args.plane_horizontal, args.plane_vertical_xz, args.plane_vertical_yz, args.nullspace_only]))
-
-        # create a list of the free axis options
-        free_axis_list = bool2int([args.position_x, args.position_y, args.position_z, args.orientation_x, args.orientation_y, args.orientation_z])
-        sum_free_axis_list = sum(free_axis_list)
-
-        zero_stiffness_axes = boolToggle(args.constrained_axes)
-        sum_zero_stiffness_axes = sum(zero_stiffness_axes)
-
-        if (sum_mode_list==0 and sum_zero_stiffness_axes==0 and sum_free_axis_list==0):
-            rospy.logerr('You need to either set one of the options or specify the desired axes of arbitrary movement! The movement of endpoint will be constrained in all directions!')
-
-        if (sum_mode_list>1 and sum_zero_stiffness_axes==0 and sum_free_axis_list==0):
-            rospy.logerr('You can set only one of the options among "pos_only", "ori_only", "plane_hor", and "plane_ver"! The movement of endpoint will be constrained in all directions!')
-
-        # give an error if the mode options as well as the individual axis options are set
-        if (sum_mode_list==1 and sum_zero_stiffness_axes==0 and sum_free_axis_list>0):
-            rospy.logerr('The individual axis options cannot be used together with the mode options! The movement of endpoint will be constrained in all directions!')
-
-        # give an error when the axes are specified by more than one method
-        if (sum_mode_list==0 and sum_zero_stiffness_axes>0 and sum_free_axis_list>0):
-            rospy.logerr('You can only set the axes either by an array or individual options! The movement of endpoint will be constrained in all directions!')
-
-        if (sum_mode_list==1 and sum_zero_stiffness_axes==0 and sum_free_axis_list>=0):
-            if args.position_only:
-                unconstrained_axes = [1, 1, 1, 0, 0, 0]
-            if args.orientation_only:
-                unconstrained_axes = [0, 0, 0, 1, 1, 1]
-            if args.plane_horizontal:
-                unconstrained_axes = [1, 1, 0, 0, 0, 0]
-            if args.plane_vertical_xz:
-                unconstrained_axes = [1, 0, 1, 0, 0, 0]
-            if args.plane_vertical_yz:
-                unconstrained_axes = [0, 1, 1, 0, 0, 0]
-            if args.nullspace_only:
-                unconstrained_axes = [0, 0, 0, 0, 0, 0]
-
-        # if the axes are specified by an array
-        if (sum_mode_list==0 and sum_zero_stiffness_axes>0 and sum_free_axis_list==0):
-            unconstrained_axes = zero_stiffness_axes
-
-        # if the axes are specified by individual options
-        if (sum_mode_list==0 and sum_zero_stiffness_axes==0 and sum_free_axis_list>0):
-            unconstrained_axes = free_axis_list
-
-        # set the stiffness to zero by default
-        interaction_options.set_K_impedance([0, 0, 0, 0, 0, 0])
-
-        # set the axes with maximum stiffness
-        interaction_options.set_max_impedance(boolToggle(int2bool(unconstrained_axes)))
-
-        interaction_options.set_in_endpoint_frame(args.in_endpoint_frame)
-
-        # set nullspace stiffness to zero if nullspace_only option is provided
-        if args.nullspace_only:
-            K_nullspace = [0, 0, 0, 0, 0, 0, 0]
-        else:
-            K_nullspace = args.K_nullspace
-
-        interaction_options.set_K_nullspace(K_nullspace)
-
-        if len(args.interaction_frame) < 7:
-            rospy.logerr('The number of elements must be 7!')
-        elif len(args.interaction_frame) == 7:
-            quat_sum_square = args.interaction_frame[3]*args.interaction_frame[3] + args.interaction_frame[4]*args.interaction_frame[4]
-            + args.interaction_frame[5]*args.interaction_frame[5] + args.interaction_frame[6]*args.interaction_frame[6]
-            if quat_sum_square  < 1.0 + 1e-7 and quat_sum_square > 1.0 - 1e-7:
-                interaction_frame = Pose()
-                interaction_frame.position.x = args.interaction_frame[0]
-                interaction_frame.position.y = args.interaction_frame[1]
-                interaction_frame.position.z = args.interaction_frame[2]
-                interaction_frame.orientation.w = args.interaction_frame[3]
-                interaction_frame.orientation.x = args.interaction_frame[4]
-                interaction_frame.orientation.y = args.interaction_frame[5]
-                interaction_frame.orientation.z = args.interaction_frame[6]
-                interaction_options.set_interaction_frame(interaction_frame)
-            else:
-                rospy.logerr('Invalid input to quaternion! The quaternion must be a unit quaternion!')
-        else:
-            rospy.logerr('Invalid input to interaction_frame!')
-
-        # always enable the rotations for constrained zero-G
-        interaction_options.set_rotations_for_constrained_zeroG(True)
-
-        msg = interaction_options.to_msg()
-
-        # print the resultant interaction options once
-        rospy.loginfo(msg)
-        pub.publish(msg)
-
-        rs = intera_interface.RobotEnable(CHECK_VERSION)
-        if args.rate > 0:
-            while not rospy.is_shutdown() and rs.state().enabled:
-                rate.sleep()
-                pub.publish(msg)
-
-    except rospy.ROSInterruptException:
-        rospy.logerr('Keyboard interrupt detected from the user. %s',
-                     'Exiting the node...')
-
-    if not rs.state().enabled:
-        # send a message to put the robot back into position mode
-        position_mode = InteractionOptions()
-        position_mode.set_interaction_control_active(False)
-        pub.publish(position_mode.to_msg())
-        rospy.sleep(0.5)
+    rospy.init_node('constrained_zeroG_py')
+    czg = ConstrainedZeroG(args)
+    if args.rate != 0:
+        rospy.on_shutdown(czg.send_position_cmd)
+    czg.send_msg()
 
 if __name__ == '__main__':
     main()
