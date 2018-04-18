@@ -32,5 +32,4 @@ from .settings import (
     SDK_VERSION,
     CHECK_VERSION,
     VERSIONS_SDK2ROBOT,
-    VERSIONS_SDK2GRIPPER,
 )
