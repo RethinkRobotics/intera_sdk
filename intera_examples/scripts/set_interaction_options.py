@@ -15,96 +15,11 @@
 # limitations under the License.
 
 import rospy
-from intera_core_msgs.msg import InteractionControlCommand
 import argparse
 from geometry_msgs.msg import Pose
-from intera_motion_interface import InteractionOptions
+from intera_core_msgs.msg import InteractionControlCommand
+from intera_motion_interface import (InteractionOptions, InteractionPublisher)
 from intera_motion_interface.utility_functions import int2bool
-
-import intera_interface
-from intera_interface import CHECK_VERSION
-
-class SetInteractionOptions(object):
-    """
-    Send Interaction Options to robot
-    """
-
-    def __init__(self, args):
-        self.pub = rospy.Publisher('/robot/limb/right/interaction_control_command',
-                                  InteractionControlCommand, queue_size = 1)
-        rospy.sleep(0.5)
-
-        self.repeat = False
-        if args.rate > 0:
-            self.rate = rospy.Rate(args.rate)
-            self.repeat = True
-        elif args.rate == 0:
-            rospy.logwarn('Interaction control options will be set only once!')
-        elif args.rate < 0:
-            rospy.logerr('Invalid publish rate!')
-
-        # set the interaction control options in the current configuration
-        interaction_options = InteractionOptions()
-
-        interaction_options.set_interaction_control_active(int2bool(args.interaction_active))
-        interaction_options.set_K_impedance(args.K_impedance)
-        interaction_options.set_max_impedance(int2bool(args.max_impedance))
-        interaction_options.set_interaction_control_mode(args.interaction_control_mode)
-        interaction_options.set_in_endpoint_frame(args.in_endpoint_frame)
-        interaction_options.set_force_command(args.force_command)
-        interaction_options.set_K_nullspace(args.K_nullspace)
-        if len(args.interaction_frame) < 7:
-            rospy.logerr('The number of elements must be 7!')
-        elif len(args.interaction_frame) == 7:
-            quat_sum_square = (args.interaction_frame[3]*args.interaction_frame[3]
-                              + args.interaction_frame[4]*args.interaction_frame[4]
-                              + args.interaction_frame[5]*args.interaction_frame[5]
-                              + args.interaction_frame[6]*args.interaction_frame[6])
-            if quat_sum_square  < 1.0 + 1e-7 and quat_sum_square > 1.0 - 1e-7:
-                interaction_frame = Pose()
-                interaction_frame.position.x = args.interaction_frame[0]
-                interaction_frame.position.y = args.interaction_frame[1]
-                interaction_frame.position.z = args.interaction_frame[2]
-                interaction_frame.orientation.w = args.interaction_frame[3]
-                interaction_frame.orientation.x = args.interaction_frame[4]
-                interaction_frame.orientation.y = args.interaction_frame[5]
-                interaction_frame.orientation.z = args.interaction_frame[6]
-                interaction_options.set_interaction_frame(interaction_frame)
-            else:
-                rospy.logerr('Invalid input to quaternion! The quaternion must be a unit quaternion!')
-        else:
-            rospy.logerr('Invalid input to interaction_frame!')
-
-        interaction_options.set_disable_damping_in_force_control(args.disable_damping_in_force_control)
-        interaction_options.set_disable_reference_resetting(args.disable_reference_resetting)
-        interaction_options.set_rotations_for_constrained_zeroG(args.rotations_for_constrained_zeroG)
-
-        self.msg = interaction_options.to_msg()
-
-    def send_msg(self):
-        try:
-            # print the resultant interaction options once
-            rospy.loginfo(self.msg)
-            self.pub.publish(self.msg)
-            rs = intera_interface.RobotEnable(CHECK_VERSION)
-            if self.repeat:
-                while not rospy.is_shutdown() and rs.state().enabled:
-                    self.rate.sleep()
-                    self.pub.publish(self.msg)
-        except rospy.ROSInterruptException:
-            rospy.logerr('Keyboard interrupt detected from the user. %s',
-                         'Exiting the node...')
-        if not rs.state().enabled:
-            self.send_position_cmd()
-
-    def send_position_cmd(self):
-        # send a message to put the robot back into position mode
-        position_mode = InteractionOptions()
-        position_mode.set_interaction_control_active(False)
-        self.pub.publish(position_mode.to_msg())
-        rospy.loginfo('Sending position command before shutdown')
-        rospy.sleep(0.5)
-
 
 def main():
     """
@@ -204,12 +119,43 @@ def main():
         help="A desired publish rate for updating interaction control commands (10Hz by default) -- 0 if we want to publish it only once")
 
     args = parser.parse_args(rospy.myargv()[1:])
-
     rospy.init_node('set_interaction_options_py')
-    setIC = SetInteractionOptions(args)
+
+    # set the interaction control options in the current configuration
+    interaction_options = InteractionOptions()
+
+    interaction_options.set_interaction_control_active(int2bool(args.interaction_active))
+    interaction_options.set_K_impedance(args.K_impedance)
+    interaction_options.set_max_impedance(int2bool(args.max_impedance))
+    interaction_options.set_interaction_control_mode(args.interaction_control_mode)
+    interaction_options.set_in_endpoint_frame(args.in_endpoint_frame)
+    interaction_options.set_force_command(args.force_command)
+    interaction_options.set_K_nullspace(args.K_nullspace)
+
+    if len(args.interaction_frame) == 7:
+        interaction_frame = Pose()
+        interaction_frame.position.x = args.interaction_frame[0]
+        interaction_frame.position.y = args.interaction_frame[1]
+        interaction_frame.position.z = args.interaction_frame[2]
+        interaction_frame.orientation.w = args.interaction_frame[3]
+        interaction_frame.orientation.x = args.interaction_frame[4]
+        interaction_frame.orientation.y = args.interaction_frame[5]
+        interaction_frame.orientation.z = args.interaction_frame[6]
+        interaction_options.set_interaction_frame(interaction_frame)
+    else:
+        rospy.logerr('Invalid input to interaction_frame. Must be 7 elements.')
+
+    interaction_options.set_disable_damping_in_force_control(args.disable_damping_in_force_control)
+    interaction_options.set_disable_reference_resetting(args.disable_reference_resetting)
+    interaction_options.set_rotations_for_constrained_zeroG(args.rotations_for_constrained_zeroG)
+
+    msg = interaction_options.to_msg()
+
+    ic_pub = InteractionPublisher()
     if args.rate != 0:
-        rospy.on_shutdown(setIC.send_position_cmd)
-    setIC.send_msg()
+        rospy.on_shutdown(ic_pub.send_position_mode_cmd)
+    ic_pub.send_command(msg, args.rate)
+
 
 if __name__ == '__main__':
     main()
