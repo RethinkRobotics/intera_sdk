@@ -149,12 +149,14 @@ def main():
     interaction_options.set_disable_reference_resetting(args.disable_reference_resetting)
     interaction_options.set_rotations_for_constrained_zeroG(args.rotations_for_constrained_zeroG)
 
-    msg = interaction_options.to_msg()
+    # print the resultant interaction options once
+    rospy.loginfo(interaction_options.to_msg())
 
     ic_pub = InteractionPublisher()
+    rospy.sleep(0.5)
     if args.rate != 0:
         rospy.on_shutdown(ic_pub.send_position_mode_cmd)
-    ic_pub.send_command(msg, args.rate)
+    ic_pub.send_command(interaction_options, args.rate)
 
 
 if __name__ == '__main__':
