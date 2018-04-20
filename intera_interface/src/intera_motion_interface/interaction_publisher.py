@@ -51,8 +51,6 @@ class InteractionPublisher(object):
         if pub_rate > 0:
             rate = rospy.Rate(pub_rate)
             repeat = True
-        elif pub_rate == 0:
-            rospy.logwarn('Interaction control options will be set only once!')
         elif pub_rate < 0:
             rospy.logerr('Invalid publish rate!')
 
@@ -67,8 +65,9 @@ class InteractionPublisher(object):
         except rospy.ROSInterruptException:
             rospy.logerr('Keyboard interrupt detected from the user. %s',
                          'Exiting the node...')
-        if not self.enable.state().enabled:
-            self.send_position_mode_cmd()
+        finally:
+            if repeat:
+                self.send_position_mode_cmd()
 
     def send_position_mode_cmd(self):
         '''

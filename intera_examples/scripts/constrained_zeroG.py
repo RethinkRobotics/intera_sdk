@@ -78,7 +78,8 @@ def main():
     --> Set desired publish rate (Hz)
 
     -r 0
-    --> The interaction command is published once, and the arm stays in that state
+    --> The interaction command is published once and exits. The arm can remain
+        in interaction control after this script.
     """
 
     arg_fmt = argparse.RawDescriptionHelpFormatter
@@ -137,10 +138,10 @@ def main():
         help="A list of desired nullspace stiffnesses, one for each of the 7 joints (a single value can be provided to apply the same value to all the directions) -- units are in (Nm/rad)")
     parser.add_argument(
         "-r",  "--rate", type=int, default=10,
-        help="A desired publish rate for updating interaction control commands (10Hz by default) -- 0 if we want to publish it only once")
+        help="A desired publish rate for updating interaction control commands (10Hz by default) -- a rate 0 publish once and exits which can cause the arm to remain in interaction control.")
 
     args = parser.parse_args(rospy.myargv()[1:])
-    rospy.init_node('constrained_zeroG_py')
+    rospy.init_node('constrained_zeroG')
 
     # set the interaction control options in the current configuration
     interaction_options = InteractionOptions()
@@ -235,6 +236,7 @@ def main():
 
     # always enable the rotations for constrained zero-G
     interaction_options.set_rotations_for_constrained_zeroG(True)
+
     # print the resultant interaction options once
     rospy.loginfo(interaction_options.to_msg())
 
@@ -243,6 +245,8 @@ def main():
     if args.rate != 0:
         rospy.on_shutdown(ic_pub.send_position_mode_cmd)
     ic_pub.send_command(interaction_options, args.rate)
+    if args.rate == 0:
+        rospy.sleep(0.5)
 
 
 if __name__ == '__main__':
