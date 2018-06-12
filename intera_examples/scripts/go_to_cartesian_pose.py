@@ -160,7 +160,7 @@ def main():
             poseStamped.pose = pose
 
             if not args.joint_angles:
-                #using current joint angles for nullspace bais if not provided
+                # using current joint angles for nullspace bais if not provided
                 joint_angles = limb.joint_ordered_angles()
                 waypoint.set_cartesian_pose(poseStamped, args.tip_name, joint_angles)
             else:
