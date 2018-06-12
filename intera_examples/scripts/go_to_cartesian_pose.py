@@ -158,7 +158,15 @@ def main():
                     pose.orientation.w = args.orientation[3]
             poseStamped = PoseStamped()
             poseStamped.pose = pose
-            waypoint.set_cartesian_pose(poseStamped, args.tip_name, args.joint_angles)
+
+            if not args.joint_angles:
+                # using current joint angles for nullspace bais if not provided
+                joint_angles = limb.joint_ordered_angles()
+                waypoint.set_cartesian_pose(poseStamped, args.tip_name, joint_angles)
+            else:
+                waypoint.set_cartesian_pose(poseStamped, args.tip_name, args.joint_angles)
+
+
 
         rospy.loginfo('Sending waypoint: \n%s', waypoint.to_string())
 
