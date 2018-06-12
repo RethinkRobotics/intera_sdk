@@ -47,8 +47,8 @@ def main():
     -> Jog arm with Relative Pose (in tip frame)
     -> x=0.01, y=0.02, z=0.03 meters, roll=0.1, pitch=0.2, yaw=0.3 radians
     -> The fixed position and orientation paramters will be ignored if provided
-
     """
+
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__)
@@ -106,6 +106,7 @@ def main():
                                          max_joint_speed_ratio=1.0)
         waypoint = MotionWaypoint(options = wpt_opts.to_msg(), limb = limb)
 
+
         joint_names = limb.joint_names()
 
         if args.joint_angles and len(args.joint_angles) != len(joint_names):
@@ -158,7 +159,15 @@ def main():
                     pose.orientation.w = args.orientation[3]
             poseStamped = PoseStamped()
             poseStamped.pose = pose
-            waypoint.set_cartesian_pose(poseStamped, args.tip_name, args.joint_angles)
+
+            if not args.joint_angles:
+                # using current joint angles for nullspace bais if not provided
+                joint_angles = limb.joint_ordered_angles()
+                waypoint.set_cartesian_pose(poseStamped, args.tip_name, joint_angles)
+            else:
+                waypoint.set_cartesian_pose(poseStamped, args.tip_name, args.joint_angles)
+
+
 
         rospy.loginfo('Sending waypoint: \n%s', waypoint.to_string())
 
