@@ -205,6 +205,18 @@ class MotionTrajectory(object):
         """
         return message_converter.convert_ros_message_to_dictionary(self._traj)
 
+    def from_dict(self, dictionary):
+        """
+        takes a dictionry string and converts it to the trajectory. This clears
+        all the data in this trajectory object. Returns true if this worked, or
+        false if it did not work
+        """
+        try:
+            self._traj=message_converter.convert_dictionary_to_ros_message('intera_motion_msgs/Trajectory', dictionary)
+            return True
+        except:
+            rospy.logerr('Could not convert string to trajectory message')
+            return False
     def to_string(self):
         """
         @return: a yaml-formatted string with the waypoint options
@@ -219,6 +231,21 @@ class MotionTrajectory(object):
         file_name = ensure_path_to_file_exists(file_name)
         with open(file_name, "w") as outfile:
             yaml.dump(self.to_dict(), outfile, default_flow_style=False)
+
+    def load_yaml_file(self, file_name):
+        """
+        loads the traj from a yaml file. This will overwrite all the
+        data currently in this trajectory.  Returns true if the reading works,
+        false otherwise.
+        @param file_name: location to read file.
+        """
+        file_name = ensure_path_to_file_exists(file_name)
+        try:
+            with open(file_name, "r") as outfile:
+                return self.from_dict(yaml.load(outfile))
+        except:
+            rospy.logerr('Could not open file traj yaml file')
+            return False
 
     def to_csv_file(self, file_name):
         """
