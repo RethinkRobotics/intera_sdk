@@ -217,6 +217,7 @@ class MotionTrajectory(object):
         except:
             rospy.logerr('Could not convert string to trajectory message')
             return False
+
     def to_string(self):
         """
         @return: a yaml-formatted string with the waypoint options

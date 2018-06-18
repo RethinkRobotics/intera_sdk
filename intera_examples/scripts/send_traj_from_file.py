@@ -27,7 +27,11 @@ from intera_motion_interface import (
 from intera_interface import Limb
 
 def main():
-
+    """
+    This is an example script to demonstrate the functionality of the MotionTrajectory
+    to read a yaml file. This script reads in the yaml file creates a trajectory object
+    and sends the trajectory to the robot.
+    """
     arg_fmt = argparse.RawDescriptionHelpFormatter
     parser = argparse.ArgumentParser(formatter_class=arg_fmt,
                                      description=main.__doc__)
