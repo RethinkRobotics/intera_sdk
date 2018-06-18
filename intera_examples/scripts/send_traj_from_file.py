@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#Shane Rozen-Levy
-# This code reads a trajectory from a file and sends it
 
 import rospy
 import argparse
