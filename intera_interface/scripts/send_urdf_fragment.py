@@ -19,15 +19,19 @@ import sys
 import argparse
 
 import rospy
-import xacro_jade
+try:
+    import xacro_jade as xacro
+except ImportError:
+    import xacro
+
 
 from intera_core_msgs.msg import (
     URDFConfiguration,
 )
 
 def xacro_parse(filename):
-    doc = xacro_jade.parse(None, filename)
-    xacro_jade.process_doc(doc, in_order=True)
+    doc = xacro.parse(None, filename)
+    xacro.process_doc(doc, in_order=True)
     return doc.toprettyxml(indent='  ')
 
 def send_urdf(parent_link, root_joint, urdf_filename, duration):
