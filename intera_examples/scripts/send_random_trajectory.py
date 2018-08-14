@@ -57,6 +57,12 @@ def main():
     -o ~/Desktop/fileName.bag
     --> Save the trajectory message to a bag file
 
+    --seed 1234
+    --> Set the seed in the random number generator before constructing the
+        trajectory. This allows for repeatable motion and is useful for
+        writing repeatable tests that use this script. Note: for a repeatable
+        test the starting pose of the robot must also be the same each time.
+
     -p
     --> Prints the trajectory to terminal before sending
 
@@ -101,6 +107,9 @@ def main():
     parser.add_argument(
         "--timeout", type=float, default=None,
         help="Max time in seconds to complete motion goal before returning. None is interpreted as an infinite timeout.")
+    parser.add_argument(
+        "--rng_seed", type=int, default=0,
+        help="specify a seed to pass to the random number generator. Set to zero to use default initialization.")
     args = parser.parse_args()
 
     if args.waypoint_count < 1:
@@ -134,7 +143,7 @@ def main():
         traj.append_waypoint(waypoint.to_msg())
 
         # Set up the random walk generator
-        walk = RandomWalk()
+        walk = RandomWalk(seed=args.rng_seed)
         limits = JointLimits()
         walk.set_lower_limits(limits.get_joint_lower_limits(limb.joint_names()))
         walk.set_upper_limits(limits.get_joint_upper_limits(limb.joint_names()))
