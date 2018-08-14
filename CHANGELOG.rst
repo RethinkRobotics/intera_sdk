@@ -1,3 +1,20 @@
+5.3.0 (2018-8-14)
+---------------------------------
+- Interaction controls examples now return to postion mode when complete
+- Added support for randomized trajectories using motion controller
+- Fixed quaternion issue for set interaction options examples
+- Added stop motion trajectory examples
+- Modifications for RobotAssemblyState message rename
+- Added InteractionPublisher class for simpler interaction control
+
+5.2.0 (2018-4-16)
+---------------------------------
+- Added intera_motion_interface package for the motion controller
+- Added support for ClickSmart
+- Added constrained ZeroG example using interaction control
+- Various examples fixs and updates
+- Added camera configuration support
+
 5.1.0 (2017-3-27)
 ---------------------------------
 - Moved to Apache 2.0 license
