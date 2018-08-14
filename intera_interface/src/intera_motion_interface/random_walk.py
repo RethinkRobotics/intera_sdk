@@ -24,7 +24,7 @@ class RandomWalk(object):
     This class is used to create a random walk in a bounded state space
     """
 
-    def __init__(self):
+    def __init__(self, seed = 0):
         """
         Constructor - creates an empty random walk object.
         Be sure to set the lower limits, upper limits, and past point before
@@ -37,6 +37,8 @@ class RandomWalk(object):
         self._dimension = None
         self._boundary_padding = 0.0
         self._maximum_distance = 1.0
+        if seed > 0:
+            random.seed(seed)
 
     def set_lower_limits(self, low):
         """
