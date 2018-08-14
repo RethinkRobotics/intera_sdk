@@ -178,10 +178,20 @@ class InteractionOptions(object):
           - None:  populate with vector of default values
           - Pose: copy all the elements
         """
-        if isinstance(interaction_frame, Pose):
-            self._data.interaction_frame = interaction_frame
-        else:
+        if not isinstance(interaction_frame, Pose):
             rospy.logerr('interaction_frame must be of type geometry_msgs.Pose')
+            return
+
+        # check for unit quaternion
+        quat_sum_square = (interaction_frame.orientation.w * interaction_frame.orientation.w
+                          + interaction_frame.orientation.x * interaction_frame.orientation.x
+                          + interaction_frame.orientation.y * interaction_frame.orientation.y
+                          + interaction_frame.orientation.z * interaction_frame.orientation.z)
+        if quat_sum_square  > 1.0 + 1e-7 or quat_sum_square < 1.0 - 1e-7:
+            rospy.logerr('Invalid input to quaternion! The quaternion must be a unit quaternion!')
+            return
+
+        self._data.interaction_frame = interaction_frame
 
     def set_endpoint_name(self, endpoint_name = default_endpoint_name):
         """

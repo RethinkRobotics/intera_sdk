@@ -3,6 +3,7 @@ from .motion_trajectory import MotionTrajectory
 from .motion_waypoint import MotionWaypoint
 from .motion_waypoint_options import MotionWaypointOptions
 from .interaction_options import InteractionOptions
+from .interaction_publisher import InteractionPublisher
 from .random_walk import RandomWalk
 from .utility_functions import (
     clamp_float_warn,
