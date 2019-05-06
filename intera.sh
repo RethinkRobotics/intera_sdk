@@ -26,8 +26,8 @@ robot_hostname="robot_hostname.local"
 your_ip="192.168.XXX.XXX"
 #your_hostname="my_computer.local"
 
-# Specify ROS distribution (e.g. indigo, hydro, etc.)
-ros_version="indigo"
+# Specify ROS distribution (e.g. kinetic, indigo, hydro, etc.)
+ros_version="kinetic"
 #-----------------------------------------------------------------------------#
 
 tf=$(mktemp)
@@ -136,11 +136,13 @@ in \${ros_setup}.\n"
 	# verify the user is running this script in the root of the catkin
 	# workspace and that the workspace has been compiled.
 	if [ ! -s "devel/setup.bash" ]; then
+	   if [ ! -s "install/setup.sh" ]; then
 		echo -ne "EXITING - \n1) Please verify that this script is being run \
 in the root of your catkin workspace.\n2) Please verify that your workspace \
 has been built (source /opt/ros/\${ros_version}/setup.sh; catkin_make).\n\
 3) Run this script again upon completion of your workspace build.\n"
 		exit 1
+	    fi
 	fi
 
 	[ -n "${your_ip}" ] && export ROS_IP="${your_ip}"
