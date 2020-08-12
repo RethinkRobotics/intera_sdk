@@ -625,7 +625,7 @@ class Limb(object):
           ikreq.use_nullspace_goal.append(True)
           # The nullspace goal can either be the full set or subset of joint angles
           goal = JointState()
-          goal.names = nullspace_goal.keys()
+          goal.name = nullspace_goal.keys()
           goal.position = nullspace_goal.values()
           ikreq.nullspace_goal.append(goal)
           # The gain used to bias toward the nullspace goal. Must be [0.0, 1.0]
