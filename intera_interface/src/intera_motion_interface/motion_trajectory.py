@@ -282,7 +282,7 @@ class MotionTrajectory(object):
             orientation = [pose.orientation.w, pose.orientation.x,
                            pose.orientation.y, pose.orientation.z]
             # If the endpoint pose has not been set
-            if not sum(position) or not sum(orientation):
+            if None in position or all(v == 0 for v in orientation):
                 new_wpt = MotionWaypoint(options = wpt.options, limb = self._limb)
                 new_wpt.set_joint_angles(joint_angles = wpt.joint_positions,
                                          active_endpoint = wpt.active_endpoint,
