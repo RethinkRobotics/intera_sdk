@@ -152,7 +152,7 @@ class Limb(object):
             queue_size=1,
             tcp_nodelay=True)
 
-        joint_state_topic = 'robot/joint_states'
+        joint_state_topic = '/robot/joint_states'
         _joint_state_sub = rospy.Subscriber(
             joint_state_topic,
             JointState,

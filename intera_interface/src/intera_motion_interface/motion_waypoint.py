@@ -174,6 +174,9 @@ class MotionWaypoint(object):
 
         if joint_angles:
             self._data.joint_positions = joint_angles
+        else:
+            self._data.joint_positions = MotionWaypoint.get_default_joint_angles()
+
 
     def to_msg(self):
         """

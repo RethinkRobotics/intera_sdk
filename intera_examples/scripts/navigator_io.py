@@ -25,25 +25,25 @@ import intera_interface
 def echo_input(nav_name='right'):
     nav = intera_interface.Navigator()
     def back_pressed(v):
-        print ("Button 'Back': {0}".format(nav.button_string_lookup(v)))
+        rospy.loginfo("Button 'Back': {0}".format(nav.button_string_lookup(v)))
 
     def rethink_pressed(v):
-        print ("Button 'Rethink': {0}".format(nav.button_string_lookup(v)))
+        rospy.loginfo ("Button 'Rethink': {0}".format(nav.button_string_lookup(v)))
 
     def circle_pressed(v):
-        print ("Button 'Circle': {0}".format(nav.button_string_lookup(v)))
+        rospy.loginfo ("Button 'Circle': {0}".format(nav.button_string_lookup(v)))
 
     def square_pressed(v):
-        print ("Button 'Square': {0}".format(nav.button_string_lookup(v)))
+        rospy.loginfo ("Button 'Square': {0}".format(nav.button_string_lookup(v)))
 
     def x_pressed(v):
-        print ("Button 'X': {0}".format(nav.button_string_lookup(v)))
+        rospy.loginfo ("Button 'X': {0}".format(nav.button_string_lookup(v)))
 
     def ok_pressed(v):
-        print ("Button 'OK': {0}".format(nav.button_string_lookup(v)))
+        rospy.loginfo ("Button 'OK': {0}".format(nav.button_string_lookup(v)))
 
     def wheel_moved(v):
-        print ("Wheel value: {0}".format(v))
+        rospy.loginfo ("Wheel value: {0}".format(v))
 
     nav.register_callback(back_pressed, '_'.join([nav_name, 'button_back']))
     nav.register_callback(rethink_pressed, '_'.join([nav_name, 'button_show']))
@@ -56,9 +56,9 @@ def echo_input(nav_name='right'):
     print ("Press input buttons on the right navigator, "
            "input will be echoed here.")
 
-    rate = rospy.Rate(1)
+    rate = rospy.Rate(10)
     i = 0
-    while not rospy.is_shutdown() and i < 10:
+    while not rospy.is_shutdown() and i < 100:
         rate.sleep()
         i += 1
 
