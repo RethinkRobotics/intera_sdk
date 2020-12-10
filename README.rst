@@ -7,6 +7,12 @@ This repository contains metapackages and files for installation/use of the Inte
 Additionally, this repositories contains the Python interface classes and examples for
 action servers and control of the Intera Robot from Rethink Robotics.
 
+Supported ROS Versions
+------------
+- Indigo
+- Kinetic
+- Melodic
+
 Installation
 ------------
 | Please follow the Getting Started wiki page for instructions on installation of the Intera SDK:
