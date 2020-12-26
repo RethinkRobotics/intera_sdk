@@ -138,12 +138,12 @@ class Limb(object):
             queue_size=1,
             tcp_nodelay=True)
 
-        _tip_states_sub = rospy.Subscriber(
-            ns + 'tip_states',
-            EndpointStates,
-            self._on_tip_states,
-            queue_size=1,
-            tcp_nodelay=True)
+        #_tip_states_sub = rospy.Subscriber(
+        #    ns + 'tip_states',
+        #    EndpointStates,
+        #    self._on_tip_states,
+        #    queue_size=1,
+        #    tcp_nodelay=True)
 
         _collision_state_sub = rospy.Subscriber(
             ns + 'collision_detection_state',
@@ -176,8 +176,8 @@ class Limb(object):
                                  timeout_msg=err_msg, timeout=5.0)
         err_msg = ("%s limb init failed to get current tip_states "
                    "from %s") % (self.name.capitalize(), ns + 'tip_states')
-        intera_dataflow.wait_for(lambda: self._tip_states is not None,
-                                 timeout_msg=err_msg, timeout=5.0)
+        #intera_dataflow.wait_for(lambda: self._tip_states is not None,
+        #                         timeout_msg=err_msg, timeout=5.0)
 
     def _on_joint_states(self, msg):
         for idx, name in enumerate(msg.name):
