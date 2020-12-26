@@ -163,8 +163,8 @@ class Limb(object):
         ns_pkn = "ExternalTools/" + limb + "/PositionKinematicsNode/"
         self._iksvc = rospy.ServiceProxy(ns_pkn + 'IKService', SolvePositionIK)
         self._fksvc = rospy.ServiceProxy(ns_pkn + 'FKService', SolvePositionFK)
-        rospy.wait_for_service(ns_pkn + 'IKService', 5.0)
-        rospy.wait_for_service(ns_pkn + 'FKService', 5.0)
+        rospy.wait_for_service(ns_pkn + 'IKService', 60.0)
+        rospy.wait_for_service(ns_pkn + 'FKService', 60.0)
 
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
