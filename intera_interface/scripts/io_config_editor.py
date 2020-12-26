@@ -51,7 +51,7 @@ def save_config(device, filename):
         # parse string so output can be nicely formatted
         json_config = json.loads(config)
         with open(filename, 'w') as f:
-            json.dump(json_config, f, ensure_ascii=False, sort_keys=True,
+            json.dump(json_config, f, ensure_ascii=True, sort_keys=True,
                 indent=2, separators=(",", ": "))
     else:
         rospy.logerr("Bad filename: '{}'".format(filename))
