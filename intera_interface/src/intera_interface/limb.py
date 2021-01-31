@@ -163,21 +163,21 @@ class Limb(object):
         ns_pkn = "ExternalTools/" + limb + "/PositionKinematicsNode/"
         self._iksvc = rospy.ServiceProxy(ns_pkn + 'IKService', SolvePositionIK)
         self._fksvc = rospy.ServiceProxy(ns_pkn + 'FKService', SolvePositionFK)
-        rospy.wait_for_service(ns_pkn + 'IKService', 5.0)
-        rospy.wait_for_service(ns_pkn + 'FKService', 5.0)
+        rospy.wait_for_service(ns_pkn + 'IKService', 25.0)
+        rospy.wait_for_service(ns_pkn + 'FKService', 25.0)
 
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
         intera_dataflow.wait_for(lambda: len(self._joint_angle.keys()) > 0,
-                                 timeout_msg=err_msg, timeout=5.0)
+                                 timeout_msg=err_msg, timeout=25.0)
         err_msg = ("%s limb init failed to get current endpoint_state "
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
         intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
-                                 timeout_msg=err_msg, timeout=5.0)
+                                 timeout_msg=err_msg, timeout=25.0)
         err_msg = ("%s limb init failed to get current tip_states "
                    "from %s") % (self.name.capitalize(), ns + 'tip_states')
         intera_dataflow.wait_for(lambda: self._tip_states is not None,
-                                 timeout_msg=err_msg, timeout=5.0)
+                                 timeout_msg=err_msg, timeout=25.0)
 
     def _on_joint_states(self, msg):
         for idx, name in enumerate(msg.name):
