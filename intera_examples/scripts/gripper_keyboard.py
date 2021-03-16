@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -47,12 +46,12 @@ def map_keyboard(limb):
     def offset_position(offset_pos):
         cmd_pos = max(min(gripper.get_position() + offset_pos, gripper.MAX_POSITION), gripper.MIN_POSITION)
         gripper.set_position(cmd_pos)
-        print("commanded position set to {0} m".format(cmd_pos))
+        print(("commanded position set to {0} m".format(cmd_pos)))
 
     def update_velocity(offset_vel):
         cmd_speed = max(min(gripper.get_cmd_velocity() + offset_vel, gripper.MAX_VELOCITY), gripper.MIN_VELOCITY)
         gripper.set_cmd_velocity(cmd_speed)
-        print("commanded velocity set to {0} m/s".format(cmd_speed))
+        print(("commanded velocity set to {0} m/s".format(cmd_speed)))
 
 
     original_deadzone = gripper.get_dead_zone()
@@ -89,15 +88,15 @@ def map_keyboard(limb):
                 done = True
             elif c in bindings:
                 cmd = bindings[c]
-                print("command: {0}".format(cmd[2]))
+                print(("command: {0}".format(cmd[2])))
                 cmd[0](*cmd[1])
             else:
                 print("key bindings: ")
                 print("  Esc: Quit")
                 print("  ?: Help")
-                for key, val in sorted(bindings.items(),
+                for key, val in sorted(list(bindings.items()),
                                        key=lambda x: x[1][2]):
-                    print("  %s: %s" % (key, val[2]))
+                    print(("  %s: %s" % (key, val[2])))
     # force shutdown call if caught by key handler
     rospy.signal_shutdown("Example finished.")
 

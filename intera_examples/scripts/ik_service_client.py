@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -90,7 +89,7 @@ def ik_service_client(limb = "right", use_advanced_options = False):
     try:
         rospy.wait_for_service(ns, 5.0)
         resp = iksvc(ikreq)
-    except (rospy.ServiceException, rospy.ROSException), e:
+    except (rospy.ServiceException, rospy.ROSException) as e:
         rospy.logerr("Service call failed: %s" % (e,))
         return False
 
@@ -104,7 +103,7 @@ def ik_service_client(limb = "right", use_advanced_options = False):
         rospy.loginfo("SUCCESS - Valid Joint Solution Found from Seed Type: %s" %
               (seed_str,))
         # Format solution into Limb API-compatible dictionary
-        limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
+        limb_joints = dict(list(zip(resp.joints[0].name, resp.joints[0].position)))
         rospy.loginfo("\nIK Joint Solution:\n%s", limb_joints)
         rospy.loginfo("------------------")
         rospy.loginfo("Response Message:\n%s", resp)

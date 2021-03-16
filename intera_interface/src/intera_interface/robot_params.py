@@ -32,7 +32,7 @@ class RobotParams(object):
         @rtype: list [str]
         @return: ordered list of camera names
         """
-        return self.get_camera_details().keys()
+        return list(self.get_camera_details().keys())
 
     def get_camera_details(self):
         """
@@ -143,6 +143,6 @@ class RobotParams(object):
         @param level: Level to color the text. Valid levels:
                       ["INFO", "WARN", "ERROR"]
         """
-        print(("{0}[{1}] {2}{3}").format(
+        print((("{0}[{1}] {2}{3}").format(
                         self._color_prefix.format(self._color_dict[level]),
-                        level, msg, self._color_suffix))
+                        level, msg, self._color_suffix)))
