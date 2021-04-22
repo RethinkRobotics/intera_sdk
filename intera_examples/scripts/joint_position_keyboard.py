@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -89,18 +88,18 @@ def map_keyboard(side):
                 cmd = bindings[c]
                 if c == '8' or c == 'i' or c == '9':
                     cmd[0](cmd[1])
-                    print("command: %s" % (cmd[2],))
+                    print(("command: %s" % (cmd[2],)))
                 else:
                     #expand binding to something like "set_j(right, 'j0', 0.1)"
                     cmd[0](*cmd[1])
-                    print("command: %s" % (cmd[2],))
+                    print(("command: %s" % (cmd[2],)))
             else:
                 print("key bindings: ")
                 print("  Esc: Quit")
                 print("  ?: Help")
-                for key, val in sorted(bindings.items(),
+                for key, val in sorted(list(bindings.items()),
                                        key=lambda x: x[1][2]):
-                    print("  %s: %s" % (key, val[2]))
+                    print(("  %s: %s" % (key, val[2])))
 
 def main():
     """RSDK Joint Position Example: Keyboard Control

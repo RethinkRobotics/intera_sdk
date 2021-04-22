@@ -20,7 +20,7 @@ import threading
 import uuid
 from threading import Lock
 import intera_dataflow
-from io_command import SetCommand
+from .io_command import SetCommand
 
 from intera_core_msgs.msg import (
     IODeviceConfiguration,
@@ -207,14 +207,14 @@ class IODeviceInterface(IOInterface):
         return a list of all signals
         """
         with self.state_mutex:
-            return copy.deepcopy(self.signals.keys())
+            return copy.deepcopy(list(self.signals.keys()))
 
     def get_signal_type(self, signal_name):
         """
         return the status for the given signal, or none
         """
         with self.state_mutex:
-            if signal_name in self.signals.keys():
+            if signal_name in list(self.signals.keys()):
                 return copy.deepcopy(self.signals[signal_name]['type'])
         return None
 
@@ -223,7 +223,7 @@ class IODeviceInterface(IOInterface):
         return the status for the given signal, or none
         """
         with self.state_mutex:
-            if signal_name in self.signals.keys():
+            if signal_name in list(self.signals.keys()):
                 return copy.deepcopy(self.signals[signal_name]['data'])
         return None
 
@@ -253,14 +253,14 @@ class IODeviceInterface(IOInterface):
         return a list of all ports
         """
         with self.state_mutex:
-            return copy.deepcopy(self.ports.keys())
+            return copy.deepcopy(list(self.ports.keys()))
 
     def get_port_type(self, port_name):
         """
         return the status for the given port, or none
         """
         with self.state_mutex:
-            if port_name in self.ports.keys():
+            if port_name in list(self.ports.keys()):
                 return copy.deepcopy(self.ports[port_name]['type'])
         return None
 
@@ -269,7 +269,7 @@ class IODeviceInterface(IOInterface):
         return the status for the given port, or none
         """
         with self.state_mutex:
-            if port_name in self.ports.keys():
+            if port_name in list(self.ports.keys()):
                 return copy.deepcopy(self.ports[port_name]['data'])
         return None
 
@@ -342,7 +342,7 @@ class IODeviceInterface(IOInterface):
         @return: returns bool True if the callback was successfully
                  deregistered, and False otherwise.
         """
-        if callback_id in self._threads.keys():
+        if callback_id in list(self._threads.keys()):
             self._callback_items[callback_id].disconnect(
                               self._callback_functions[callback_id])
             return True

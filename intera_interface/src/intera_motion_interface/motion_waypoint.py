@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 # Copyright (c) 2016-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,10 +25,10 @@ from intera_motion_msgs.msg import (
 )
 from sensor_msgs.msg import JointState
 from copy import deepcopy
-from utility_functions import ensure_path_to_file_exists
+from .utility_functions import ensure_path_to_file_exists
 from rospy_message_converter import message_converter
 import yaml
-from motion_waypoint_options import MotionWaypointOptions
+from .motion_waypoint_options import MotionWaypointOptions
 from intera_interface import Limb
 
 class MotionWaypoint(object):
@@ -141,7 +140,7 @@ class MotionWaypoint(object):
         if not perform_fk or not joint_angles:
             self._data.pose = pose   # empty pose as well
         else:   # Solve forward kinematics to get the pose
-            joints = dict(zip(self._limb.joint_names(), joint_angles))
+            joints = dict(list(zip(self._limb.joint_names(), joint_angles)))
             pose.pose = self._limb.joint_angles_to_cartesian_pose(
                     joint_angles=joints,
                     end_point=active_endpoint)

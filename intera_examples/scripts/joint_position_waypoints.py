@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -116,7 +115,7 @@ class Waypoints(object):
         loop = 0
         while not rospy.is_shutdown():
             loop += 1
-            print("Waypoint playback loop #%d " % (loop,))
+            print(("Waypoint playback loop #%d " % (loop,)))
             for waypoint in self._waypoints:
                 if rospy.is_shutdown():
                     break

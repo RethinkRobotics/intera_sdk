@@ -5,7 +5,7 @@
 # http://www.voidspace.org.uk/python/license.shtml
 # https://pypi.python.org/pypi/weakrefset
 
-from __future__ import with_statement
+
 
 from _weakref import ref
 
