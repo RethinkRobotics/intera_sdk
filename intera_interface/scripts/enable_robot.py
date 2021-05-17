@@ -51,7 +51,7 @@ def main():
     try:
         for act in args.actions:
             if act == 'state':
-                print((rs.state()))
+                print(rs.state())
             elif act == 'enable':
                 rs.enable()
             elif act == 'disable':

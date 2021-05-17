@@ -115,7 +115,7 @@ class Waypoints(object):
         loop = 0
         while not rospy.is_shutdown():
             loop += 1
-            print(("Waypoint playback loop #%d " % (loop,)))
+            print("Waypoint playback loop #%d " % (loop,))
             for waypoint in self._waypoints:
                 if rospy.is_shutdown():
                     break
