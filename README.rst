@@ -12,6 +12,7 @@ Supported ROS Versions
 - Indigo
 - Kinetic
 - Melodic
+- Noetic
 
 Installation
 ------------

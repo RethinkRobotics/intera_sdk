@@ -350,7 +350,7 @@ Related examples:
         loopstr = "forever"
     while (result == True and loop_cnt <= args.number_loops
            and not rospy.is_shutdown()):
-        print(("Playback loop %d of %s" % (loop_cnt, loopstr,)))
+        print("Playback loop %d of %s" % (loop_cnt, loopstr,))
         traj.start()
         result = traj.wait()
         loop_cnt = loop_cnt + 1

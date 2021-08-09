@@ -60,17 +60,17 @@ def map_joystick(joystick, limb):
             for (test, _cmd, doc) in bindings:
                 if callable(doc):
                     doc = doc()
-                print(("%s: %s" % (str(test[1]), doc)))
+                print("%s: %s" % (str(test[1]), doc))
 
     def offset_position(offset_pos):
         cmd_pos = max(min(gripper.get_position() + offset_pos, gripper.MAX_POSITION), gripper.MIN_POSITION)
         gripper.set_position(cmd_pos)
-        print(("commanded position set to {0} m".format(cmd_pos)))
+        print("commanded position set to {0} m".format(cmd_pos))
 
     def update_velocity(offset_vel):
         cmd_speed = max(min(gripper.get_cmd_velocity() + offset_vel, gripper.MAX_VELOCITY), gripper.MIN_VELOCITY)
         gripper.set_cmd_velocity(cmd_speed)
-        print(("commanded velocity set to {0} m/s".format(cmd_speed)))
+        print("commanded velocity set to {0} m/s".format(cmd_speed))
 
 
     # decrease position dead_zone

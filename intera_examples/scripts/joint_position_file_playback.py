@@ -77,7 +77,7 @@ def map_file(filename, limb, loops=1):
         if not gripper.is_calibrated():
             gripper.calibrate()
 
-    print(("Playing back: %s" % (filename,)))
+    print("Playing back: %s" % (filename,))
     with open(filename, 'r') as f:
         lines = f.readlines()
     keys = lines[0].rstrip().split(',')
