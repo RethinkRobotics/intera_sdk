@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>intera_examples</name>
-  <version>5.3.0</version>
+  <version>5.5.0</version>
   <description>
     Example programs for Intera SDK usage.
   </description>
