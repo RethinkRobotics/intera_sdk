@@ -240,6 +240,9 @@ class JointTrajectoryActionServer(object):
             self._limb.set_joint_velocities(dict(list(zip(joint_names, velocities))))
         if self._mode == 'position':
             self._limb.set_joint_positions(dict(list(zip(joint_names, point.positions))))
+        if len(point.velocities) == 0 or len(point.accelerations) == 0:
+            point.velocities = [0]*len(point.positions)
+            point.accelerations = [0]*len(point.positions)
         if self._mode == 'position_w_id':
             self._limb.set_joint_trajectory(joint_names,
                                             point.positions,

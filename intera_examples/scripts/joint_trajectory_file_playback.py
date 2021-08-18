@@ -191,7 +191,7 @@ class Trajectory(object):
             diffs = list(map(operator.sub, cmd, cur))
             diffs = list(map(operator.abs, diffs))
             #determine the largest time offset necessary across all joints
-            offset = max(list(map(operator.div, diffs, dflt_vel)))
+            offset = max(list(map(operator.truediv, diffs, dflt_vel)))
             return offset
 
         for idx, values in enumerate(lines[1:]):

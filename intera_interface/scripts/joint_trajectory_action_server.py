@@ -88,7 +88,7 @@ def main():
         type=float, help="trajectory control rate (Hz)"
     )
     parser.add_argument(
-        "-m", "--mode", default='position_w_id',
+        "-m", "--mode", default='velocity',
         choices=['position_w_id', 'position', 'velocity'],
         help="control mode for trajectory execution"
     )
