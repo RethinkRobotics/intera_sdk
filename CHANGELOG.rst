@@ -1,3 +1,10 @@
+5.5.0 (2021-8-19)
+---------------------------------
+- Smaller usability fixes
+- Added ROS noetic and melodic support
+- Added Python3 support while still being backwards compatible
+- Smaller fixes in joint trajectory example
+
 5.3.0 (2018-8-14)
 ---------------------------------
 - Interaction controls examples now return to postion mode when complete
