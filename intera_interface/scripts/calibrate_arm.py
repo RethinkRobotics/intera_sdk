@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
+
 import argparse
 import sys
 
@@ -101,7 +100,7 @@ def is_gripper_removed():
     """
     try:
         gripper = intera_interface.get_current_gripper_interface()
-    except Exception, e:
+    except Exception as e:
         return True
     rospy.logerr("Calibration Client: Cannot calibrate with grippers attached."
                  " Remove grippers before calibration!")
@@ -133,7 +132,7 @@ def main():
     rospy.loginfo("Running Calibrate on {0} arm".format(arm))
     try:
         goal_state = ca.start_calibration()
-    except KeyboardInterrupt, e:
+    except KeyboardInterrupt as e:
         error = e
         goal_state = ca.stop_calibration()
 

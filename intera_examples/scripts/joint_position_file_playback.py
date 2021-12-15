@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -40,12 +39,12 @@ def clean_line(line, names):
     #convert the line of strings to a float or None
     line = [try_float(x) for x in line.rstrip().split(',')]
     #zip the values with the joint names
-    combined = zip(names[1:], line[1:])
+    combined = list(zip(names[1:], line[1:]))
     #take out any tuples that have a none value
     cleaned = [x for x in combined if x[1] is not None]
     #convert it to a dictionary with only valid commands
     command = dict(cleaned)
-    right_command = dict((key, command[key]) for key in command.keys()
+    right_command = dict((key, command[key]) for key in list(command.keys())
                          if key[:-2] == 'right_')
     return (command, right_command, line)
 
@@ -64,10 +63,10 @@ def map_file(filename, limb, loops=1):
     first column is the time stamp
     """
     limb_interface = intera_interface.Limb(limb)
-    has_gripper = True
+    has_gripper = False
     try:
         gripper = intera_interface.Gripper(limb + '_gripper')
-    except ValueError:
+    except:
         has_gripper = False
         rospy.loginfo("Could not detect a gripper attached to the robot")
 
@@ -109,7 +108,7 @@ def map_file(filename, limb, loops=1):
                 if has_gripper and gripper.name in cmd:
                         gripper.set_position(cmd[gripper.name])
                 rate.sleep()
-        print
+        print()
     return True
 
 def main():

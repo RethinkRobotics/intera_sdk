@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -135,7 +134,7 @@ class Trajectory(object):
         #convert the line of strings to a float or None
         line = [try_float(x) for x in line.rstrip().split(',')]
         #zip the values with the joint names
-        combined = zip(joint_names[1:], line[1:])
+        combined = list(zip(joint_names[1:], line[1:]))
         #take out any tuples that have a none value
         cleaned = [x for x in combined if x[1] is not None]
         #convert it to a dictionary with only valid commands
@@ -189,10 +188,10 @@ class Trajectory(object):
                     cur.append(self.arm.joint_angle(name))
                     prm = rospy.get_param(vel_param % name, 0.25)
                     dflt_vel.append(prm)
-            diffs = map(operator.sub, cmd, cur)
-            diffs = map(operator.abs, diffs)
+            diffs = list(map(operator.sub, cmd, cur))
+            diffs = list(map(operator.abs, diffs))
             #determine the largest time offset necessary across all joints
-            offset = max(map(operator.div, diffs, dflt_vel))
+            offset = max(list(map(operator.div, diffs, dflt_vel)))
             return offset
 
         for idx, values in enumerate(lines[1:]):

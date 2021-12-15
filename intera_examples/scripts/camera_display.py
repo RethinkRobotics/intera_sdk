@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,13 +22,14 @@ from cv_bridge import CvBridge, CvBridgeError
 import rospy
 import intera_interface
 
-def show_image_callback(img_data, (edge_detection, window_name)):
+def show_image_callback(img_data, xxx_todo_changeme):
     """The callback function to show image by using CvBridge and cv
     """
+    (edge_detection, window_name) = xxx_todo_changeme
     bridge = CvBridge()
     try:
         cv_image = bridge.imgmsg_to_cv2(img_data, "bgr8")
-    except CvBridgeError, err:
+    except CvBridgeError as err:
         rospy.logerr(err)
         return
     if edge_detection == True:

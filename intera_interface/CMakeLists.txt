@@ -40,6 +40,16 @@ catkin_package(
   intera_motion_msgs
 )
 
+catkin_install_python(PROGRAMS
+  scripts/home_joints.py
+  scripts/joint_trajectory_action_server.py
+  scripts/calibrate_arm.py
+  scripts/io_config_editor.py
+  scripts/send_urdf_fragment.py
+  scripts/enable_robot.py
+  
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+
 install(
   DIRECTORY scripts/
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

@@ -18,7 +18,7 @@ from weakref import WeakKeyDictionary
 try:
     from weakref import WeakSet
 except ImportError:
-    from weakrefset import WeakSet
+    from .weakrefset import WeakSet
 
 
 class Signal(object):
@@ -30,7 +30,7 @@ class Signal(object):
         for f in self._functions:
             f(*args, **kargs)
 
-        for obj, functions in self._methods.items():
+        for obj, functions in list(self._methods.items()):
             for f in functions:
                 f(obj, *args, **kargs)
 

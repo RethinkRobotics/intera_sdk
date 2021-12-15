@@ -20,7 +20,7 @@ from sensor_msgs.msg import Image
 from intera_core_msgs.msg import IONodeConfiguration
 
 import intera_dataflow
-from robot_params import RobotParams
+from .robot_params import RobotParams
 from intera_io import IODeviceInterface
 
 
@@ -38,7 +38,7 @@ class Cameras(object):
         self.cameras_io = dict()
 
         camera_param_dict = RobotParams().get_camera_details()
-        camera_list = camera_param_dict.keys()
+        camera_list = list(camera_param_dict.keys())
         # check to make sure cameras is not an empty list
         if not camera_list:
             rospy.logerr(' '.join(["camera list is empty: ", ' , '.join(camera_list)]))
@@ -49,7 +49,7 @@ class Cameras(object):
             timeout=5.0,
             timeout_msg=("Failed to connect to Camera Node and retrieve configuration.")
         )
-        cameras_to_load = self._get_camera_launch_config().keys()
+        cameras_to_load = list(self._get_camera_launch_config().keys())
 
         camera_capabilities = {
             "mono": ['cognex'],
@@ -119,7 +119,7 @@ class Cameras(object):
         @rtype: [str]
         @return: ordered list of camera names
         """
-        return self.cameras_io.keys()
+        return list(self.cameras_io.keys())
 
     def verify_camera_exists(self, camera_name):
         """

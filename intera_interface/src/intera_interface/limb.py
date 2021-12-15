@@ -47,8 +47,8 @@ from intera_core_msgs.srv import (
     SolvePositionFK,
     SolvePositionFKRequest
 )
-import settings
-from robot_params import RobotParams
+from . import settings
+from .robot_params import RobotParams
 
 
 class Limb(object):
@@ -168,11 +168,11 @@ class Limb(object):
 
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
-        intera_dataflow.wait_for(lambda: len(self._joint_angle.keys()) > 0,
+        intera_dataflow.wait_for(lambda: len(list(self._joint_angle.keys())) > 0,
                                  timeout_msg=err_msg, timeout=5.0)
         err_msg = ("%s limb init failed to get current endpoint_state "
                    "from %s") % (self.name.capitalize(), ns + 'endpoint_state')
-        intera_dataflow.wait_for(lambda: len(self._cartesian_pose.keys()) > 0,
+        intera_dataflow.wait_for(lambda: len(list(self._cartesian_pose.keys())) > 0,
                                  timeout_msg=err_msg, timeout=5.0)
         err_msg = ("%s limb init failed to get current tip_states "
                    "from %s") % (self.name.capitalize(), ns + 'tip_states')
@@ -468,8 +468,8 @@ class Limb(object):
         @type raw: bool
         @param raw: advanced, direct position control mode
         """
-        self._command_msg.names = positions.keys()
-        self._command_msg.position = positions.values()
+        self._command_msg.names = list(positions.keys())
+        self._command_msg.position = list(positions.values())
         self._command_msg.mode = JointCommand.POSITION_MODE
         self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
@@ -486,8 +486,8 @@ class Limb(object):
         @type velocities: dict({str:float})
         @param velocities: joint_name:velocity command
         """
-        self._command_msg.names = velocities.keys()
-        self._command_msg.velocity = velocities.values()
+        self._command_msg.names = list(velocities.keys())
+        self._command_msg.velocity = list(velocities.values())
         self._command_msg.mode = JointCommand.VELOCITY_MODE
         self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
@@ -504,8 +504,8 @@ class Limb(object):
         @type torques: dict({str:float})
         @param torques: joint_name:torque command
         """
-        self._command_msg.names = torques.keys()
-        self._command_msg.effort = torques.values()
+        self._command_msg.names = list(torques.keys())
+        self._command_msg.effort = list(torques.values())
         self._command_msg.mode = JointCommand.TORQUE_MODE
         self._command_msg.header.stamp = rospy.Time.now()
         self._pub_joint_cmd.publish(self._command_msg)
@@ -526,7 +526,7 @@ class Limb(object):
         except KeyError:
             rospy.logerr(("Get neutral pose failed, arm: \"{0}\".").format(self.name))
             return
-        angles = dict(zip(self.joint_names(), neutral_pose))
+        angles = dict(list(zip(self.joint_names(), neutral_pose)))
         self.set_joint_position_speed(speed)
         return self.move_to_joint_positions(angles, timeout)
 
@@ -556,7 +556,7 @@ class Limb(object):
                 return abs(angle - self._joint_angle[joint])
             return joint_diff
 
-        diffs = [genf(j, a) for j, a in positions.items() if
+        diffs = [genf(j, a) for j, a in list(positions.items()) if
                  j in self._joint_angle]
         fail_msg = "{0} limb failed to reach commanded joint positions.".format(
                                                       self.name.capitalize())
@@ -613,8 +613,8 @@ class Limb(object):
         if joint_seed is not None:
             ikreq.seed_mode = ikreq.SEED_USER
             seed = JointState()
-            seed.name = joint_seed.keys()
-            seed.position = joint_seed.values()
+            seed.name = list(joint_seed.keys())
+            seed.position = list(joint_seed.values())
             ikreq.seed_angles.append(seed)
 
         # Once the primary IK task is solved, the solver will then try to bias the
@@ -625,8 +625,8 @@ class Limb(object):
           ikreq.use_nullspace_goal.append(True)
           # The nullspace goal can either be the full set or subset of joint angles
           goal = JointState()
-          goal.name = nullspace_goal.keys()
-          goal.position = nullspace_goal.values()
+          goal.name = list(nullspace_goal.keys())
+          goal.position = list(nullspace_goal.values())
           ikreq.nullspace_goal.append(goal)
           # The gain used to bias toward the nullspace goal. Must be [0.0, 1.0]
           # If empty, the default gain of 0.4 will be used
@@ -634,7 +634,7 @@ class Limb(object):
 
         try:
             resp = self._iksvc(ikreq)
-        except (rospy.ServiceException, rospy.ROSException), e:
+        except (rospy.ServiceException, rospy.ROSException) as e:
             rospy.logerr("IK Service call failed: %s" % (e,))
             return False
         limb_joints = {}
@@ -642,7 +642,7 @@ class Limb(object):
         if (resp.result_type[0] > 0
                 or (allow_collision and resp.result_type[0] == resp.IK_IN_COLLISION)):
             # Format solution into Limb API-compatible dictionary
-            limb_joints = dict(zip(resp.joints[0].name, resp.joints[0].position))
+            limb_joints = dict(list(zip(resp.joints[0].name, resp.joints[0].position)))
         else:
             rospy.logerr("INVALID POSE - No Valid Joint Solution Found.")
             return False
@@ -662,14 +662,14 @@ class Limb(object):
         fkreq = SolvePositionFKRequest()
         # Add desired pose for forward kinematics
         joints = JointState()
-        joints.name = joint_angles.keys()
-        joints.position = joint_angles.values()
+        joints.name = list(joint_angles.keys())
+        joints.position = list(joint_angles.values())
         fkreq.configuration.append(joints)
         # Request forward kinematics from base to end_point
         fkreq.tip_names.append(end_point)
         try:
             resp = self._fksvc(fkreq)
-        except (rospy.ServiceException, rospy.ROSException), e:
+        except (rospy.ServiceException, rospy.ROSException) as e:
             rospy.logerr("FK Service call failed: %s" % (e,))
             return False
         return resp

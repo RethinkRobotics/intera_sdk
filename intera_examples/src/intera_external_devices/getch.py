@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-
+#! /usr/bin/env python
 # Copyright (c) 2013-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,7 +40,7 @@ def getch(timeout=0.01):
         if fileno in rlist:
             ch = sys.stdin.read(1)
     except Exception as ex:
-        print "getch", ex
+        print("getch", ex)
         raise OSError
     finally:
         termios.tcsetattr(fileno, termios.TCSADRAIN, old_settings)

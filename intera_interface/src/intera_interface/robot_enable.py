@@ -30,7 +30,7 @@ import intera_dataflow
 from intera_core_msgs.msg import (
     RobotAssemblyState,
 )
-import settings
+from . import settings
 
 
 class RobotEnable(object):
@@ -71,7 +71,7 @@ class RobotEnable(object):
 
         intera_dataflow.wait_for(
             lambda: not self._state is None,
-            timeout=5.0,
+            timeout=10.0,
             timeout_msg=("Failed to get robot state on %s" %
             (state_topic,)),
         )
@@ -162,7 +162,7 @@ http://sdk.rethinkrobotics.com/intera/SDK_Shell
                 timeout_msg=error_env,
                 body=pub.publish
             )
-        except OSError, e:
+        except OSError as e:
             if e.errno == errno.ETIMEDOUT:
                 if self._state.error == True and self._state.stopped == False:
                     rospy.logwarn(error_nonfatal)

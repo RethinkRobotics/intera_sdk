@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 # Copyright (c) 2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +16,7 @@
 
 import rospy
 from intera_core_msgs.msg import InteractionControlCommand
-from interaction_options import InteractionOptions
+from .interaction_options import InteractionOptions
 import intera_interface
 from intera_interface import CHECK_VERSION
 

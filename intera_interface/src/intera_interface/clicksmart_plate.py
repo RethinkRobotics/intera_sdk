@@ -180,7 +180,7 @@ class SimpleClickSmartGripper(object):
         """
         (ept_id, endpoint_info) = self.get_endpoint_info(endpoint_id)
         exclude = ['endpoint_id', 'label', 'type', 'actuationTimeS']
-        return {k: v for k,v in endpoint_info.iteritems() if k not in exclude}
+        return {k: v for k,v in endpoint_info.items() if k not in exclude}
 
     def get_all_ee_signals(self):
         """
@@ -221,7 +221,7 @@ class SimpleClickSmartGripper(object):
         @return: list of endpoint_ids in ClickSmart config
         """
         if self.endpoint_map:
-            return self.endpoint_map.keys()
+            return list(self.endpoint_map.keys())
         else:
             return []
 
@@ -241,10 +241,10 @@ class SimpleClickSmartGripper(object):
         @return: (endpoint_id, endpoint_info) - the default endpoint_id (or the one specified)
             and signal/config info associated with endpoint
         """
-        if self.endpoint_map is None or len(self.endpoint_map.keys()) <= 0:
+        if self.endpoint_map is None or len(list(self.endpoint_map.keys())) <= 0:
             rospy.logerr('Cannot use endpoint signals without any endpoints!')
             return
-        endpoint_id = self.endpoint_map.keys()[0] if endpoint_id is None else endpoint_id
+        endpoint_id = list(self.endpoint_map.keys())[0] if endpoint_id is None else endpoint_id
         return (endpoint_id, self.endpoint_map[endpoint_id])
 
     def send_configuration(self, config, timeout=5.0):

@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 # Copyright (c) 2016-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -23,10 +22,10 @@ from intera_motion_msgs.msg import (
     TrajectoryOptions,
     Waypoint
 )
-from motion_controller_action_client import MotionControllerActionClient
-from motion_waypoint import MotionWaypoint
-from motion_waypoint_options import MotionWaypointOptions
-from utility_functions import ensure_path_to_file_exists
+from .motion_controller_action_client import MotionControllerActionClient
+from .motion_waypoint import MotionWaypoint
+from .motion_waypoint_options import MotionWaypointOptions
+from .utility_functions import ensure_path_to_file_exists
 from copy import deepcopy
 from rospy_message_converter import message_converter
 from intera_interface import Limb

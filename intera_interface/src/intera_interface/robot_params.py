@@ -32,7 +32,7 @@ class RobotParams(object):
         @rtype: list [str]
         @return: ordered list of camera names
         """
-        return self.get_camera_details().keys()
+        return list(self.get_camera_details().keys())
 
     def get_camera_details(self):
         """

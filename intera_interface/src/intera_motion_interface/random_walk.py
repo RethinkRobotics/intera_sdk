@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 # Copyright (c) 2016-2018, Rethink Robotics Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -145,7 +144,7 @@ class RandomWalk(object):
         lower = max(low + pad*r, val - dist*r)
         upper = min(upp - pad*r, val + dist*r)
         if lower > upper:
-            print "No valid solution! Ignoring last sample value"
+            print("No valid solution! Ignoring last sample value")
             lower = low + pad*r
             upper = upp - pad*r
         return lower + (upper-lower)*random.random()
