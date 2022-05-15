@@ -61,6 +61,7 @@ class Trajectory(object):
     def add_point(self, positions, time):
         point = JointTrajectoryPoint()
         point.positions = copy(positions)
+        point.velocities = [0.1] * len(positions)
         point.time_from_start = rospy.Duration(time)
         self._goal.trajectory.points.append(point)
 

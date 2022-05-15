@@ -138,12 +138,12 @@ class Limb(object):
             queue_size=1,
             tcp_nodelay=True)
 
-        _tip_states_sub = rospy.Subscriber(
-            ns + 'tip_states',
-            EndpointStates,
-            self._on_tip_states,
-            queue_size=1,
-            tcp_nodelay=True)
+        #_tip_states_sub = rospy.Subscriber(
+        #    ns + 'tip_states',
+        #    EndpointStates,
+        #    self._on_tip_states,
+        #    queue_size=1,
+        #    tcp_nodelay=True)
 
         _collision_state_sub = rospy.Subscriber(
             ns + 'collision_detection_state',
@@ -163,8 +163,8 @@ class Limb(object):
         ns_pkn = "ExternalTools/" + limb + "/PositionKinematicsNode/"
         self._iksvc = rospy.ServiceProxy(ns_pkn + 'IKService', SolvePositionIK)
         self._fksvc = rospy.ServiceProxy(ns_pkn + 'FKService', SolvePositionFK)
-        rospy.wait_for_service(ns_pkn + 'IKService', 5.0)
-        rospy.wait_for_service(ns_pkn + 'FKService', 5.0)
+        rospy.wait_for_service(ns_pkn + 'IKService', 60.0)
+        rospy.wait_for_service(ns_pkn + 'FKService', 60.0)
 
         err_msg = ("%s limb init failed to get current joint_states "
                    "from %s") % (self.name.capitalize(), joint_state_topic)
@@ -176,8 +176,8 @@ class Limb(object):
                                  timeout_msg=err_msg, timeout=5.0)
         err_msg = ("%s limb init failed to get current tip_states "
                    "from %s") % (self.name.capitalize(), ns + 'tip_states')
-        intera_dataflow.wait_for(lambda: self._tip_states is not None,
-                                 timeout_msg=err_msg, timeout=5.0)
+        #intera_dataflow.wait_for(lambda: self._tip_states is not None,
+        #                         timeout_msg=err_msg, timeout=5.0)
 
     def _on_joint_states(self, msg):
         for idx, name in enumerate(msg.name):
@@ -625,7 +625,7 @@ class Limb(object):
           ikreq.use_nullspace_goal.append(True)
           # The nullspace goal can either be the full set or subset of joint angles
           goal = JointState()
-          goal.names = list(nullspace_goal.keys())
+          goal.name = list(nullspace_goal.keys())
           goal.position = list(nullspace_goal.values())
           ikreq.nullspace_goal.append(goal)
           # The gain used to bias toward the nullspace goal. Must be [0.0, 1.0]

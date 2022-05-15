@@ -163,9 +163,9 @@ class MotionWaypoint(object):
             This is used as the nullspace bias if set.
         """
         if pose is None:
-          self._data.pose = PoseStamped()  # empty pose
+            self._data.pose = PoseStamped()  # empty pose
         else:
-          self._data.pose = pose
+            self._data.pose = pose
 
         if active_endpoint is None:
             active_endpoint = MotionWaypoint.get_default_active_endpoint()
