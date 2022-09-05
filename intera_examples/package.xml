@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <package format="3">
   <name>intera_examples</name>
-  <version>5.5.0</version>
+  <version>5.5.2</version>
   <description>
     Example programs for Intera SDK usage.
   </description>
 
   <maintainer email="rsdk.support@rethinkrobotics.com">
-    Rethink Robotics Inc.
+    Rethink Robotics GmbH.
   </maintainer>
   <license>Apache 2.0</license>
   <url type="website">http://sdk.rethinkrobotics.com/intera/</url>
@@ -17,7 +17,7 @@
   <url type="bugtracker">
     https://github.com/RethinkRobotics/intera_sdk/issues
   </url>
-  <author>Rethink Robotics Inc.</author>
+  <author>Rethink Robotics GmbH.</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 

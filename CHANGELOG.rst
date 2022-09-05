@@ -1,4 +1,4 @@
-5.5.0 (2021-8-19)
+5.5.2 (2021-8-19)
 ---------------------------------
 - Smaller usability fixes
 - Added ROS noetic and melodic support

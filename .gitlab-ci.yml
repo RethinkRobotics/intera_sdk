@@ -1,0 +1,87 @@
+#| =====================================
+#| Stages definition
+#| =====================================
+stages:
+  - build
+
+#|=================================
+#| Templates
+#|=================================
+include:
+  - project: 'rethink-research-development/rr-gitlab-templates'
+    ref: master
+    file: '/ci/ssh.yml'
+
+.build_intera_sdk:
+  variables:
+    DISTRIBUTION: "noetic"
+  image: ${CI_DEPENDENCY_PROXY_DIRECT_GROUP_IMAGE_PREFIX}/ros:$DISTRIBUTION-ros-base
+  tags:
+    - amd64
+  before_script:
+    - apt-get update
+    - apt-get install -y libspnav-dev libbluetooth-dev libcwiid-dev libx11-dev git
+    - !reference [.ssh_clone_docker, before_script]
+    - shopt -s extglob dotglob
+    - mkdir temporary_mv_dir
+    - mv !(temporary_mv_dir) temporary_mv_dir
+    - mkdir src
+    - mv temporary_mv_dir src/${CI_PROJECT_NAME}
+  script:
+    - catkin_make
+    - catkin_make run_tests
+    - catkin_test_results
+  artifacts:
+    when: always
+    paths:
+      - build/test_results/*/*.xml
+    reports:
+      junit:
+        - build/test_results/*/*.xml
+
+#|=================================
+#| CI Jobs
+#|=================================
+
+
+indigo:
+  extends: .build_intera_sdk
+  variables:
+    DISTRIBUTION: "indigo"
+  stage: build
+  before_script:
+    - !reference [.build_intera_sdk, before_script]
+    - git clone https://github.com/RethinkRobotics/intera_common.git src/intera_common
+    - apt-get install -y ros-indigo-joystick-drivers ros-indigo-cv-bridge ros-indigo-xacro ros-indigo-control-msgs ros-indigo-rospy-message-converter
+
+kinetic:
+  extends: .build_intera_sdk
+  variables:
+    DISTRIBUTION: "kinetic"
+  stage: build
+  before_script:
+    - !reference [.build_intera_sdk, before_script]
+    - git clone "${INTERA_COMMON_REPO}" -b main src/intera_common
+    - rosdep install -r --ignore-packages-from-source --default-yes --from-paths src
+
+melodic:
+  extends: .build_intera_sdk
+  variables:
+    DISTRIBUTION: "melodic"
+  stage: build
+  before_script:
+    - !reference [.build_intera_sdk, before_script]
+    - git clone "${INTERA_COMMON_REPO}" -b main src/intera_common
+    - git clone https://github.com/ros-drivers/joystick_drivers.git src/joystick_drivers
+    - rosdep install -r --ignore-packages-from-source --default-yes --from-paths src
+
+noetic:
+  extends: .build_intera_sdk
+  variables:
+    DISTRIBUTION: "noetic"
+  stage: build
+  before_script:
+    - !reference [.build_intera_sdk, before_script]
+    - git clone "${INTERA_COMMON_REPO}" -b main src/intera_common
+    - git clone https://github.com/ros-drivers/joystick_drivers.git src/joystick_drivers
+    - rosdep install -r --ignore-packages-from-source --default-yes --from-paths src

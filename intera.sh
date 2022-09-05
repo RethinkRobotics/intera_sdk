@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright (c) 2013-2016, Rethink Robotics
+# Copyright (c) 2013-2023, Rethink Robotics GmbH
 # All rights reserved.
 
 # This file is to be used in the *root* of your Catkin workspace.
@@ -27,7 +27,7 @@ your_ip="192.168.XXX.XXX"
 #your_hostname="my_computer.local"
 
 # Specify ROS distribution (e.g. noetic, melodic, kinetic, indigo, hydro, etc.)
-ros_version="melodic"
+ros_version="noetic"
 #-----------------------------------------------------------------------------#
 
 tf=$(mktemp)

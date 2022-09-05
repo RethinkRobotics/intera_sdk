@@ -9,7 +9,7 @@
   </description>
 
   <maintainer email="rsdk.support@rethinkrobotics.com">
-    Rethink Robotics Inc.
+    Rethink Robotics GmbH.
   </maintainer>
   <license>Apache 2.0</license>
   <url type="website">http://sdk.rethinkrobotics.com/intera/</url>
@@ -19,7 +19,7 @@
   <url type="bugtracker">
     https://github.com/RethinkRobotics/intera_sdk/issues
   </url>
-  <author>Rethink Robotics Inc.</author>
+  <author>Rethink Robotics GmbH.</author>
 
   <buildtool_depend condition="$ROS_PYTHON_VERSION == 2">python-setuptools</buildtool_depend>
   <buildtool_depend condition="$ROS_PYTHON_VERSION == 3">python3-setuptools</buildtool_depend>

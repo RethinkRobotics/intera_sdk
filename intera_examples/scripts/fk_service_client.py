@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-# Copyright (c) 2013-2018, Rethink Robotics Inc.
+# Copyright (c) 2013-2023, Rethink Robotics GmbH.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
