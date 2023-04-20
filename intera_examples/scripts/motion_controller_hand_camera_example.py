@@ -21,7 +21,10 @@ from intera_motion_interface import (
 )
 
 from intera_motion_msgs.msg import TrajectoryOptions
-from intera_interface import Limb
+from intera_interface import (
+    Limb,
+    TipSelector
+)
 
 from geometry_msgs.msg import (
     PoseStamped
@@ -34,8 +37,13 @@ def position_from_pose(pose):
 
 
 rospy.init_node('montion_controller_hand_camera_example')
+endpoint = 'right_hand_camera'
 
 limb = Limb()
+
+tips = TipSelector()
+tips.add_camera_tip()
+rospy.sleep(rospy.Duration(0.5))
 
 wpt_opts = MotionWaypointOptions(max_joint_speed_ratio=0.2,
                                  max_joint_accel=0.2)
@@ -43,7 +51,7 @@ wpt_opts = MotionWaypointOptions(max_joint_speed_ratio=0.2,
 wpt_opts.set_joint_tolerances(0.01)
 # In this case, we would like to change the pose of the hand camera by 90°
 # about the x-dir.
-endpoint = 'right_hand_camera'
+
 
 # Get the current state (pose, twist, wrench) of the right_hand_camera
 state_camera = limb.tip_state(endpoint)

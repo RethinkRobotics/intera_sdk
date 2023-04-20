@@ -34,3 +34,4 @@ from .settings import (
     VERSIONS_SDK2ROBOT,
     VERSIONS_SDK2GRIPPER,
 )
+from .tip_selector import TipSelector
