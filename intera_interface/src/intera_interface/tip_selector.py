@@ -78,15 +78,19 @@ class TipSelector(object):
     def add_tip(self, tip_name):
         if tip_name not in self._available_tips:
             rospy.logerr(f"Tip with name {tip_name} is not available!")
-            return
+            return False
         if tip_name not in self._selected_tips:
             self._selected_tips.append(self._camera_tip)
         self._publish()
+        return True
 
     def remove_tip(self, tip_name):
-        if tip_name in self._selected_tips:
-            self._selected_tips.remove(tip_name)
+        if tip_name not in self._selected_tips:
+            rospy.logerr(f"Tip with name {tip_name} is not available!")
+            return False
+        self._selected_tips.remove(tip_name)
         self._publish()
+        return True
 
     def _publish(self):
         msg = StringArray()
