@@ -61,7 +61,7 @@ kinetic:
   stage: build
   before_script:
     - !reference [.build_intera_sdk, before_script]
-    - git clone "${INTERA_COMMON_REPO}" -b main src/intera_common
+    - git clone https://github.com/RethinkRobotics/intera_common.git -b main src/intera_common
     - rosdep install -r --ignore-packages-from-source --default-yes --from-paths src
 
 melodic:
