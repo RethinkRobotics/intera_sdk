@@ -7,13 +7,13 @@ the Intera Research Robot from Rethink Robotics
 Code & Tickets
 --------------
 
-+-----------------+----------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
-+-----------------+----------------------------------------------------------------+
-| Issues          | https://github.com/RethinkRobotics/intera_interface/issues     |
-+-----------------+----------------------------------------------------------------+
-| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
-+-----------------+----------------------------------------------------------------+
++-----------------+------------------------------------------------------------------+
+| Documentation   | https://support.rethinkrobotics.com/support/solutions/80000457344|
++-----------------+------------------------------------------------------------------+
+| Issues          | https://github.com/RethinkRobotics/intera_interface/issues       |
++-----------------+------------------------------------------------------------------+
+| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions              |
++-----------------+------------------------------------------------------------------+
 
 intera_interface Repository Overview
 ------------------------------------
@@ -58,7 +58,3 @@ Other Intera Repositories
 | intera_common    | https://github.com/RethinkRobotics/intera_common    |
 +------------------+-----------------------------------------------------+
 
-Latest Release Information
---------------------------
-
-http://sdk.rethinkrobotics.com/intera/Release-Changes

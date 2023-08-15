@@ -6,13 +6,13 @@ Examples for utilizing the Intera SDK Interface to communicate with robots from 
 Code & Tickets
 --------------
 
-+-----------------+----------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/intera/                         |
-+-----------------+----------------------------------------------------------------+
-| Issues          | https://github.com/RethinkRobotics/intera_sdk/issues           |
-+-----------------+----------------------------------------------------------------+
-| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions            |
-+-----------------+----------------------------------------------------------------+
++-----------------+------------------------------------------------------------------+
+| Documentation   | https://support.rethinkrobotics.com/support/solutions/80000457344|
++-----------------+------------------------------------------------------------------+
+| Issues          | https://github.com/RethinkRobotics/intera_sdk/issues             |
++-----------------+------------------------------------------------------------------+
+| Contributions   | http://sdk.rethinkrobotics.com/intera/Contributions              |
++-----------------+------------------------------------------------------------------+
 
 intera_examples Repository Overview
 -----------------------------------
@@ -65,7 +65,3 @@ Other Intera SDK Repositories
 | intera_common    | https://github.com/RethinkRobotics/intera_common    |
 +------------------+-----------------------------------------------------+
 
-Latest Release Information
---------------------------
-
-http://sdk.rethinkrobotics.com/intera/Release-Changes

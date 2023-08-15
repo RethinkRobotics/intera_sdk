@@ -17,13 +17,13 @@ Supported ROS Versions
 Installation
 ------------
 | Please follow the Getting Started wiki page for instructions on installation of the Intera SDK:
-| http://sdk.rethinkrobotics.com/intera/Workstation_Setup
+| https://support.rethinkrobotics.com/support/solutions/articles/80000980134-workstation-setup
 
 Code & Tickets
 --------------
 
 +-----------------+----------------------------------------------------------------------------+
-| Documentation   | http://sdk.rethinkrobotics.com/intera/                                     |
+| Documentation   | https://support.rethinkrobotics.com/support/solutions/80000457344          |
 +-----------------+----------------------------------------------------------------------------+
 | Python API Docs | http://rethinkrobotics.github.io/intera_sdk_docs                           |
 +-----------------+----------------------------------------------------------------------------+
@@ -62,7 +62,3 @@ Other Intera Repositories
 | intera_common    | https://github.com/RethinkRobotics/intera_common    |
 +------------------+-----------------------------------------------------+
 
-Latest Release Information
---------------------------
-
-http://sdk.rethinkrobotics.com/intera/Release-Changes
